@@ -1,10 +1,16 @@
 import {
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
   YAxis,
+  CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
@@ -12,168 +18,167 @@ import {
 
 function Reports({
   sales,
+  medicines,
   expenses,
+  dark,
 }) {
 
-  /* TODAY */
-  const today =
-    new Date()
-      .toISOString()
-      .split("T")[0];
+  /* =========================
+     FILTER
+  ========================= */
 
-  /* DAILY SALES */
-  const dailySales =
-    sales
-      .filter(
-        (sale) =>
-          sale.date ===
-          today
-      )
-      .reduce(
-        (acc, sale) =>
-          acc +
-          Number(
-            sale.total || 0
-          ),
-        0
-      );
+  const [filter] =
+    useState("all");
 
-  /* WEEKLY SALES */
-  const weeklySales =
+  /* =========================
+     TOTALS
+  ========================= */
+
+  const totalSales =
     sales.reduce(
-      (acc, sale) =>
-        acc +
+      (sum, sale) =>
+        sum +
         Number(
           sale.total || 0
         ),
       0
     );
 
-  /* MONTHLY PROFIT */
-  const monthlyProfit =
-    sales.reduce(
-      (acc, sale) => {
-
-        const saleProfit =
-          sale.items?.reduce(
-            (
-              itemAcc,
-              item
-            ) =>
-
-              itemAcc +
-
-              (
-                item.sellPrice -
-                item.buyPrice
-              ) * item.qty,
-
-            0
-          ) || 0;
-
-        return (
-          acc +
-          saleProfit
-        );
-      },
-
-      0
-    );
-
-  /* YEARLY PROFIT */
-  const yearlyProfit =
-    monthlyProfit;
-
-  /* EXPENSES */
   const totalExpenses =
     expenses.reduce(
       (
-        acc,
+        sum,
         expense
       ) =>
-
-        acc +
+        sum +
         Number(
-          expense.amount ||
-            0
+          expense.amount || 0
         ),
-
       0
     );
 
-  /* LOSS */
-  const totalLoss =
-    totalExpenses;
+  const totalProfit =
+    sales.reduce(
+      (sum, sale) => {
 
-  /* NET PROFIT */
-  const netProfit =
-    monthlyProfit -
-    totalLoss;
+        const profit =
+          Number(
+            sale.total || 0
+          ) -
+          Number(
+            sale.buyTotal ||
+              0
+          );
 
-  /* CHART DATA */
+        return (
+          sum + profit
+        );
+      },
+      0
+    );
+
+  /* =========================
+     CHART DATA
+  ========================= */
+
   const salesChart =
-    sales.map((sale) => ({
-      customer:
-        sale.customer,
+    useMemo(() => {
 
-      total:
-        sale.total,
-    }));
+      const grouped =
+        {};
 
-  /* PAYMENT STATUS */
-  const paymentData = [
+      sales.forEach(
+        (sale) => {
+
+          const customer =
+            sale.customer ||
+            "Unknown";
+
+          if (
+            !grouped[
+              customer
+            ]
+          ) {
+
+            grouped[
+              customer
+            ] = 0;
+          }
+
+          grouped[
+            customer
+          ] += Number(
+            sale.total || 0
+          );
+        }
+      );
+
+      return Object.keys(
+        grouped
+      ).map((key) => ({
+        customer: key,
+        total:
+          grouped[key],
+      }));
+    }, [sales]);
+
+  /* =========================
+     PIE DATA
+  ========================= */
+
+  const pieData = [
     {
-      name: "Paid",
+      name: "Sales",
       value:
-        sales.filter(
-          (sale) =>
-            sale.status ===
-            "Paid"
-        ).length,
+        totalSales,
     },
 
     {
-      name: "Partial",
+      name: "Expenses",
       value:
-        sales.filter(
-          (sale) =>
-            sale.status ===
-            "Partial"
-        ).length,
-    },
-
-    {
-      name: "Unpaid",
-      value:
-        sales.filter(
-          (sale) =>
-            sale.status ===
-            "Unpaid"
-        ).length,
+        totalExpenses,
     },
   ];
 
   const COLORS = [
     "#16a34a",
-    "#f59e0b",
     "#dc2626",
   ];
 
   return (
-    <div>
+    <div
+      style={{
+        width: "100%",
+
+        minHeight:
+          "100vh",
+
+        color:
+          dark
+            ? "#ffffff"
+            : "#111827",
+      }}
+    >
 
       {/* HEADER */}
+
       <div
         style={{
           marginBottom:
-            "30px",
+            "24px",
         }}
       >
 
         <h1
           style={{
-            margin: 0,
-            fontSize: "42px",
+            fontSize:
+              "36px",
+
+            fontWeight:
+              "bold",
+
+            marginBottom:
+              "10px",
           }}
         >
           Reports 📈
@@ -181,95 +186,186 @@ function Reports({
 
         <p
           style={{
-            color: "#6b7280",
-            marginTop: "8px",
+            color:
+              dark
+                ? "#94a3b8"
+                : "#6b7280",
           }}
         >
-          Business analytics
-          and pharmacy reports
+          Pharmacy analytics
+          and reports
         </p>
       </div>
 
       {/* CARDS */}
+
       <div
         style={{
           display: "grid",
 
           gridTemplateColumns:
-            "repeat(auto-fit,minmax(240px,1fr))",
+            "repeat(auto-fit,minmax(220px,1fr))",
 
-          gap: "22px",
+          gap: "20px",
 
           marginBottom:
             "30px",
         }}
       >
 
-        <Card
-          title="Daily Sales"
-          value={`$${dailySales.toFixed(
-            2
-          )}`}
-          icon="📅"
-          color="#16a34a"
-        />
+        {/* SALES */}
 
-        <Card
-          title="Weekly Sales"
-          value={`$${weeklySales.toFixed(
-            2
-          )}`}
-          icon="🗓️"
-          color="#2563eb"
-        />
+        <div
+          style={{
+            background:
+              dark
+                ? "#111827"
+                : "#ffffff",
 
-        <Card
-          title="Monthly Profit"
-          value={`$${monthlyProfit.toFixed(
-            2
-          )}`}
-          icon="💰"
-          color="#16a34a"
-        />
+            borderRadius:
+              "24px",
 
-        <Card
-          title="Yearly Profit"
-          value={`$${yearlyProfit.toFixed(
-            2
-          )}`}
-          icon="🏆"
-          color="#9333ea"
-        />
+            padding:
+              "24px",
 
-        <Card
-          title="Loss"
-          value={`$${totalLoss.toFixed(
-            2
-          )}`}
-          icon="📉"
-          color="#dc2626"
-        />
+            border:
+              dark
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
+          }}
+        >
 
-        <Card
-          title="Expenses"
-          value={`$${totalExpenses.toFixed(
-            2
-          )}`}
-          icon="💸"
-          color="#f59e0b"
-        />
+          <p
+            style={{
+              color:
+                "#16a34a",
 
-        <Card
-          title="Net Profit"
-          value={`$${netProfit.toFixed(
-            2
-          )}`}
-          icon="📊"
-          color="#14b8a6"
-        />
+              marginBottom:
+                "10px",
+            }}
+          >
+            Total Sales
+          </p>
+
+          <h2
+            style={{
+              fontSize:
+                "32px",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            $
+            {totalSales.toFixed(
+              2
+            )}
+          </h2>
+        </div>
+
+        {/* EXPENSES */}
+
+        <div
+          style={{
+            background:
+              dark
+                ? "#111827"
+                : "#ffffff",
+
+            borderRadius:
+              "24px",
+
+            padding:
+              "24px",
+
+            border:
+              dark
+                ? "1px solid #1f2937"
+                : "#e5e7eb",
+          }}
+        >
+
+          <p
+            style={{
+              color:
+                "#dc2626",
+
+              marginBottom:
+                "10px",
+            }}
+          >
+            Expenses
+          </p>
+
+          <h2
+            style={{
+              fontSize:
+                "32px",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            $
+            {totalExpenses.toFixed(
+              2
+            )}
+          </h2>
+        </div>
+
+        {/* PROFIT */}
+
+        <div
+          style={{
+            background:
+              dark
+                ? "#111827"
+                : "#ffffff",
+
+            borderRadius:
+              "24px",
+
+            padding:
+              "24px",
+
+            border:
+              dark
+                ? "1px solid #1f2937"
+                : "#e5e7eb",
+          }}
+        >
+
+          <p
+            style={{
+              color:
+                "#06b6d4",
+
+              marginBottom:
+                "10px",
+            }}
+          >
+            Profit
+          </p>
+
+          <h2
+            style={{
+              fontSize:
+                "32px",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            $
+            {totalProfit.toFixed(
+              2
+            )}
+          </h2>
+        </div>
       </div>
 
       {/* CHARTS */}
+
       <div
         style={{
           display: "grid",
@@ -284,193 +380,200 @@ function Reports({
         }}
       >
 
-        {/* SALES CHART */}
+        {/* BAR CHART */}
+
         <div
           style={{
             background:
-              "#fff",
+              dark
+                ? "#111827"
+                : "#ffffff",
 
             borderRadius:
               "24px",
 
             padding:
-              "24px",
+              "20px",
 
-            boxShadow:
-              "0 8px 24px rgba(0,0,0,0.05)",
+            border:
+              dark
+                ? "1px solid #1f2937"
+                : "#e5e7eb",
+
+            overflowX:
+              "auto",
           }}
         >
 
-          <h2
+          <h3
             style={{
-              marginTop: 0,
-            }}
-          >
-            Sales Overview
-          </h2>
-
-          {sales.length ===
-          0 ? (
-
-            <div
-              style={{
-                height:
-                  "320px",
-
-                display:
-                  "flex",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                color:
-                  "#9ca3af",
-
-                fontSize:
-                  "22px",
-              }}
-            >
-              No sales data
-            </div>
-
-          ) : (
-
-            <ResponsiveContainer
-              width="100%"
-              height={320}
-            >
-
-              <BarChart
-                data={
-                  salesChart
-                }
-              >
-
-                <XAxis dataKey="customer" />
-
-                <YAxis />
-
-                <Tooltip />
-
-                <Bar
-                  dataKey="total"
-                  fill="#16a34a"
-                  radius={[
-                    8,
-                    8,
-                    0,
-                    0,
-                  ]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </div>
-
-        {/* PIE */}
-        <div
-          style={{
-            background:
-              "#fff",
-
-            borderRadius:
-              "24px",
-
-            padding:
-              "24px",
-
-            boxShadow:
-              "0 8px 24px rgba(0,0,0,0.05)",
-          }}
-        >
-
-          <h2
-            style={{
-              marginTop: 0,
               marginBottom:
                 "20px",
+
+              fontSize:
+                "20px",
+
+              fontWeight:
+                "bold",
             }}
           >
-            Payment Status
-          </h2>
+            Sales Analytics
+          </h3>
 
-          {sales.length ===
-          0 ? (
+          <ResponsiveContainer
+            width="100%"
+            height={300}
+          >
 
-            <div
-              style={{
-                height:
-                  "320px",
-
-                display:
-                  "flex",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                color:
-                  "#9ca3af",
-              }}
-            >
-              No report data
-            </div>
-
-          ) : (
-
-            <ResponsiveContainer
-              width="100%"
-              height={320}
+            <BarChart
+              data={
+                salesChart
+              }
             >
 
-              <PieChart>
+              <CartesianGrid
+                strokeDasharray="3 3"
 
-                <Pie
-                  data={
-                    paymentData
-                  }
-                  dataKey="value"
-                  outerRadius={
-                    110
-                  }
-                  label
-                >
+                stroke={
+                  dark
+                    ? "#334155"
+                    : "#e5e7eb"
+                }
+              />
 
-                  {paymentData.map(
-                    (
-                      entry,
-                      index
-                    ) => (
+              <XAxis
+                dataKey="customer"
 
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          COLORS[
-                            index
-                          ]
-                        }
-                      />
-                    )
-                  )}
-                </Pie>
+                tick={{
+                  fill:
+                    dark
+                      ? "#cbd5e1"
+                      : "#374151",
+                }}
+              />
 
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          )}
+              <YAxis
+                tick={{
+                  fill:
+                    dark
+                      ? "#cbd5e1"
+                      : "#374151",
+                }}
+              />
+
+              <Tooltip />
+
+              <Bar
+                dataKey="total"
+
+                fill="#16a34a"
+
+                radius={[
+                  10,
+                  10,
+                  0,
+                  0,
+                ]}
+              />
+            </BarChart>
+
+          </ResponsiveContainer>
+        </div>
+
+        {/* PIE CHART */}
+
+        <div
+          style={{
+            background:
+              dark
+                ? "#111827"
+                : "#ffffff",
+
+            borderRadius:
+              "24px",
+
+            padding:
+              "20px",
+
+            border:
+              dark
+                ? "1px solid #1f2937"
+                : "#e5e7eb",
+          }}
+        >
+
+          <h3
+            style={{
+              marginBottom:
+                "20px",
+
+              fontSize:
+                "20px",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            Overview
+          </h3>
+
+          <ResponsiveContainer
+            width="100%"
+            height={300}
+          >
+
+            <PieChart>
+
+              <Pie
+                data={pieData}
+
+                cx="50%"
+
+                cy="50%"
+
+                outerRadius={
+                  100
+                }
+
+                dataKey="value"
+
+                label
+              >
+
+                {pieData.map(
+                  (
+                    entry,
+                    index
+                  ) => (
+
+                    <Cell
+                      key={`cell-${index}`}
+
+                      fill={
+                        COLORS[
+                          index %
+                            COLORS.length
+                        ]
+                      }
+                    />
+                  )
+                )}
+              </Pie>
+
+            </PieChart>
+
+          </ResponsiveContainer>
         </div>
       </div>
 
-      {/* SALES TABLE */}
+      {/* TABLE */}
+
       <div
         style={{
           background:
-            "#fff",
+            dark
+              ? "#111827"
+              : "#ffffff",
 
           borderRadius:
             "24px",
@@ -478,416 +581,290 @@ function Reports({
           padding:
             "24px",
 
-          boxShadow:
-            "0 8px 24px rgba(0,0,0,0.05)",
+          border:
+            dark
+              ? "1px solid #1f2937"
+              : "#e5e7eb",
+
+          overflowX:
+            "auto",
         }}
       >
 
-        <h2
+        <h3
           style={{
-            marginTop: 0,
             marginBottom:
-              "20px",
+              "24px",
+
+            fontSize:
+              "22px",
+
+            fontWeight:
+              "bold",
           }}
         >
           Sales Analytics
-        </h2>
+        </h3>
 
-        {sales.length ===
-        0 ? (
+        <table
+          style={{
+            width: "100%",
 
-          <div
-            style={{
-              color:
-                "#9ca3af",
-            }}
-          >
-            No sales found
-          </div>
+            borderCollapse:
+              "collapse",
 
-        ) : (
+            minWidth:
+              "1100px",
+          }}
+        >
 
-          <table
-            style={{
-              width: "100%",
-              borderCollapse:
-                "collapse",
-            }}
-          >
+          <thead>
 
-            <thead>
-              <tr
-                style={{
-                  background:
-                    "#f9fafb",
-                }}
-              >
+            <tr
+              style={{
+                borderBottom:
+                  dark
+                    ? "1px solid #1f2937"
+                    : "1px solid #e5e7eb",
+              }}
+            >
 
-                <th style={th}>
-                  Invoice
-                </th>
+              {[
+                "Invoice",
+                "Date",
+                "Customer",
+                "Medicines",
+                "Qty",
+                "Buy",
+                "Sell",
+                "Total",
+                "Profit",
+                "Payment",
+                "Status",
+              ].map(
+                (item) => (
 
-                <th style={th}>
-                  Date
-                </th>
+                  <th
+                    key={item}
 
-                <th style={th}>
-                  Customer
-                </th>
+                    style={{
+                      textAlign:
+                        "left",
 
-                <th style={th}>
-                  Medicines
-                </th>
+                      padding:
+                        "18px",
 
-                <th style={th}>
-                  Qty
-                </th>
+                      color:
+                        dark
+                          ? "#ffffff"
+                          : "#111827",
+                    }}
+                  >
+                    {item}
+                  </th>
+                )
+              )}
+            </tr>
+          </thead>
 
-                <th style={th}>
-                  Buy Price
-                </th>
+          <tbody>
 
-                <th style={th}>
-                  Sell Price
-                </th>
+            {sales.map(
+              (sale) => {
 
-                <th style={th}>
-                  Total
-                </th>
-
-                <th style={th}>
-                  Profit
-                </th>
-
-                <th style={th}>
-                  Payment
-                </th>
-
-                <th style={th}>
-                  Status
-                </th>
-              </tr>
-            </thead>
-
-            <tbody>
-
-              {sales.map(
-                (sale) => {
-
-                  const totalQty =
-                    sale.items?.reduce(
-                      (
-                        acc,
-                        item
-                      ) =>
-
-                        acc +
-                        item.qty,
-
+                const profit =
+                  Number(
+                    sale.total || 0
+                  ) -
+                  Number(
+                    sale.buyTotal ||
                       0
-                    );
+                  );
 
-                  const totalBuy =
-                    sale.items?.reduce(
-                      (
-                        acc,
-                        item
-                      ) =>
+                return (
 
-                        acc +
-                        item.buyPrice,
+                  <tr
+                    key={
+                      sale.id
+                    }
 
-                      0
-                    );
+                    style={{
+                      borderBottom:
+                        dark
+                          ? "1px solid #1f2937"
+                          : "#e5e7eb",
+                    }}
+                  >
 
-                  const totalSell =
-                    sale.items?.reduce(
-                      (
-                        acc,
-                        item
-                      ) =>
-
-                        acc +
-                        item.sellPrice,
-
-                      0
-                    );
-
-                  const profit =
-                    sale.items?.reduce(
-                      (
-                        acc,
-                        item
-                      ) =>
-
-                        acc +
-
-                        (
-                          item.sellPrice -
-                          item.buyPrice
-                        ) *
-                          item.qty,
-
-                      0
-                    );
-
-                  return (
-                    <tr
-                      key={
-                        sale.id
-                      }
+                    <td
                       style={{
-                        borderBottom:
-                          "1px solid #f3f4f6",
+                        padding:
+                          "18px",
+
+                        color:
+                          "#2563eb",
+
+                        fontWeight:
+                          "bold",
                       }}
                     >
+                     {
+  sale.invoice
+    ? sale.invoice
+    : sale.id?.slice(
+        0,
+        8
+      )
+}
+                    </td>
 
-                      <td
-                        style={{
-                          ...td,
+                  <td
+  style={{
+    padding:
+      "18px",
 
-                          color:
-                            "#2563eb",
+    minWidth:
+      "180px",
 
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        {
-                          sale.id
-                        }
-                      </td>
+    whiteSpace:
+      "nowrap",
+  }}
+>
+  {new Date(
+    sale.date
+  ).toLocaleDateString()}
+</td>
 
-                      <td style={td}>
-                        {
-                          sale.date
-                        }
-                      </td>
+                    <td
+                      style={{
+                        padding:
+                          "18px",
+                      }}
+                    >
+                      {
+                        sale.customer
+                      }
+                    </td>
 
-                      <td
-                        style={{
-                          ...td,
+                    <td
+                      style={{
+                        padding:
+                          "18px",
+                      }}
+                    >
+                      {sale.items?.[0]
+                        ?.name || "-"}
+                    </td>
 
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        {
-                          sale.customer
-                        }
-                      </td>
+                    <td
+                      style={{
+                        padding:
+                          "18px",
+                      }}
+                    >
+                      {sale.items?.[0]
+                        ?.qty || 0}
+                    </td>
 
-                      <td style={td}>
-                        {sale.items
-                          ?.map(
-                            (
-                              item
-                            ) =>
-                              item.name
-                          )
-                          .join(
-                            ", "
-                          )}
-                      </td>
+                    <td
+                      style={{
+                        padding:
+                          "18px",
+                      }}
+                    >
+                      $
+                      {sale.items?.[0]
+                        ?.buyPrice || 0}
+                    </td>
 
-                      <td style={td}>
-                        {
-                          totalQty
-                        }
-                      </td>
+                    <td
+                      style={{
+                        padding:
+                          "18px",
+                      }}
+                    >
+                      $
+                      {sale.items?.[0]
+                        ?.price || 0}
+                    </td>
 
-                      <td style={td}>
-                        $
-                        {Number(
-                          totalBuy
-                        ).toFixed(
-                          2
-                        )}
-                      </td>
+                    <td
+                      style={{
+                        padding:
+                          "18px",
 
-                      <td style={td}>
-                        $
-                        {Number(
-                          totalSell
-                        ).toFixed(
-                          2
-                        )}
-                      </td>
+                        color:
+                          "#16a34a",
 
-                      <td
-                        style={{
-                          ...td,
+                        fontWeight:
+                          "bold",
+                      }}
+                    >
+                      $
+                      {Number(
+                        sale.total || 0
+                      ).toFixed(
+                        2
+                      )}
+                    </td>
 
-                          color:
-                            "#16a34a",
+                    <td
+                      style={{
+                        padding:
+                          "18px",
 
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        $
-                        {Number(
-                          sale.total
-                        ).toFixed(
-                          2
-                        )}
-                      </td>
+                        color:
+                          "#06b6d4",
 
-                      <td
-                        style={{
-                          ...td,
+                        fontWeight:
+                          "bold",
+                      }}
+                    >
+                      $
+                      {profit.toFixed(
+                        2
+                      )}
+                    </td>
 
-                          color:
-                            "#14b8a6",
+                    <td
+                      style={{
+                        padding:
+                          "18px",
+                      }}
+                    >
+                      {
+                        sale.paymentMethod
+                      }
+                    </td>
 
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        $
-                        {Number(
-                          profit
-                        ).toFixed(
-                          2
-                        )}
-                      </td>
+                    <td
+                      style={{
+                        padding:
+                          "18px",
 
-                      <td style={td}>
-                        {
-                          sale.method
-                        }
-                      </td>
+                        color:
+                          sale.status ===
+                          "paid"
+                            ? "#16a34a"
+                            : "#ef4444",
 
-                      <td
-                        style={{
-                          ...td,
-
-                          color:
-                            sale.status ===
-                            "Paid"
-
-                              ? "#16a34a"
-
-                              : sale.status ===
-                                  "Partial"
-
-                                ? "#f59e0b"
-
-                                : "#dc2626",
-
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        {
-                          sale.status
-                        }
-                      </td>
-                    </tr>
-                  );
-                }
-              )}
-            </tbody>
-          </table>
-        )}
+                        fontWeight:
+                          "bold",
+                      }}
+                    >
+                      {
+                        sale.status
+                      }
+                    </td>
+                  </tr>
+                );
+              }
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
-
-/* CARD */
-function Card({
-  title,
-  value,
-  icon,
-  color,
-}) {
-
-  return (
-    <div
-      style={{
-        background:
-          "#fff",
-
-        borderRadius:
-          "24px",
-
-        padding:
-          "24px",
-
-        display: "flex",
-
-        justifyContent:
-          "space-between",
-
-        alignItems:
-          "center",
-
-        boxShadow:
-          "0 8px 24px rgba(0,0,0,0.05)",
-      }}
-    >
-
-      <div>
-
-        <p
-          style={{
-            color:
-              "#6b7280",
-
-            marginBottom:
-              "10px",
-          }}
-        >
-          {title}
-        </p>
-
-        <h2
-          style={{
-            margin: 0,
-          }}
-        >
-          {value}
-        </h2>
-      </div>
-
-      <div
-        style={{
-          width: "64px",
-          height: "64px",
-
-          borderRadius:
-            "20px",
-
-          background:
-            color + "20",
-
-          display: "flex",
-
-          alignItems:
-            "center",
-
-          justifyContent:
-            "center",
-
-          fontSize:
-            "30px",
-        }}
-      >
-        {icon}
-      </div>
-    </div>
-  );
-}
-
-/* TABLE */
-const th = {
-  padding: "16px",
-  textAlign: "left",
-};
-
-const td = {
-  padding: "16px",
-};
 
 export default Reports;

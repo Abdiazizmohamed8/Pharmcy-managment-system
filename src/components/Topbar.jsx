@@ -1,12 +1,28 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
+
+import {
+  signOut,
+} from "firebase/auth";
+
+import {
+  auth,
+} from "../firebase";
 
 function Topbar({
   dark,
   setDark,
   setAuthed,
+  setCurrentUser,
   currentUser,
   medicines = [],
+  sales = [],
 }) {
+
+  /* =========================
+     STATE
+  ========================= */
 
   const [
     showNotifications,
@@ -19,33 +35,57 @@ function Topbar({
 
   const notifications = [];
 
+  /* =========================
+     MEDICINE ALERTS
+  ========================= */
+
   medicines.forEach(
     (medicine) => {
 
       /* LOW STOCK */
+
       if (
-        medicine.stock <=
-        medicine.minStock
+        Number(
+          medicine.stock
+        ) <=
+        Number(
+          medicine.minStock ||
+            5
+        )
       ) {
 
         notifications.push({
-          type: "danger",
+          type:
+            "danger",
 
-          message: `${medicine.name} low stock`,
+          message:
+            `${medicine.name} stock is low`,
         });
       }
 
       /* EXPIRY */
+
+      const expiryDate =
+        medicine.expiryDate ||
+        medicine.expiry;
+
       if (
-        medicine.expiryDate
+        expiryDate
       ) {
 
         const today =
           new Date();
 
+        today.setHours(
+          0,
+          0,
+          0,
+          0
+        );
+
         const expiry =
           new Date(
-            medicine.expiryDate
+            `${expiryDate}T00:00:00`
           );
 
         const diff =
@@ -54,60 +94,131 @@ function Topbar({
         const days =
           Math.ceil(
             diff /
-            (1000 *
-              60 *
-              60 *
-              24)
+              (1000 *
+                60 *
+                60 *
+                24)
           );
 
-        /* EXPIRED */
-        if (days < 0) {
-
-          notifications.push({
-            type: "danger",
-
-            message: `${medicine.name} expired`,
-          });
-        }
-
-        /* EXPIRING SOON */
-        else if (
-          days <= 10
+        if (
+          days < 0
         ) {
 
           notifications.push({
-            type: "warning",
+            type:
+              "danger",
 
-            message: `${medicine.name} expiring soon`,
+            message:
+              `${medicine.name} expired`,
           });
+
+        }
+
+        else if (
+          days <= 60
+        ) {
+
+          notifications.push({
+            type:
+              "warning",
+
+            message:
+              `${medicine.name} expiring soon`,
+          });
+
         }
       }
     }
   );
 
+  /* =========================
+     DEBT ALERTS
+  ========================= */
+
+  sales.forEach(
+    (sale) => {
+
+      if (
+        sale.paymentMethod ===
+          "Debt" &&
+
+        sale.paymentStatus
+          ?.toLowerCase() !==
+          "paid"
+      ) {
+
+        notifications.push({
+          type:
+            "danger",
+
+          message:
+            `${sale.customerName} unpaid debt`,
+        });
+      }
+    }
+  );
+
+  /* =========================
+     LOGOUT
+  ========================= */
+
+  const handleLogout =
+    async () => {
+
+      try {
+
+        await signOut(
+          auth
+        );
+
+        setAuthed(
+          false
+        );
+
+        setCurrentUser(
+          null
+        );
+
+      } catch (
+        error
+      ) {
+
+        console.log(
+          error
+        );
+      }
+    };
+
   return (
+
     <div
       style={{
         background:
           dark
-            ? "#111827"
+            ? "#020617"
             : "#ffffff",
-
-        padding:
-          "14px 28px",
 
         borderBottom:
           dark
-            ? "1px solid #374151"
+            ? "1px solid #1e293b"
             : "1px solid #e5e7eb",
 
-        display: "flex",
+        padding:
+          "18px 24px",
+
+        display:
+          "flex",
 
         justifyContent:
           "space-between",
 
         alignItems:
           "center",
+
+        flexWrap:
+          "wrap",
+
+        gap: "18px",
 
         position:
           "sticky",
@@ -119,6 +230,7 @@ function Topbar({
     >
 
       {/* LEFT */}
+
       <div>
 
         <h1
@@ -126,14 +238,14 @@ function Topbar({
             margin: 0,
 
             fontSize:
-              "26px",
+              "30px",
 
             fontWeight:
               "700",
 
             color:
               dark
-                ? "#fff"
+                ? "#ffffff"
                 : "#111827",
           }}
         >
@@ -142,27 +254,26 @@ function Topbar({
 
         <p
           style={{
-            margin:
-              "4px 0 0",
+            marginTop:
+              "6px",
 
             color:
               dark
-                ? "#9ca3af"
+                ? "#94a3b8"
                 : "#6b7280",
-
-            fontSize:
-              "14px",
           }}
         >
-          Pharmacy management
-          system
+          Pharmacy management system
         </p>
+
       </div>
 
       {/* RIGHT */}
+
       <div
         style={{
-          display: "flex",
+          display:
+            "flex",
 
           alignItems:
             "center",
@@ -171,9 +282,7 @@ function Topbar({
         }}
       >
 
-        {/* =========================
-            NOTIFICATIONS
-        ========================= */}
+        {/* NOTIFICATION */}
 
         <div
           style={{
@@ -190,37 +299,41 @@ function Topbar({
             }
 
             style={{
-              width: "54px",
+              width: "56px",
 
               height:
-                "54px",
+                "56px",
 
               borderRadius:
-                "16px",
+                "18px",
 
-              border: "none",
+              border:
+                dark
+                  ? "1px solid #1e293b"
+                  : "1px solid #e5e7eb",
 
               background:
                 dark
-                  ? "#1f2937"
-                  : "#f3f4f6",
+                  ? "#111827"
+                  : "#f9fafb",
 
-              cursor:
-                "pointer",
+              color:
+                dark
+                  ? "#ffffff"
+                  : "#111827",
 
               fontSize:
                 "22px",
 
+              cursor:
+                "pointer",
+
               position:
                 "relative",
-
-              transition:
-                "0.2s",
             }}
           >
             🔔
 
-            {/* COUNT */}
             {notifications.length >
               0 && (
 
@@ -229,11 +342,13 @@ function Topbar({
                   position:
                     "absolute",
 
-                  top: "-4px",
+                  top: "-5px",
 
-                  right: "-4px",
+                  right:
+                    "-5px",
 
-                  width: "24px",
+                  width:
+                    "24px",
 
                   height:
                     "24px",
@@ -242,10 +357,10 @@ function Topbar({
                     "50%",
 
                   background:
-                    "#dc2626",
+                    "#ef4444",
 
                   color:
-                    "#fff",
+                    "#ffffff",
 
                   display:
                     "flex",
@@ -261,9 +376,6 @@ function Topbar({
 
                   fontWeight:
                     "bold",
-
-                  animation:
-                    "pulse 1s infinite",
                 }}
               >
                 {
@@ -274,6 +386,7 @@ function Topbar({
           </button>
 
           {/* DROPDOWN */}
+
           {showNotifications && (
 
             <div
@@ -285,7 +398,7 @@ function Topbar({
 
                 right: 0,
 
-                width: "340px",
+                width: "330px",
 
                 maxHeight:
                   "420px",
@@ -295,17 +408,22 @@ function Topbar({
 
                 background:
                   dark
-                    ? "#1f2937"
+                    ? "#111827"
                     : "#ffffff",
 
+                border:
+                  dark
+                    ? "1px solid #1f2937"
+                    : "1px solid #e5e7eb",
+
                 borderRadius:
-                  "20px",
+                  "22px",
 
                 padding:
                   "18px",
 
                 boxShadow:
-                  "0 10px 30px rgba(0,0,0,0.12)",
+                  "0 10px 35px rgba(0,0,0,0.3)",
 
                 zIndex: 999,
               }}
@@ -318,12 +436,9 @@ function Topbar({
                   marginBottom:
                     "16px",
 
-                  fontSize:
-                    "18px",
-
                   color:
                     dark
-                      ? "#fff"
+                      ? "#ffffff"
                       : "#111827",
                 }}
               >
@@ -333,16 +448,16 @@ function Topbar({
               {notifications.length ===
               0 ? (
 
-                <p
+                <div
                   style={{
                     color:
                       dark
-                        ? "#9ca3af"
+                        ? "#94a3b8"
                         : "#6b7280",
                   }}
                 >
                   No alerts
-                </p>
+                </div>
 
               ) : (
 
@@ -353,7 +468,9 @@ function Topbar({
                   ) => (
 
                     <div
-                      key={index}
+                      key={
+                        index
+                      }
 
                       style={{
                         padding:
@@ -369,17 +486,17 @@ function Topbar({
                           notification.type ===
                           "danger"
 
-                            ? "#fee2e2"
+                            ? "#7f1d1d"
 
-                            : "#fef3c7",
+                            : notification.type ===
+                              "warning"
+
+                            ? "#92400e"
+
+                            : "#1e3a8a",
 
                         color:
-                          notification.type ===
-                          "danger"
-
-                            ? "#dc2626"
-
-                            : "#92400e",
+                          "#ffffff",
 
                         fontWeight:
                           "600",
@@ -388,16 +505,25 @@ function Topbar({
                           "14px",
                       }}
                     >
-                      {notification.type ===
-                      "danger"
 
-                        ? "🔥 "
+                      {
+                        notification.type ===
+                        "danger"
 
-                        : "⚠️ "}
+                          ? "🔥 "
+
+                          : notification.type ===
+                            "warning"
+
+                          ? "⏰ "
+
+                          : "🔔 "
+                      }
 
                       {
                         notification.message
                       }
+
                     </div>
                   )
                 )
@@ -406,9 +532,7 @@ function Topbar({
           )}
         </div>
 
-        {/* =========================
-            DARK MODE
-        ========================= */}
+        {/* DARK MODE */}
 
         <button
           onClick={() =>
@@ -418,36 +542,39 @@ function Topbar({
           }
 
           style={{
-            width: "54px",
+            width: "56px",
 
             height:
-              "54px",
+              "56px",
 
             borderRadius:
-              "16px",
+              "18px",
 
-            border: "none",
+            border:
+              dark
+                ? "1px solid #1e293b"
+                : "1px solid #e5e7eb",
 
             background:
               dark
                 ? "#16a34a"
-                : "#f3f4f6",
+                : "#f9fafb",
+
+            fontSize:
+              "22px",
 
             cursor:
               "pointer",
-
-            fontSize:
-              "20px",
           }}
         >
-          {dark
-            ? "🌙"
-            : "☀️"}
+          {
+            dark
+              ? "🌙"
+              : "☀️"
+          }
         </button>
 
-        {/* =========================
-            USER PROFILE
-        ========================= */}
+        {/* USER */}
 
         <div
           style={{
@@ -461,202 +588,90 @@ function Topbar({
 
             background:
               dark
-                ? "#1f2937"
+                ? "#111827"
                 : "#f9fafb",
 
             padding:
-              "8px 14px",
+              "10px 14px",
 
             borderRadius:
-              "18px",
+              "20px",
           }}
         >
 
-          {/* USER IMAGE */}
-          {currentUser?.image ? (
+          <div
+            style={{
+              width: "52px",
 
-            <img
-              src={
-                currentUser.image
-              }
+              height:
+                "52px",
 
-              alt="user"
+              borderRadius:
+                "50%",
 
-              style={{
-                width: "50px",
+              background:
+                "#16a34a",
 
-                height:
-                  "50px",
+              color:
+                "#ffffff",
 
-                borderRadius:
-                  "50%",
+              display:
+                "flex",
 
-                objectFit:
-                  "cover",
+              alignItems:
+                "center",
 
-                border:
-                  "2px solid #16a34a",
-              }}
-            />
+              justifyContent:
+                "center",
 
-          ) : (
-
-            <div
-              style={{
-                width: "50px",
-
-                height:
-                  "50px",
-
-                borderRadius:
-                  "50%",
-
-                background:
-                  "#16a34a",
-
-                color: "#fff",
-
-                display:
-                  "flex",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                fontWeight:
-                  "bold",
-
-                fontSize:
-                  "18px",
-              }}
-            >
-              {
-                currentUser?.name?.charAt(
-                  0
-                )
-              }
-            </div>
-          )}
-
-          {/* USER INFO */}
-          <div>
-
-            <div
-              style={{
-                fontWeight:
-                  "700",
-
-                fontSize:
-                  "16px",
-
-                color:
-                  dark
-                    ? "#fff"
-                    : "#111827",
-              }}
-            >
-              {
-                currentUser?.name
-              }
-            </div>
-
-            {/* ROLE */}
-            <div
-              style={{
-                marginTop:
-                  "4px",
-
-                display:
-                  "inline-flex",
-
-                alignItems:
-                  "center",
-
-                gap: "5px",
-
-                background:
-                  currentUser?.role ===
-                  "Admin"
-
-                    ? "#dcfce7"
-
-                    : "#dbeafe",
-
-                color:
-                  currentUser?.role ===
-                  "Admin"
-
-                    ? "#166534"
-
-                    : "#1d4ed8",
-
-                padding:
-                  "3px 9px",
-
-                borderRadius:
-                  "999px",
-
-                fontSize:
-                  "11px",
-
-                fontWeight:
-                  "bold",
-              }}
-            >
-              {currentUser?.role ===
-              "Admin"
-
-                ? "👑 Admin"
-
-                : "💳 Cashier"}
-            </div>
+              fontWeight:
+                "bold",
+            }}
+          >
+            {currentUser?.name
+              ?.charAt(0)
+              ?.toUpperCase()}
           </div>
+
         </div>
 
-        {/* =========================
-            LOGOUT
-        ========================= */}
+        {/* LOGOUT */}
 
         <button
-          onClick={() =>
-            setAuthed(
-              false
-            )
+          onClick={
+            handleLogout
           }
 
           style={{
             background:
               "#dc2626",
 
-            color: "#fff",
+            color:
+              "#ffffff",
 
-            border: "none",
+            border:
+              "none",
 
             padding:
-              "14px 22px",
+              "14px 24px",
 
             borderRadius:
               "16px",
 
             fontWeight:
-              "bold",
+              "700",
 
             cursor:
               "pointer",
-
-            fontSize:
-              "14px",
-
-            transition:
-              "0.2s",
           }}
         >
           Logout
         </button>
+
       </div>
+
     </div>
+
   );
 }
 

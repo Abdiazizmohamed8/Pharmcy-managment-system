@@ -1,88 +1,239 @@
 import {
-  BarChart,
-  Bar,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
 } from "recharts";
 
-import { fmt } from "../utils/helpers";
-
 function Dashboard({
-  medicines,
-  customers,
-  sales,
+  medicines = [],
+  customers = [],
+  sales = [],
+  dark = false,
 }) {
 
-  /* TOTAL REVENUE */
-  const revenue =
-    sales
-      .filter(
-        (sale) =>
-          sale.status ===
-          "Paid"
-      )
-      .reduce(
-        (acc, sale) =>
-          acc +
-          Number(
-            sale.total
-          ),
-        0
-      );
+  /* =========================
+     FILTER
+  ========================= */
 
-  /* TOTAL DEBT */
-  const totalDebt =
-    customers.reduce(
-      (acc, customer) =>
+  const [period, setPeriod] =
+    useState("All");
+
+  /* =========================
+     FILTER SALES
+  ========================= */
+
+  const filteredSales =
+    useMemo(() => {
+
+      const now =
+        new Date();
+
+      return sales
+        .filter(
+          (sale) =>
+
+            sale.status ===
+            "paid"
+        )
+
+        .filter(
+          (sale) => {
+
+            if (!sale.date)
+              return true;
+
+            const saleDate =
+              new Date(
+                sale.date
+              );
+
+            const diff =
+              now - saleDate;
+
+            const days =
+              diff /
+              (1000 *
+                60 *
+                60 *
+                24);
+
+            if (
+              period ===
+              "Today"
+            ) {
+
+              return (
+                saleDate.toDateString() ===
+                now.toDateString()
+              );
+            }
+
+            if (
+              period ===
+              "Weekly"
+            ) {
+
+              return days <= 7;
+            }
+
+            if (
+              period ===
+              "Monthly"
+            ) {
+
+              return days <= 30;
+            }
+
+            if (
+              period ===
+              "Yearly"
+            ) {
+
+              return days <= 365;
+            }
+
+            return true;
+          }
+        );
+
+    }, [
+      sales,
+      period,
+    ]);
+
+  /* =========================
+     STATS
+  ========================= */
+
+  const revenue =
+    filteredSales.reduce(
+      (
+        acc,
+        sale
+      ) =>
 
         acc +
         Number(
-          customer.debt ||
-            0
+          sale.total || 0
         ),
 
       0
     );
 
-  /* LOW STOCK */
+  const totalCustomers =
+    customers.length;
+
+  const totalMedicines =
+    medicines.length;
+
+  const totalDebt =
+    customers.reduce(
+      (
+        acc,
+        customer
+      ) =>
+
+        acc +
+        Number(
+          customer.debt || 0
+        ),
+
+      0
+    );
+
   const lowStock =
     medicines.filter(
       (medicine) =>
+
         Number(
           medicine.stock
-        ) <= 10
-    ).length;
+        ) <=
+        Number(
+          medicine.minStock || 0
+        )
+    );
 
-  /* CHART */
-  const salesData =
-    sales.map((sale) => ({
-      customer:
-        sale.customer,
+  /* =========================
+     CHART DATA
+  ========================= */
 
-      total:
-        sale.total,
-    }));
+  const chartData =
+    filteredSales.map(
+      (sale) => ({
+        name:
+          sale.customer ||
+          "Sale",
 
-  /* RECENT SALES */
+        sales:
+          Number(
+            sale.total || 0
+          ),
+      })
+    );
+
+  /* =========================
+     RECENT SALES
+  ========================= */
+
   const recentSales =
-    sales.slice(0, 5);
+    [...sales]
+      .sort(
+        (a, b) =>
+          b.createdAt -
+          a.createdAt
+      )
+      .slice(0, 5);
 
   return (
-    <div>
+    <div
+      style={{
+        minHeight:
+          "100vh",
+
+        background:
+          dark
+            ? "#020617"
+            : "#f3f4f6",
+
+        color:
+          dark
+            ? "#ffffff"
+            : "#111827",
+      }}
+    >
 
       {/* HEADER */}
+
       <div
         style={{
           marginBottom:
-            "30px",
+            "28px",
         }}
       >
+
         <h1
           style={{
             margin: 0,
-            fontSize: "40px",
+
+            fontSize:
+              "36px",
+
+            fontWeight:
+              "700",
+
+            color:
+              dark
+                ? "#ffffff"
+                : "#111827",
           }}
         >
           Dashboard 📊
@@ -90,24 +241,120 @@ function Dashboard({
 
         <p
           style={{
-            color: "#6b7280",
-            marginTop: "10px",
+            marginTop:
+              "8px",
+
+            color:
+              dark
+                ? "#94a3b8"
+                : "#6b7280",
+
+            fontSize:
+              "15px",
           }}
         >
-          Welcome to ANFAC
-          Pharmacy System
+          Pharmacy system overview
         </p>
       </div>
 
+      {/* FILTERS */}
+
+      <div
+        style={{
+          display: "flex",
+
+          gap: "12px",
+
+          flexWrap:
+            "wrap",
+
+          marginBottom:
+            "28px",
+        }}
+      >
+
+        {[
+          "Today",
+          "Weekly",
+          "Monthly",
+          "Yearly",
+          "All",
+        ].map(
+          (item) => (
+
+            <button
+              key={item}
+
+              onClick={() =>
+                setPeriod(
+                  item
+                )
+              }
+
+              style={{
+                background:
+                  period ===
+                  item
+
+                    ? "#16a34a"
+
+                    : dark
+
+                    ? "#111827"
+
+                    : "#ffffff",
+
+                color:
+                  period ===
+                  item
+
+                    ? "#ffffff"
+
+                    : dark
+
+                    ? "#ffffff"
+
+                    : "#111827",
+
+                border:
+                  dark
+
+                    ? "1px solid #1e293b"
+
+                    : "1px solid #d1d5db",
+
+                padding:
+                  "12px 20px",
+
+                borderRadius:
+                  "14px",
+
+                cursor:
+                  "pointer",
+
+                fontWeight:
+                  "700",
+
+                fontSize:
+                  "14px",
+              }}
+            >
+              {item}
+            </button>
+          )
+        )}
+      </div>
+
       {/* CARDS */}
+
       <div
         style={{
           display: "grid",
 
           gridTemplateColumns:
-            "repeat(auto-fit,minmax(240px,1fr))",
+            "repeat(auto-fit,minmax(230px,1fr))",
 
-          gap: "22px",
+          gap: "20px",
 
           marginBottom:
             "28px",
@@ -116,40 +363,43 @@ function Dashboard({
 
         <Card
           title="Revenue"
-          value={fmt(
-            revenue
-          )}
-          icon="💰"
+          value={`$${revenue.toFixed(
+            2
+          )}`}
           color="#16a34a"
+          dark={dark}
         />
 
         <Card
           title="Customers"
           value={
-            customers.length
+            totalCustomers
           }
-          icon="👥"
           color="#2563eb"
+          dark={dark}
         />
 
         <Card
-          title="Low Stock"
-          value={lowStock}
-          icon="⚠️"
-          color="#d97706"
+          title="Medicines"
+          value={
+            totalMedicines
+          }
+          color="#f59e0b"
+          dark={dark}
         />
 
         <Card
           title="Debt"
-          value={fmt(
-            totalDebt
-          )}
-          icon="💳"
+          value={`$${totalDebt.toFixed(
+            2
+          )}`}
           color="#dc2626"
+          dark={dark}
         />
       </div>
 
-      {/* CONTENT */}
+      {/* GRID */}
+
       <div
         style={{
           display: "grid",
@@ -157,64 +407,31 @@ function Dashboard({
           gridTemplateColumns:
             "2fr 1fr",
 
-          gap: "24px",
+          gap: "20px",
 
           marginBottom:
-            "28px",
+            "24px",
         }}
       >
 
-        {/* SALES CHART */}
+        {/* CHART */}
+
         <div
-          style={{
-            background:
-              "#fff",
-
-            borderRadius:
-              "24px",
-
-            padding:
-              "24px",
-
-            boxShadow:
-              "0 8px 24px rgba(0,0,0,0.05)",
-          }}
+          style={box(dark)}
         >
 
           <h2
-            style={{
-              marginTop: 0,
-            }}
+            style={title(
+              dark
+            )}
           >
-            Sales Overview
+            Sales Performance
           </h2>
 
-          {sales.length ===
+          {chartData.length ===
           0 ? (
 
-            <div
-              style={{
-                height:
-                  "320px",
-
-                display:
-                  "flex",
-
-                alignItems:
-                  "center",
-
-                justifyContent:
-                  "center",
-
-                color:
-                  "#9ca3af",
-
-                fontSize:
-                  "22px",
-              }}
-            >
-              No sales data
-            </div>
+            <Empty dark={dark} />
 
           ) : (
 
@@ -223,474 +440,572 @@ function Dashboard({
               height={320}
             >
 
-              <BarChart
+              <AreaChart
                 data={
-                  salesData
+                  chartData
                 }
               >
-                <XAxis dataKey="customer" />
 
-                <YAxis />
+                <CartesianGrid
+                  strokeDasharray="3 3"
 
-                <Tooltip />
-
-                <Bar
-                  dataKey="total"
-                  fill="#16a34a"
-                  radius={[
-                    8,
-                    8,
-                    0,
-                    0,
-                  ]}
+                  stroke={
+                    dark
+                      ? "#334155"
+                      : "#e5e7eb"
+                  }
                 />
-              </BarChart>
+
+                <XAxis
+                  dataKey="name"
+
+                  tick={{
+                    fill:
+                      dark
+                        ? "#cbd5e1"
+                        : "#374151",
+                  }}
+                />
+
+                <YAxis
+                  tick={{
+                    fill:
+                      dark
+                        ? "#cbd5e1"
+                        : "#374151",
+                  }}
+                />
+
+                <Tooltip
+                  contentStyle={{
+                    background:
+                      dark
+                        ? "#111827"
+                        : "#ffffff",
+
+                    border:
+                      dark
+                        ? "1px solid #334155"
+                        : "1px solid #e5e7eb",
+
+                    borderRadius:
+                      "12px",
+
+                    color:
+                      dark
+                        ? "#ffffff"
+                        : "#111827",
+                  }}
+                />
+
+                <Area
+                  type="monotone"
+
+                  dataKey="sales"
+
+                  stroke="#16a34a"
+
+                  fill="#16a34a"
+
+                  fillOpacity={
+                    0.2
+                  }
+
+                  strokeWidth={3}
+                />
+              </AreaChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        {/* MEDICINES */}
+        {/* LOW STOCK */}
+
         <div
-          style={{
-            background:
-              "#fff",
-
-            borderRadius:
-              "24px",
-
-            padding:
-              "24px",
-
-            boxShadow:
-              "0 8px 24px rgba(0,0,0,0.05)",
-          }}
+          style={box(dark)}
         >
 
           <h2
-            style={{
-              marginTop: 0,
-              marginBottom:
-                "20px",
-            }}
+            style={title(
+              dark
+            )}
           >
-            Medicines
+            Low Stock ⚠️
           </h2>
 
-          {medicines.length ===
+          {lowStock.length ===
           0 ? (
 
             <div
               style={{
                 color:
-                  "#9ca3af",
+                  dark
+                    ? "#94a3b8"
+                    : "#6b7280",
               }}
             >
-              No medicines found
+              No low stock
             </div>
 
           ) : (
 
-            medicines
-              .slice(0, 5)
-              .map(
-                (
-                  medicine
-                ) => (
+            lowStock.map(
+              (
+                medicine
+              ) => (
+
+                <div
+                  key={
+                    medicine.id
+                  }
+
+                  style={{
+                    padding:
+                      "14px",
+
+                    borderRadius:
+                      "14px",
+
+                    background:
+                      dark
+                        ? "#7f1d1d"
+                        : "#fee2e2",
+
+                    marginBottom:
+                      "12px",
+                  }}
+                >
 
                   <div
-                    key={
-                      medicine.id
-                    }
                     style={{
-                      border:
-                        "1px solid #f3f4f6",
+                      fontWeight:
+                        "700",
 
-                      borderRadius:
-                        "18px",
-
-                      padding:
-                        "16px",
-
-                      marginBottom:
-                        "14px",
-
-                      background:
-                        "#fafafa",
+                      color:
+                        dark
+                          ? "#ffffff"
+                          : "#991b1b",
                     }}
                   >
-
-                    <div
-                      style={{
-                        display:
-                          "flex",
-
-                        justifyContent:
-                          "space-between",
-
-                        alignItems:
-                          "center",
-                      }}
-                    >
-
-                      <div>
-
-                        <h3
-                          style={{
-                            margin:
-                              "0 0 8px",
-                          }}
-                        >
-                          {
-                            medicine.name
-                          }
-                        </h3>
-
-                        <p
-                          style={{
-                            margin: 0,
-                            color:
-                              "#6b7280",
-                          }}
-                        >
-                          {
-                            medicine.category
-                          }
-                        </p>
-                      </div>
-
-                      <div
-                        style={{
-                          background:
-                            Number(
-                              medicine.stock
-                            ) <=
-                            10
-
-                              ? "#fee2e2"
-
-                              : "#dcfce7",
-
-                          color:
-                            Number(
-                              medicine.stock
-                            ) <=
-                            10
-
-                              ? "#dc2626"
-
-                              : "#16a34a",
-
-                          padding:
-                            "8px 14px",
-
-                          borderRadius:
-                            "14px",
-
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        {
-                          medicine.stock
-                        }
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop:
-                          "12px",
-
-                        display:
-                          "flex",
-
-                        justifyContent:
-                          "space-between",
-                      }}
-                    >
-
-                      <span
-                        style={{
-                          color:
-                            "#16a34a",
-
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        Buy:
-                        {" "}
-                        $
-                        {
-                          medicine.buyPrice
-                        }
-                      </span>
-
-                      <span
-                        style={{
-                          color:
-                            "#2563eb",
-
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        Sell:
-                        {" "}
-                        $
-                        {
-                          medicine.sellPrice
-                        }
-                      </span>
-                    </div>
+                    {
+                      medicine.name
+                    }
                   </div>
-                )
+
+                  <div
+                    style={{
+                      marginTop:
+                        "5px",
+
+                      color:
+                        dark
+                          ? "#fecaca"
+                          : "#7f1d1d",
+                    }}
+                  >
+                    Stock:
+                    {" "}
+                    {
+                      medicine.stock
+                    }
+                  </div>
+                </div>
               )
+            )
           )}
         </div>
       </div>
 
       {/* RECENT SALES */}
+
       <div
-        style={{
-          background:
-            "#fff",
-
-          borderRadius:
-            "24px",
-
-          padding:
-            "24px",
-
-          boxShadow:
-            "0 8px 24px rgba(0,0,0,0.05)",
-        }}
+        style={box(dark)}
       >
 
         <h2
-          style={{
-            marginTop: 0,
-            marginBottom:
-              "20px",
-          }}
+          style={title(
+            dark
+          )}
         >
-          Recent Sales
+          Recent Sales 🧾
         </h2>
 
         {recentSales.length ===
         0 ? (
 
-          <div
-            style={{
-              color:
-                "#9ca3af",
-            }}
-          >
-            No sales found
-          </div>
+          <Empty dark={dark} />
 
         ) : (
 
-          <table
+          <div
             style={{
-              width: "100%",
-              borderCollapse:
-                "collapse",
+              overflowX:
+                "auto",
             }}
           >
 
-            <thead>
-              <tr
-                style={{
-                  background:
-                    "#f9fafb",
-                }}
-              >
-                <th style={th}>
-                  Invoice
-                </th>
+            <table
+              style={{
+                width: "100%",
 
-                <th style={th}>
-                  Customer
-                </th>
+                minWidth:
+                  "700px",
 
-                <th style={th}>
-                  Amount
-                </th>
+                borderCollapse:
+                  "collapse",
+              }}
+            >
 
-                <th style={th}>
-                  Status
-                </th>
-              </tr>
-            </thead>
+              <thead>
 
-            <tbody>
+                <tr>
 
-              {recentSales.map(
-                (sale) => (
+                  {[
+                    "Customer",
+                    "Amount",
+                    "Method",
+                    "Status",
+                    "Date",
+                  ].map(
+                    (
+                      item
+                    ) => (
 
-                  <tr
-                    key={
-                      sale.id
-                    }
-                    style={{
-                      borderBottom:
-                        "1px solid #f3f4f6",
-                    }}
-                  >
+                      <th
+                        key={
+                          item
+                        }
 
-                    <td style={td}>
-                      {
-                        sale.id
+                        style={th(
+                          dark
+                        )}
+                      >
+                        {item}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+
+              <tbody>
+
+                {recentSales.map(
+                  (
+                    sale,
+                    index
+                  ) => (
+
+                    <tr
+                      key={
+                        index
                       }
-                    </td>
 
-                    <td style={td}>
-                      {
-                        sale.customer
-                      }
-                    </td>
-
-                    <td
                       style={{
-                        ...td,
+                        borderTop:
+                          dark
 
-                        color:
-                          "#16a34a",
+                            ? "1px solid #1f2937"
 
-                        fontWeight:
-                          "bold",
+                            : "1px solid #f3f4f6",
                       }}
                     >
-                      {fmt(
-                        sale.total
-                      )}
-                    </td>
 
-                    <td
-                      style={{
-                        ...td,
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
+                        {
+                          sale.customer
+                        }
+                      </td>
 
-                        color:
-                          sale.status ===
-                          "Paid"
+                      <td
+                        style={{
+                          ...td(
+                            dark
+                          ),
 
-                            ? "#16a34a"
+                          color:
+                            "#16a34a",
 
-                            : "#dc2626",
+                          fontWeight:
+                            "700",
+                        }}
+                      >
+                        $
+                        {
+                          sale.total
+                        }
+                      </td>
 
-                        fontWeight:
-                          "bold",
-                      }}
-                    >
-                      {
-                        sale.status
-                      }
-                    </td>
-                  </tr>
-                )
-              )}
-            </tbody>
-          </table>
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
+                        {
+                          sale.method
+                        }
+                      </td>
+
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
+
+                        <span
+                          style={{
+                            background:
+                              sale.status ===
+                              "paid"
+
+                                ? "#dcfce7"
+
+                                : "#fee2e2",
+
+                            color:
+                              sale.status ===
+                              "paid"
+
+                                ? "#166534"
+
+                                : "#dc2626",
+
+                            padding:
+                              "6px 12px",
+
+                            borderRadius:
+                              "999px",
+
+                            fontSize:
+                              "12px",
+
+                            fontWeight:
+                              "bold",
+
+                            textTransform:
+                              "capitalize",
+                          }}
+                        >
+                          {
+                            sale.status
+                          }
+                        </span>
+                      </td>
+
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
+                        {sale.date
+                          ?.slice(
+                            0,
+                            10
+                          )}
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-/* CARD */
+/* =========================
+   CARD
+========================= */
+
 function Card({
   title,
   value,
-  icon,
   color,
+  dark,
 }) {
 
   return (
     <div
       style={{
         background:
-          "#fff",
+          dark
+            ? "#111827"
+            : "#ffffff",
+
+        border:
+          dark
+            ? "1px solid #1e293b"
+            : "1px solid #e5e7eb",
 
         borderRadius:
-          "24px",
+          "22px",
 
         padding:
-          "24px",
+          "22px",
 
-        display: "flex",
-
-        justifyContent:
-          "space-between",
-
-        alignItems:
-          "center",
+        borderTop:
+          `5px solid ${color}`,
 
         boxShadow:
-          "0 8px 24px rgba(0,0,0,0.05)",
+          dark
+            ? "0 4px 20px rgba(0,0,0,0.25)"
+            : "0 4px 18px rgba(0,0,0,0.05)",
       }}
     >
 
-      <div>
-
-        <p
-          style={{
-            color:
-              "#6b7280",
-
-            marginBottom:
-              "10px",
-          }}
-        >
-          {title}
-        </p>
-
-        <h2
-          style={{
-            margin: 0,
-          }}
-        >
-          {value}
-        </h2>
-      </div>
-
-      <div
+      <p
         style={{
-          width: "64px",
-          height: "64px",
+          margin:
+            "0 0 12px",
 
-          borderRadius:
-            "20px",
+          color:
+            dark
+              ? "#94a3b8"
+              : "#6b7280",
 
-          background:
-            color + "20",
+          fontWeight:
+            "700",
 
-          display: "flex",
+          fontSize:
+            "15px",
+        }}
+      >
+        {title}
+      </p>
 
-          alignItems:
-            "center",
+      <h2
+        style={{
+          margin: 0,
 
-          justifyContent:
-            "center",
+          color:
+            dark
+              ? "#ffffff"
+              : "#111827",
 
           fontSize:
             "30px",
+
+          fontWeight:
+            "700",
         }}
       >
-        {icon}
-      </div>
+        {value}
+      </h2>
     </div>
   );
 }
 
-/* TABLE */
-const th = {
-  textAlign: "left",
-  padding: "16px",
-};
+/* =========================
+   EMPTY
+========================= */
 
-const td = {
-  padding: "16px",
-};
+function Empty({
+  dark,
+}) {
+
+  return (
+    <div
+      style={{
+        height:
+          "300px",
+
+        display:
+          "flex",
+
+        alignItems:
+          "center",
+
+        justifyContent:
+          "center",
+
+        color:
+          dark
+            ? "#94a3b8"
+            : "#6b7280",
+      }}
+    >
+      No data available
+    </div>
+  );
+}
+
+/* =========================
+   STYLES
+========================= */
+
+const box = (
+  dark
+) => ({
+  background:
+    dark
+      ? "#111827"
+      : "#ffffff",
+
+  border:
+    dark
+      ? "1px solid #1e293b"
+      : "1px solid #e5e7eb",
+
+  borderRadius:
+    "24px",
+
+  padding:
+    "24px",
+
+  boxShadow:
+    dark
+      ? "0 4px 20px rgba(0,0,0,0.3)"
+      : "0 4px 18px rgba(0,0,0,0.05)",
+});
+
+const title = (
+  dark
+) => ({
+  marginTop: 0,
+
+  marginBottom:
+    "22px",
+
+  color:
+    dark
+      ? "#ffffff"
+      : "#111827",
+});
+
+const th = (
+  dark
+) => ({
+  textAlign:
+    "left",
+
+  padding:
+    "16px",
+
+  color:
+    dark
+      ? "#ffffff"
+      : "#374151",
+
+  background:
+    dark
+      ? "#0f172a"
+      : "#f9fafb",
+});
+
+const td = (
+  dark
+) => ({
+  padding:
+    "16px",
+
+  color:
+    dark
+      ? "#e5e7eb"
+      : "#111827",
+});
 
 export default Dashboard;

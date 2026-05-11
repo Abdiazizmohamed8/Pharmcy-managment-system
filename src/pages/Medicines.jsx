@@ -1,62 +1,109 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
+
+/* =========================
+   FIREBASE
+========================= */
+
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+
+import {
+  db,
+} from "../firebase";
 
 function Medicines({
   medicines,
-  setMedicines,
+  dark,
 }) {
 
-  const [search, setSearch] =
-    useState("");
+  /* =========================
+     STATES
+  ========================= */
 
-  const [categoryFilter, setCategoryFilter] =
-    useState("All");
+  const [
+    search,
+    setSearch,
+  ] = useState("");
 
-  const [sortStock, setSortStock] =
-    useState("default");
+  const [
+    categoryFilter,
+    setCategoryFilter,
+  ] = useState("All");
 
-  const [showModal, setShowModal] =
-    useState(false);
+  const [
+    sortStock,
+    setSortStock,
+  ] = useState("default");
 
-  const [editingMedicine, setEditingMedicine] =
-    useState(null);
+  const [
+    showModal,
+    setShowModal,
+  ] = useState(false);
 
-  const [formData, setFormData] =
-    useState({
-      name: "",
-      category: "",
-      stock: "",
-      minStock: "",
-      buyPrice: "",
-      sellPrice: "",
-      expiryDate: "",
-      supplier: "",
-    });
+  const [
+    editingMedicine,
+    setEditingMedicine,
+  ] = useState(null);
 
-  /* FILTERED */
+  const [
+    formData,
+    setFormData,
+  ] = useState({
+    name: "",
+    category: "",
+    stock: "",
+    minStock: "",
+    buyPrice: "",
+    sellPrice: "",
+    expiryDate: "",
+    supplier: "",
+  });
+
+  /* =========================
+     FILTER
+  ========================= */
+
   let filteredMedicines =
-    medicines.filter((medicine) => {
+    medicines.filter(
+      (medicine) => {
 
-      const matchesSearch =
-        medicine.name
-          .toLowerCase()
-          .includes(
-            search.toLowerCase()
-          );
+        const matchesSearch =
+          medicine.name
+            ?.toLowerCase()
+            .includes(
+              search.toLowerCase()
+            );
 
-      const matchesCategory =
-        categoryFilter === "All"
-          ? true
-          : medicine.category ===
-            categoryFilter;
+        const matchesCategory =
+          categoryFilter ===
+          "All"
 
-      return (
-        matchesSearch &&
-        matchesCategory
-      );
-    });
+            ? true
 
-  /* SORT */
-  if (sortStock === "low") {
+            : medicine.category ===
+              categoryFilter;
+
+        return (
+          matchesSearch &&
+          matchesCategory
+        );
+      }
+    );
+
+  /* =========================
+     SORT
+  ========================= */
+
+  if (
+    sortStock === "low"
+  ) {
 
     filteredMedicines.sort(
       (a, b) =>
@@ -64,7 +111,9 @@ function Medicines({
     );
   }
 
-  if (sortStock === "high") {
+  if (
+    sortStock === "high"
+  ) {
 
     filteredMedicines.sort(
       (a, b) =>
@@ -72,7 +121,10 @@ function Medicines({
     );
   }
 
-  /* UNIQUE CATEGORIES */
+  /* =========================
+     CATEGORIES
+  ========================= */
+
   const categories = [
     "All",
 
@@ -84,192 +136,257 @@ function Medicines({
     ),
   ];
 
-  /* ADD / EDIT */
-  const saveMedicine = () => {
+  /* =========================
+     SAVE MEDICINE
+  ========================= */
 
-    if (
-      !formData.name ||
-      !formData.category ||
-      !formData.stock ||
-      !formData.buyPrice ||
-      !formData.sellPrice
-    ) {
+  const saveMedicine =
+    async () => {
 
-      alert(
-        "Please fill all fields"
-      );
+      if (
+        !formData.name ||
+        !formData.category ||
+        !formData.stock ||
+        !formData.buyPrice ||
+        !formData.sellPrice
+      ) {
 
-      return;
-    }
+        alert(
+          "Please fill all fields"
+        );
 
-    const medicineData = {
-      id:
-        editingMedicine?.id ||
-        Date.now(),
+        return;
+      }
 
-      name: formData.name,
+      try {
 
-      category:
-        formData.category,
+        const medicineData = {
 
-      stock: Number(
-        formData.stock
-      ),
+          name:
+            formData.name.trim(),
 
-      minStock: Number(
-        formData.minStock
-      ),
+          category:
+            formData.category.trim(),
 
-      buyPrice: Number(
-        formData.buyPrice
-      ),
+          stock:
+            Number(
+              formData.stock
+            ),
 
-      sellPrice: Number(
-        formData.sellPrice
-      ),
+          minStock:
+            Number(
+              formData.minStock || 0
+            ),
 
-      expiryDate:
-        formData.expiryDate,
+          buyPrice:
+            Number(
+              formData.buyPrice
+            ),
 
-      supplier:
-        formData.supplier,
+          sellPrice:
+            Number(
+              formData.sellPrice
+            ),
+
+          expiryDate:
+            formData.expiryDate,
+
+          supplier:
+            formData.supplier.trim(),
+        };
+
+        if (
+          editingMedicine
+        ) {
+
+          await updateDoc(
+
+            doc(
+              db,
+              "medicines",
+              editingMedicine.id
+            ),
+
+            medicineData
+          );
+
+        } else {
+
+          await addDoc(
+
+            collection(
+              db,
+              "medicines"
+            ),
+
+            medicineData
+          );
+        }
+
+        resetForm();
+
+      } catch (error) {
+
+        console.log(
+          error
+        );
+
+        alert(
+          "Failed to save medicine"
+        );
+      }
     };
 
-    if (editingMedicine) {
+  /* =========================
+     RESET
+  ========================= */
 
-      setMedicines(
-        medicines.map(
-          (medicine) =>
+  const resetForm =
+    () => {
 
-            medicine.id ===
-            editingMedicine.id
+      setFormData({
+        name: "",
+        category: "",
+        stock: "",
+        minStock: "",
+        buyPrice: "",
+        sellPrice: "",
+        expiryDate: "",
+        supplier: "",
+      });
 
-              ? medicineData
-
-              : medicine
-        )
+      setEditingMedicine(
+        null
       );
 
-    } else {
+      setShowModal(
+        false
+      );
+    };
 
-      setMedicines([
-        ...medicines,
-        medicineData,
-      ]);
-    }
+  /* =========================
+     EDIT
+  ========================= */
 
-    resetForm();
-  };
+  const editMedicine =
+    (medicine) => {
 
-  /* RESET */
-  const resetForm = () => {
-
-    setFormData({
-      name: "",
-      category: "",
-      stock: "",
-      minStock: "",
-      buyPrice: "",
-      sellPrice: "",
-      expiryDate: "",
-      supplier: "",
-    });
-
-    setEditingMedicine(null);
-
-    setShowModal(false);
-  };
-
-  /* EDIT */
-  const editMedicine = (
-    medicine
-  ) => {
-
-    setEditingMedicine(
-      medicine
-    );
-
-    setFormData({
-      name: medicine.name,
-
-      category:
-        medicine.category,
-
-      stock:
-        medicine.stock,
-
-      minStock:
-        medicine.minStock,
-
-      buyPrice:
-        medicine.buyPrice,
-
-      sellPrice:
-        medicine.sellPrice,
-
-      expiryDate:
-        medicine.expiryDate,
-
-      supplier:
-        medicine.supplier,
-    });
-
-    setShowModal(true);
-  };
-
-  /* DELETE */
-  const deleteMedicine = (
-    id
-  ) => {
-
-    const confirmDelete =
-      window.confirm(
-        "Delete this medicine?"
+      setEditingMedicine(
+        medicine
       );
 
-    if (!confirmDelete) return;
+      setFormData({
+        name:
+          medicine.name,
 
-    setMedicines(
-      medicines.filter(
-        (medicine) =>
-          medicine.id !== id
+        category:
+          medicine.category,
+
+        stock:
+          medicine.stock,
+
+        minStock:
+          medicine.minStock,
+
+        buyPrice:
+          medicine.buyPrice,
+
+        sellPrice:
+          medicine.sellPrice,
+
+        expiryDate:
+          medicine.expiryDate,
+
+        supplier:
+          medicine.supplier,
+      });
+
+      setShowModal(
+        true
+      );
+    };
+
+  /* =========================
+     DELETE
+  ========================= */
+
+  const deleteMedicine =
+    async (id) => {
+
+      const confirmDelete =
+        window.confirm(
+          "Delete this medicine?"
+        );
+
+      if (
+        !confirmDelete
       )
-    );
-  };
+        return;
 
-  /* EXPIRY WARNING */
-  const isExpiringSoon = (
-    date
-  ) => {
+      try {
 
-    if (!date) return false;
+        await deleteDoc(
+          doc(
+            db,
+            "medicines",
+            id
+          )
+        );
 
-    const today =
-      new Date();
+      } catch (error) {
 
-    const expiry =
-      new Date(date);
+        console.log(
+          error
+        );
 
-    const diff =
-      expiry - today;
+        alert(
+          "Delete failed"
+        );
+      }
+    };
 
-    const days =
-      diff /
-      (1000 *
-        60 *
-        60 *
-        24);
+  /* =========================
+     EXPIRY
+  ========================= */
 
-    return days <= 30;
-  };
+  const isExpiringSoon =
+    (date) => {
+
+      if (!date)
+        return false;
+
+      const today =
+        new Date();
+
+      const expiry =
+        new Date(date);
+
+      const diff =
+        expiry - today;
+
+      const days =
+        diff /
+        (1000 *
+          60 *
+          60 *
+          24);
+
+      return days <= 30;
+    };
 
   return (
-    <div>
+    <div
+      style={{
+        width: "100%",
+      }}
+    >
 
       {/* HEADER */}
+
       <div
         style={{
-          display: "flex",
+          display:
+            "flex",
 
           justifyContent:
             "space-between",
@@ -277,8 +394,13 @@ function Medicines({
           alignItems:
             "center",
 
+          flexWrap:
+            "wrap",
+
+          gap: "18px",
+
           marginBottom:
-            "30px",
+            "26px",
         }}
       >
 
@@ -287,7 +409,14 @@ function Medicines({
           <h1
             style={{
               margin: 0,
-              fontSize: "46px",
+
+              fontSize:
+                "34px",
+
+              color:
+                dark
+                  ? "#ffffff"
+                  : "#111827",
             }}
           >
             Medicines 💊
@@ -295,41 +424,59 @@ function Medicines({
 
           <p
             style={{
-              color: "#6b7280",
-              marginTop: "8px",
+              marginTop:
+                "8px",
+
+              color:
+                dark
+                  ? "#94a3b8"
+                  : "#6b7280",
+
+              fontSize:
+                "15px",
             }}
           >
-            Pharmacy inventory
-            management
+            Manage pharmacy medicines
           </p>
         </div>
 
         <button
           onClick={() =>
-            setShowModal(true)
+            setShowModal(
+              true
+            )
           }
+
           style={{
             background:
               "#16a34a",
 
-            color: "#fff",
+            color:
+              "#ffffff",
 
-            border: "none",
+            border:
+              "none",
 
             padding:
-              "16px 28px",
+              "14px 22px",
 
             borderRadius:
-              "14px",
+              "16px",
 
             fontWeight:
               "bold",
 
-            fontSize:
-              "17px",
-
             cursor:
               "pointer",
+
+            fontSize:
+              "15px",
+
+            width:
+              "100%",
+
+            maxWidth:
+              "220px",
           }}
         >
           + Add Medicine
@@ -337,68 +484,97 @@ function Medicines({
       </div>
 
       {/* FILTERS */}
+
       <div
         style={{
-          display: "flex",
+          display:
+            "flex",
 
-          gap: "16px",
+          gap: "14px",
+
+          flexWrap:
+            "wrap",
 
           marginBottom:
             "24px",
-
-          flexWrap: "wrap",
         }}
       >
 
-        {/* SEARCH */}
         <input
           type="text"
+
           placeholder="Search medicine..."
+
           value={search}
+
           onChange={(e) =>
             setSearch(
               e.target.value
             )
           }
+
           style={{
             flex: 1,
 
             minWidth:
-              "240px",
+              "220px",
 
             padding:
-              "16px",
+              "14px 16px",
 
             borderRadius:
               "14px",
 
             border:
-              "1px solid #d1d5db",
+              dark
+                ? "1px solid #374151"
+                : "1px solid #d1d5db",
 
             fontSize:
-              "16px",
+              "14px",
+
+            outline:
+              "none",
+
+            background:
+              dark
+                ? "#111827"
+                : "#ffffff",
+
+            color:
+              dark
+                ? "#ffffff"
+                : "#111827",
           }}
         />
 
-        {/* CATEGORY */}
         <select
           value={
             categoryFilter
           }
+
           onChange={(e) =>
             setCategoryFilter(
               e.target.value
             )
           }
-          style={select}
+
+          style={
+            select(dark)
+          }
         >
 
           {categories.map(
             (category) => (
 
               <option
-                key={category}
-                value={category}
+                key={
+                  category
+                }
+
+                value={
+                  category
+                }
               >
                 {category}
               </option>
@@ -406,15 +582,20 @@ function Medicines({
           )}
         </select>
 
-        {/* SORT */}
         <select
-          value={sortStock}
+          value={
+            sortStock
+          }
+
           onChange={(e) =>
             setSortStock(
               e.target.value
             )
           }
-          style={select}
+
+          style={
+            select(dark)
+          }
         >
 
           <option value="default">
@@ -432,25 +613,33 @@ function Medicines({
       </div>
 
       {/* TABLE */}
+
       <div
         style={{
           background:
-            "#fff",
+            dark
+              ? "#111827"
+              : "#ffffff",
 
           borderRadius:
             "24px",
 
-          overflow:
-            "hidden",
+          overflowX:
+            "auto",
 
-          boxShadow:
-            "0 10px 30px rgba(0,0,0,0.05)",
+          border:
+            dark
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
         }}
       >
 
         <table
           style={{
             width: "100%",
+
+            minWidth:
+              "1100px",
 
             borderCollapse:
               "collapse",
@@ -460,51 +649,43 @@ function Medicines({
           <thead
             style={{
               background:
-                "#f9fafb",
+                dark
+                  ? "#0f172a"
+                  : "#f9fafb",
             }}
           >
 
             <tr>
 
-              <th style={th}>
-                Medicine
-              </th>
+              {[
+                "Medicine",
+                "Category",
+                "Stock",
+                "Buy",
+                "Sell",
+                "Profit",
+                "Expiry",
+                "Supplier",
+                "Status",
+                "Action",
+              ].map(
+                (
+                  item
+                ) => (
 
-              <th style={th}>
-                Category
-              </th>
+                  <th
+                    key={
+                      item
+                    }
 
-              <th style={th}>
-                Stock
-              </th>
-
-              <th style={th}>
-                Buy
-              </th>
-
-              <th style={th}>
-                Sell
-              </th>
-
-              <th style={th}>
-                Profit
-              </th>
-
-              <th style={th}>
-                Expiry
-              </th>
-
-              <th style={th}>
-                Supplier
-              </th>
-
-              <th style={th}>
-                Status
-              </th>
-
-              <th style={th}>
-                Action
-              </th>
+                    style={th(
+                      dark
+                    )}
+                  >
+                    {item}
+                  </th>
+                )
+              )}
             </tr>
           </thead>
 
@@ -517,31 +698,41 @@ function Medicines({
 
                 <td
                   colSpan="10"
+
                   style={{
                     padding:
-                      "40px",
+                      "70px 20px",
 
                     textAlign:
                       "center",
 
                     color:
-                      "#9ca3af",
+                      dark
+                        ? "#94a3b8"
+                        : "#9ca3af",
+
+                    fontSize:
+                      "16px",
                   }}
                 >
-                  No medicines found
+                  No medicines available
                 </td>
               </tr>
 
             ) : (
 
               filteredMedicines.map(
-                (medicine) => {
+                (
+                  medicine
+                ) => {
 
                   const profit =
                     (
                       medicine.sellPrice -
                       medicine.buyPrice
-                    ).toFixed(2);
+                    ).toFixed(
+                      2
+                    );
 
                   const lowStock =
                     medicine.stock <=
@@ -557,97 +748,53 @@ function Medicines({
                       key={
                         medicine.id
                       }
-                      style={{
-                        borderBottom:
-                          "1px solid #f3f4f6",
-                      }}
                     >
 
-                      {/* NAME */}
                       <td
-                        style={{
-                          ...td,
-
-                          fontWeight:
-                            "bold",
-                        }}
+                        style={td(
+                          dark
+                        )}
                       >
                         {
                           medicine.name
                         }
                       </td>
 
-                      {/* CATEGORY */}
-                      <td style={td}>
-
-                        <span
-                          style={{
-                            background:
-                              "#dcfce7",
-
-                            color:
-                              "#16a34a",
-
-                            padding:
-                              "8px 14px",
-
-                            borderRadius:
-                              "999px",
-
-                            fontWeight:
-                              "bold",
-                          }}
-                        >
-                          {
-                            medicine.category
-                          }
-                        </span>
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
+                        {
+                          medicine.category
+                        }
                       </td>
 
-                      {/* STOCK */}
-                      <td style={td}>
-
-                        <span
-                          style={{
-                            color:
-                              lowStock
-
-                                ? "#dc2626"
-
-                                : "#16a34a",
-
-                            fontWeight:
-                              "bold",
-
-                            fontSize:
-                              "18px",
-                          }}
-                        >
-                          {
-                            medicine.stock
-                          }
-                        </span>
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
+                        {
+                          medicine.stock
+                        }
                       </td>
 
-                      {/* BUY */}
-                      <td style={td}>
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
                         $
                         {
                           medicine.buyPrice
                         }
                       </td>
 
-                      {/* SELL */}
                       <td
-                        style={{
-                          ...td,
-
-                          color:
-                            "#16a34a",
-
-                          fontWeight:
-                            "bold",
-                        }}
+                        style={td(
+                          dark
+                        )}
                       >
                         $
                         {
@@ -655,129 +802,76 @@ function Medicines({
                         }
                       </td>
 
-                      {/* PROFIT */}
                       <td
-                        style={{
-                          ...td,
-
-                          color:
-                            "#14b8a6",
-
-                          fontWeight:
-                            "bold",
-                        }}
+                        style={td(
+                          dark
+                        )}
                       >
                         $
-                        {profit}
-                      </td>
-
-                      {/* EXPIRY */}
-                      <td style={td}>
-
-                        <span
-                          style={{
-                            color:
-                              expiring
-
-                                ? "#dc2626"
-
-                                : "#111827",
-
-                            fontWeight:
-                              expiring
-                                ? "bold"
-                                : "normal",
-                          }}
-                        >
-                          {
-                            medicine.expiryDate
-                          }
-                        </span>
-                      </td>
-
-                      {/* SUPPLIER */}
-                      <td style={td}>
                         {
-                          medicine.supplier
+                          profit
                         }
                       </td>
 
-                      {/* STATUS */}
-                      <td style={td}>
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
+                        {
+                          medicine.expiryDate ||
+                          "N/A"
+                        }
+                      </td>
+
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
+                        {
+                          medicine.supplier ||
+                          "N/A"
+                        }
+                      </td>
+
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
 
                         {lowStock ? (
 
-                          <span
-                            style={{
-                              background:
-                                "#fee2e2",
-
-                              color:
-                                "#dc2626",
-
-                              padding:
-                                "8px 14px",
-
-                              borderRadius:
-                                "999px",
-
-                              fontWeight:
-                                "bold",
-                            }}
-                          >
-                            Low Stock
-                          </span>
+                          <Status
+                            bg="#fee2e2"
+                            color="#dc2626"
+                            text="Low"
+                          />
 
                         ) : expiring ? (
 
-                          <span
-                            style={{
-                              background:
-                                "#fef3c7",
-
-                              color:
-                                "#92400e",
-
-                              padding:
-                                "8px 14px",
-
-                              borderRadius:
-                                "999px",
-
-                              fontWeight:
-                                "bold",
-                            }}
-                          >
-                            Expiring
-                          </span>
+                          <Status
+                            bg="#fef3c7"
+                            color="#92400e"
+                            text="Expiring"
+                          />
 
                         ) : (
 
-                          <span
-                            style={{
-                              background:
-                                "#dcfce7",
-
-                              color:
-                                "#16a34a",
-
-                              padding:
-                                "8px 14px",
-
-                              borderRadius:
-                                "999px",
-
-                              fontWeight:
-                                "bold",
-                            }}
-                          >
-                            Good
-                          </span>
+                          <Status
+                            bg="#dcfce7"
+                            color="#166534"
+                            text="Good"
+                          />
                         )}
                       </td>
 
-                      {/* ACTION */}
-                      <td style={td}>
+                      <td
+                        style={td(
+                          dark
+                        )}
+                      >
 
                         <div
                           style={{
@@ -788,68 +882,30 @@ function Medicines({
                           }}
                         >
 
-                          {/* EDIT */}
                           <button
                             onClick={() =>
                               editMedicine(
                                 medicine
                               )
                             }
-                            style={{
-                              background:
-                                "#2563eb",
 
-                              color:
-                                "#fff",
-
-                              border:
-                                "none",
-
-                              padding:
-                                "10px 14px",
-
-                              borderRadius:
-                                "10px",
-
-                              cursor:
-                                "pointer",
-
-                              fontWeight:
-                                "bold",
-                            }}
+                            style={
+                              editBtn
+                            }
                           >
                             Edit
                           </button>
 
-                          {/* DELETE */}
                           <button
                             onClick={() =>
                               deleteMedicine(
                                 medicine.id
                               )
                             }
-                            style={{
-                              background:
-                                "#dc2626",
 
-                              color:
-                                "#fff",
-
-                              border:
-                                "none",
-
-                              padding:
-                                "10px 14px",
-
-                              borderRadius:
-                                "10px",
-
-                              cursor:
-                                "pointer",
-
-                              fontWeight:
-                                "bold",
-                            }}
+                            style={
+                              deleteBtn
+                            }
                           >
                             Delete
                           </button>
@@ -865,6 +921,7 @@ function Medicines({
       </div>
 
       {/* MODAL */}
+
       {showModal && (
 
         <div
@@ -872,16 +929,13 @@ function Medicines({
             position:
               "fixed",
 
-            top: 0,
-            left: 0,
-
-            width: "100%",
-            height: "100%",
+            inset: 0,
 
             background:
-              "rgba(0,0,0,0.5)",
+              "rgba(0,0,0,0.6)",
 
-            display: "flex",
+            display:
+              "flex",
 
             justifyContent:
               "center",
@@ -890,29 +944,43 @@ function Medicines({
               "center",
 
             zIndex: 999,
+
+            padding:
+              "20px",
           }}
         >
 
           <div
             style={{
               background:
-                "#fff",
+                dark
+                  ? "#111827"
+                  : "#ffffff",
 
-              width: "700px",
+              width: "100%",
+
+              maxWidth:
+                "750px",
 
               borderRadius:
                 "24px",
 
               padding:
-                "30px",
+                "28px",
             }}
           >
 
             <h2
               style={{
                 marginTop: 0,
+
                 marginBottom:
                   "24px",
+
+                color:
+                  dark
+                    ? "#ffffff"
+                    : "#111827",
               }}
             >
               {editingMedicine
@@ -922,159 +990,152 @@ function Medicines({
 
             <div
               style={{
-                display: "grid",
+                display:
+                  "grid",
 
                 gridTemplateColumns:
-                  "1fr 1fr",
+                  "repeat(auto-fit,minmax(220px,1fr))",
 
-                gap: "18px",
+                gap: "16px",
               }}
             >
 
-              <input
-                placeholder="Medicine name"
-                value={
-                  formData.name
-                }
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    name:
-                      e.target
-                        .value,
-                  })
-                }
-                style={input}
-              />
+              {[
+                {
+                  key:
+                    "name",
 
-              <input
-                placeholder="Category"
-                value={
-                  formData.category
-                }
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    category:
-                      e.target
-                        .value,
-                  })
-                }
-                style={input}
-              />
+                  placeholder:
+                    "Medicine name",
+                },
 
-              <input
-                type="number"
-                placeholder="Stock"
-                value={
-                  formData.stock
-                }
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    stock:
-                      e.target
-                        .value,
-                  })
-                }
-                style={input}
-              />
+                {
+                  key:
+                    "category",
 
-              <input
-                type="number"
-                placeholder="Minimum stock"
-                value={
-                  formData.minStock
-                }
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    minStock:
-                      e.target
-                        .value,
-                  })
-                }
-                style={input}
-              />
+                  placeholder:
+                    "Category",
+                },
 
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Buy price"
-                value={
-                  formData.buyPrice
-                }
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    buyPrice:
-                      e.target
-                        .value,
-                  })
-                }
-                style={input}
-              />
+                {
+                  key:
+                    "stock",
 
-              <input
-                type="number"
-                step="0.01"
-                placeholder="Sell price"
-                value={
-                  formData.sellPrice
-                }
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    sellPrice:
-                      e.target
-                        .value,
-                  })
-                }
-                style={input}
-              />
+                  placeholder:
+                    "Stock",
 
-              <input
-                type="date"
-                value={
-                  formData.expiryDate
-                }
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    expiryDate:
-                      e.target
-                        .value,
-                  })
-                }
-                style={input}
-              />
+                  type:
+                    "number",
+                },
 
-              <input
-                placeholder="Supplier"
-                value={
-                  formData.supplier
-                }
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    supplier:
-                      e.target
-                        .value,
-                  })
-                }
-                style={input}
-              />
+                {
+                  key:
+                    "minStock",
+
+                  placeholder:
+                    "Minimum stock",
+
+                  type:
+                    "number",
+                },
+
+                {
+                  key:
+                    "buyPrice",
+
+                  placeholder:
+                    "Buy price",
+
+                  type:
+                    "number",
+                },
+
+                {
+                  key:
+                    "sellPrice",
+
+                  placeholder:
+                    "Sell price",
+
+                  type:
+                    "number",
+                },
+
+                {
+                  key:
+                    "expiryDate",
+
+                  type:
+                    "date",
+                },
+
+                {
+                  key:
+                    "supplier",
+
+                  placeholder:
+                    "Supplier",
+                },
+              ].map(
+                (
+                  field
+                ) => (
+
+                  <input
+                    key={
+                      field.key
+                    }
+
+                    type={
+                      field.type ||
+                      "text"
+                    }
+
+                    placeholder={
+                      field.placeholder
+                    }
+
+                    value={
+                      formData[
+                        field.key
+                      ]
+                    }
+
+                    onChange={(
+                      e
+                    ) =>
+                      setFormData(
+                        {
+                          ...formData,
+
+                          [field.key]:
+                            e.target.value,
+                        }
+                      )
+                    }
+
+                    style={
+                      input(
+                        dark
+                      )
+                    }
+                  />
+                )
+              )}
             </div>
 
-            {/* BUTTONS */}
             <div
               style={{
-                display: "flex",
+                display:
+                  "flex",
 
-                gap: "16px",
+                gap: "14px",
 
                 marginTop:
                   "24px",
+
+                flexWrap:
+                  "wrap",
               }}
             >
 
@@ -1082,31 +1143,10 @@ function Medicines({
                 onClick={
                   saveMedicine
                 }
-                style={{
-                  flex: 1,
 
-                  background:
-                    "#16a34a",
-
-                  color: "#fff",
-
-                  border: "none",
-
-                  padding:
-                    "18px",
-
-                  borderRadius:
-                    "16px",
-
-                  fontWeight:
-                    "bold",
-
-                  fontSize:
-                    "18px",
-
-                  cursor:
-                    "pointer",
-                }}
+                style={
+                  saveBtn
+                }
               >
                 {editingMedicine
                   ? "Update Medicine"
@@ -1117,29 +1157,12 @@ function Medicines({
                 onClick={
                   resetForm
                 }
-                style={{
-                  flex: 1,
 
-                  background:
-                    "#e5e7eb",
-
-                  border: "none",
-
-                  padding:
-                    "18px",
-
-                  borderRadius:
-                    "16px",
-
-                  fontWeight:
-                    "bold",
-
-                  fontSize:
-                    "18px",
-
-                  cursor:
-                    "pointer",
-                }}
+                style={
+                  cancelBtn(
+                    dark
+                  )
+                }
               >
                 Cancel
               </button>
@@ -1151,40 +1174,238 @@ function Medicines({
   );
 }
 
-/* TABLE */
-const th = {
-  padding: "18px",
-  textAlign: "left",
-};
+/* =========================
+   STATUS
+========================= */
 
-const td = {
-  padding: "18px",
-};
+function Status({
+  bg,
+  color,
+  text,
+}) {
 
-/* INPUT */
-const input = {
-  padding: "16px",
+  return (
+    <span
+      style={{
+        background:
+          bg,
 
-  borderRadius: "14px",
+        color:
+          color,
+
+        padding:
+          "8px 14px",
+
+        borderRadius:
+          "999px",
+
+        fontWeight:
+          "bold",
+
+        fontSize:
+          "12px",
+      }}
+    >
+      {text}
+    </span>
+  );
+}
+
+/* =========================
+   STYLES
+========================= */
+
+const th = (
+  dark
+) => ({
+  textAlign:
+    "left",
+
+  padding:
+    "18px",
+
+  fontSize:
+    "14px",
+
+  color:
+    dark
+      ? "#ffffff"
+      : "#374151",
+});
+
+const td = (
+  dark
+) => ({
+  padding:
+    "18px",
+
+  color:
+    dark
+      ? "#e5e7eb"
+      : "#111827",
+});
+
+const input = (
+  dark
+) => ({
+  width: "100%",
+
+  padding:
+    "14px",
+
+  borderRadius:
+    "14px",
 
   border:
-    "1px solid #d1d5db",
+    dark
+      ? "1px solid #374151"
+      : "1px solid #d1d5db",
 
-  fontSize: "16px",
-};
+  background:
+    dark
+      ? "#0f172a"
+      : "#ffffff",
 
-/* SELECT */
-const select = {
-  padding: "16px",
+  color:
+    dark
+      ? "#ffffff"
+      : "#111827",
 
-  borderRadius: "14px",
+  outline:
+    "none",
+
+  boxSizing:
+    "border-box",
+});
+
+const select = (
+  dark
+) => ({
+  padding:
+    "14px",
+
+  borderRadius:
+    "14px",
 
   border:
-    "1px solid #d1d5db",
+    dark
+      ? "1px solid #374151"
+      : "1px solid #d1d5db",
 
-  fontSize: "16px",
+  background:
+    dark
+      ? "#111827"
+      : "#ffffff",
 
-  minWidth: "180px",
+  color:
+    dark
+      ? "#ffffff"
+      : "#111827",
+
+  outline:
+    "none",
+});
+
+const editBtn = {
+  background:
+    "#2563eb",
+
+  color:
+    "#ffffff",
+
+  border:
+    "none",
+
+  padding:
+    "10px 14px",
+
+  borderRadius:
+    "10px",
+
+  cursor:
+    "pointer",
+
+  fontWeight:
+    "bold",
 };
+
+const deleteBtn = {
+  background:
+    "#dc2626",
+
+  color:
+    "#ffffff",
+
+  border:
+    "none",
+
+  padding:
+    "10px 14px",
+
+  borderRadius:
+    "10px",
+
+  cursor:
+    "pointer",
+
+  fontWeight:
+    "bold",
+};
+
+const saveBtn = {
+  flex: 1,
+
+  background:
+    "#16a34a",
+
+  color:
+    "#ffffff",
+
+  border:
+    "none",
+
+  padding:
+    "16px",
+
+  borderRadius:
+    "14px",
+
+  fontWeight:
+    "bold",
+
+  cursor:
+    "pointer",
+};
+
+const cancelBtn = (
+  dark
+) => ({
+  flex: 1,
+
+  background:
+    dark
+      ? "#1f2937"
+      : "#f3f4f6",
+
+  color:
+    dark
+      ? "#ffffff"
+      : "#111827",
+
+  border:
+    "none",
+
+  padding:
+    "16px",
+
+  borderRadius:
+    "14px",
+
+  fontWeight:
+    "bold",
+
+  cursor:
+    "pointer",
+});
 
 export default Medicines;

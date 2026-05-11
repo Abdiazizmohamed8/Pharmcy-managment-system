@@ -1,4 +1,15 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
+
+import {
+  doc,
+  updateDoc,
+} from "firebase/firestore";
+
+import {
+  db,
+} from "../firebase";
 
 function Debts({
   customers,
@@ -6,12 +17,20 @@ function Debts({
   sales,
   setSales,
   toast,
+  dark,
 }) {
+
+  /* =========================
+     STATES
+  ========================= */
 
   const [search, setSearch] =
     useState("");
 
-  /* ONLY CUSTOMERS WITH DEBT */
+  /* =========================
+     FILTER DEBTS
+  ========================= */
+
   const debtCustomers =
     customers.filter(
       (customer) =>
@@ -20,21 +39,30 @@ function Debts({
         ) > 0
     );
 
-  /* SEARCH */
+  /* =========================
+     SEARCH
+  ========================= */
+
   const filteredCustomers =
     debtCustomers.filter(
       (customer) =>
         customer.name
-          .toLowerCase()
+          ?.toLowerCase()
           .includes(
             search.toLowerCase()
           )
     );
 
-  /* TOTAL DEBT */
+  /* =========================
+     TOTAL DEBT
+  ========================= */
+
   const totalDebt =
     debtCustomers.reduce(
-      (acc, customer) =>
+      (
+        acc,
+        customer
+      ) =>
 
         acc +
         Number(
@@ -45,73 +73,178 @@ function Debts({
       0
     );
 
-  /* MARK PAID */
-  const markPaid = (
-    customerName
-  ) => {
+  /* =========================
+     MARK PAID
+  ========================= */
 
-    /* UPDATE CUSTOMERS */
-    const updatedCustomers =
-      customers.map(
-        (customer) => {
+  const markPaid =
+    async (
+      customer
+    ) => {
 
-          if (
-            customer.name ===
-            customerName
-          ) {
+      try {
 
-            return {
-              ...customer,
-              debt: 0,
-            };
+        /* =========================
+           UPDATE CUSTOMER
+        ========================= */
+
+        await updateDoc(
+          doc(
+            db,
+            "customers",
+            customer.id
+          ),
+
+          {
+            debt: 0,
           }
+        );
 
-          return customer;
-        }
-      );
+        /* =========================
+           UPDATE LOCAL CUSTOMER
+        ========================= */
 
-    setCustomers(
-      updatedCustomers
-    );
+        const updatedCustomers =
+          customers.map(
+            (item) => {
 
-    /* UPDATE SALES */
-    const updatedSales =
-      sales.map((sale) => {
+              if (
+                item.id ===
+                customer.id
+              ) {
+
+                return {
+                  ...item,
+                  debt: 0,
+                };
+              }
+
+              return item;
+            }
+          );
+
+        setCustomers(
+          updatedCustomers
+        );
+
+        /* =========================
+           UPDATE SALES
+        ========================= */
+const updatedSales =
+  await Promise.all(
+
+    sales.map(
+      async (sale) => {
 
         if (
-          sale.customer ===
-            customerName &&
-          sale.status !==
-            "Paid"
+
+          (
+            sale.customer ===
+              customer.name ||
+
+            sale.customerName ===
+              customer.name
+          ) &&
+
+          (
+            sale.status ===
+              "unpaid" ||
+
+            sale.status ===
+              "partial"
+          )
         ) {
 
+          /* UPDATE FIREBASE */
+
+          await updateDoc(
+
+            doc(
+              db,
+              "sales",
+              sale.id
+            ),
+
+            {
+
+              status:
+                "paid",
+
+              paymentStatus:
+                "paid",
+
+              paid:
+                sale.total,
+
+              debt: 0,
+
+              remainingDebt: 0,
+            }
+          );
+
           return {
+
             ...sale,
 
             status:
-              "Paid",
+              "paid",
+
+            paymentStatus:
+              "paid",
 
             paid:
               sale.total,
 
             debt: 0,
+
+            remainingDebt: 0,
           };
         }
 
         return sale;
-      });
+      }
+    )
+  );
 
-    setSales(updatedSales);
+setSales(
+  updatedSales
+);
 
-    toast(
-      `${customerName} debt paid`
-    );
-  };
+        toast(
+          `${customer.name} paid debt`,
+          "success"
+        );
+
+      } catch (error) {
+
+        console.log(
+          error
+        );
+
+        toast(
+          "Failed to update debt",
+          "error"
+        );
+      }
+    };
 
   return (
-    <div>
+    <div
+      style={{
+        width: "100%",
+
+        minHeight:
+          "100vh",
+
+        background:
+          dark
+            ? "#020617"
+            : "#f3f4f6",
+      }}
+    >
 
       {/* HEADER */}
+
       <div
         style={{
           display: "flex",
@@ -122,17 +255,31 @@ function Debts({
           alignItems:
             "center",
 
+          flexWrap:
+            "wrap",
+
+          gap: "16px",
+
           marginBottom:
             "24px",
         }}
       >
+
+        {/* LEFT */}
 
         <div>
 
           <h1
             style={{
               margin: 0,
-              fontSize: "42px",
+
+              fontSize:
+                "34px",
+
+              color:
+                dark
+                  ? "#ffffff"
+                  : "#111827",
             }}
           >
             Debts 💳
@@ -140,14 +287,23 @@ function Debts({
 
           <p
             style={{
-              color: "#6b7280",
-              marginTop: "8px",
+              marginTop:
+                "8px",
+
+              color:
+                dark
+                  ? "#d1d5db"
+                  : "#6b7280",
+
+              fontSize:
+                "15px",
             }}
           >
-            Manage unpaid and
-            partial payments
+            Manage customer debts
           </p>
         </div>
+
+        {/* TOTAL */}
 
         <div
           style={{
@@ -157,308 +313,441 @@ function Debts({
             color: "#fff",
 
             padding:
-              "20px",
+              "16px 22px",
 
             borderRadius:
-              "20px",
+              "18px",
 
-            fontWeight:
-              "bold",
+            minWidth:
+              "180px",
 
-            fontSize:
-              "28px",
+            boxShadow:
+              dark
+                ? "0 4px 18px rgba(0,0,0,0.4)"
+                : "0 4px 18px rgba(220,38,38,0.2)",
           }}
         >
-          Total Debt:
-          {" "}
-          $
-          {totalDebt.toFixed(
-            2
-          )}
+
+          <div
+            style={{
+              fontSize:
+                "13px",
+
+              opacity: 0.9,
+
+              marginBottom:
+                "6px",
+            }}
+          >
+            Total Debt
+          </div>
+
+          <div
+            style={{
+              fontSize:
+                "28px",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            $
+            {totalDebt.toFixed(
+              2
+            )}
+          </div>
         </div>
       </div>
 
       {/* SEARCH */}
-      <input
-        type="text"
-        placeholder="Search customer..."
-        value={search}
-        onChange={(e) =>
-          setSearch(
-            e.target.value
-          )
-        }
-        style={{
-          width: "320px",
 
-          padding: "16px",
-
-          borderRadius:
-            "14px",
-
-          border:
-            "1px solid #d1d5db",
-
-          marginBottom:
-            "24px",
-
-          fontSize:
-            "16px",
-        }}
-      />
-
-      {/* TABLE */}
       <div
         style={{
-          background:
-            "#fff",
-
-          borderRadius:
+          marginBottom:
             "24px",
-
-          overflow:
-            "hidden",
-
-          boxShadow:
-            "0 8px 24px rgba(0,0,0,0.05)",
         }}
       >
 
-        <table
+        <input
+          type="text"
+
+          placeholder="Search customer..."
+
+          value={search}
+
+          onChange={(e) =>
+            setSearch(
+              e.target.value
+            )
+          }
+
           style={{
             width: "100%",
 
-            borderCollapse:
-              "collapse",
+            maxWidth:
+              "420px",
+
+            padding:
+              "15px 18px",
+
+            borderRadius:
+              "16px",
+
+            border:
+              dark
+
+                ? "1px solid #374151"
+
+                : "1px solid #d1d5db",
+
+            outline:
+              "none",
+
+            fontSize:
+              "15px",
+
+            background:
+              dark
+                ? "#111827"
+                : "#ffffff",
+
+            color:
+              dark
+                ? "#ffffff"
+                : "#111827",
+
+            boxSizing:
+              "border-box",
+          }}
+        />
+      </div>
+
+      {/* EMPTY */}
+
+      {filteredCustomers.length ===
+      0 ? (
+
+        <div
+          style={{
+            background:
+              dark
+                ? "#111827"
+                : "#ffffff",
+
+            borderRadius:
+              "24px",
+
+            padding:
+              "80px 20px",
+
+            textAlign:
+              "center",
+
+            color:
+              dark
+                ? "#d1d5db"
+                : "#9ca3af",
+
+            fontSize:
+              "18px",
+
+            border:
+              dark
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
+
+            boxShadow:
+              dark
+                ? "0 4px 20px rgba(0,0,0,0.35)"
+                : "0 4px 18px rgba(0,0,0,0.05)",
           }}
         >
+          No debts found
+        </div>
 
-          <thead
-            style={{
-              background:
-                "#f9fafb",
-            }}
-          >
-            <tr>
+      ) : (
 
-              <th style={th}>
-                Customer
-              </th>
+      <div
+  style={{
+    overflowX:
+      "auto",
 
-              <th style={th}>
-                Phone
-              </th>
+    borderRadius:
+      "24px",
 
-              <th style={th}>
-                Address
-              </th>
+    background:
+      dark
+        ? "#111827"
+        : "#ffffff",
 
-              <th style={th}>
-                Debt
-              </th>
+    border:
+      dark
+        ? "1px solid #1f2937"
+        : "1px solid #e5e7eb",
+  }}
+>
 
-              <th style={th}>
-                Status
-              </th>
+  <table
+    style={{
+      width: "100%",
 
-              <th style={th}>
-                Action
-              </th>
-            </tr>
-          </thead>
+      borderCollapse:
+        "collapse",
 
-          <tbody>
+      minWidth:
+        "900px",
+    }}
+  >
 
-            {filteredCustomers.length ===
-            0 ? (
+    {/* HEAD */}
 
-              <tr>
+    <thead>
 
-                <td
-                  colSpan="6"
+      <tr
+        style={{
+          borderBottom:
+            dark
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
+        }}
+      >
+
+        {[
+          "Customer",
+          "Phone",
+          "Address",
+          "Debt",
+          "Status",
+          "Action",
+        ].map(
+          (item) => (
+
+            <th
+              key={item}
+
+              style={{
+                padding:
+                  "18px",
+
+                textAlign:
+                  "left",
+
+                color:
+                  dark
+                    ? "#ffffff"
+                    : "#111827",
+              }}
+            >
+              {item}
+            </th>
+          )
+        )}
+      </tr>
+    </thead>
+
+    {/* BODY */}
+
+    <tbody>
+
+      {filteredCustomers.map(
+        (
+          customer
+        ) => {
+
+          const customerSales =
+            sales.filter(
+              (sale) =>
+
+                sale.customer ===
+                customer.name
+            );
+
+          const hasPartial =
+            customerSales.some(
+              (sale) =>
+
+                sale.status ===
+                "partial"
+            );
+
+          return (
+
+            <tr
+              key={
+                customer.id
+              }
+
+              style={{
+                borderBottom:
+                  dark
+                    ? "1px solid #1f2937"
+                    : "1px solid #e5e7eb",
+              }}
+            >
+
+              <td
+                style={{
+                  padding:
+                    "18px",
+
+                  color:
+                    dark
+                      ? "#ffffff"
+                      : "#111827",
+
+                  fontWeight:
+                    "600",
+                }}
+              >
+                {
+                  customer.name
+                }
+              </td>
+
+              <td
+                style={{
+                  padding:
+                    "18px",
+
+                  color:
+                    dark
+                      ? "#d1d5db"
+                      : "#6b7280",
+                }}
+              >
+                {
+                  customer.phone
+                }
+              </td>
+
+              <td
+                style={{
+                  padding:
+                    "18px",
+
+                  color:
+                    dark
+                      ? "#d1d5db"
+                      : "#6b7280",
+                }}
+              >
+                {
+                  customer.address
+                }
+              </td>
+
+              <td
+                style={{
+                  padding:
+                    "18px",
+
+                  color:
+                    "#ef4444",
+
+                  fontWeight:
+                    "bold",
+                }}
+              >
+                $
+                {Number(
+                  customer.debt
+                ).toFixed(
+                  2
+                )}
+              </td>
+
+              <td
+                style={{
+                  padding:
+                    "18px",
+                }}
+              >
+
+                <span
                   style={{
-                    padding:
-                      "40px",
+                    background:
+                      hasPartial
 
-                    textAlign:
-                      "center",
+                        ? "#fef3c7"
+
+                        : "#fee2e2",
 
                     color:
-                      "#9ca3af",
+                      hasPartial
+
+                        ? "#92400e"
+
+                        : "#dc2626",
+
+                    padding:
+                      "8px 14px",
+
+                    borderRadius:
+                      "999px",
+
+                    fontSize:
+                      "13px",
+
+                    fontWeight:
+                      "bold",
                   }}
                 >
-                  No debts found
-                </td>
-              </tr>
+                  {hasPartial
+                    ? "Partial"
+                    : "Unpaid"}
+                </span>
+              </td>
 
-            ) : (
+              <td
+                style={{
+                  padding:
+                    "18px",
+                }}
+              >
 
-              filteredCustomers.map(
-                (
-                  customer
-                ) => {
+                <button
+                  onClick={() =>
+                    markPaid(
+                      customer
+                    )
+                  }
 
-                  const customerSales =
-                    sales.filter(
-                      (
-                        sale
-                      ) =>
+                  style={{
+                    background:
+                      "#16a34a",
 
-                        sale.customer ===
-                        customer.name
-                    );
+                    color:
+                      "#ffffff",
 
-                  const hasPartial =
-                    customerSales.some(
-                      (
-                        sale
-                      ) =>
+                    border:
+                      "none",
 
-                        sale.status ===
-                        "Partial"
-                    );
+                    padding:
+                      "12px 18px",
 
-                  return (
-                    <tr
-                      key={
-                        customer.id
-                      }
-                      style={{
-                        borderTop:
-                          "1px solid #f3f4f6",
-                      }}
-                    >
+                    borderRadius:
+                      "14px",
 
-                      <td style={td}>
-                        {
-                          customer.name
-                        }
-                      </td>
+                    cursor:
+                      "pointer",
 
-                      <td style={td}>
-                        {
-                          customer.phone ||
-                          "N/A"
-                        }
-                      </td>
-
-                      <td style={td}>
-                        {
-                          customer.address ||
-                          "N/A"
-                        }
-                      </td>
-
-                      <td
-                        style={{
-                          ...td,
-
-                          color:
-                            "#dc2626",
-
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        $
-                        {Number(
-                          customer.debt
-                        ).toFixed(
-                          2
-                        )}
-                      </td>
-
-                      <td style={td}>
-
-                        <span
-                          style={{
-                            background:
-                              hasPartial
-
-                                ? "#fef3c7"
-
-                                : "#fee2e2",
-
-                            color:
-                              hasPartial
-
-                                ? "#92400e"
-
-                                : "#dc2626",
-
-                            padding:
-                              "8px 14px",
-
-                            borderRadius:
-                              "999px",
-
-                            fontWeight:
-                              "bold",
-
-                            fontSize:
-                              "14px",
-                          }}
-                        >
-                          {hasPartial
-                            ? "Partial"
-                            : "Unpaid"}
-                        </span>
-                      </td>
-
-                      <td style={td}>
-
-                        <button
-                          onClick={() =>
-                            markPaid(
-                              customer.name
-                            )
-                          }
-                          style={{
-                            background:
-                              "#16a34a",
-
-                            color:
-                              "#fff",
-
-                            border:
-                              "none",
-
-                            padding:
-                              "12px 18px",
-
-                            borderRadius:
-                              "12px",
-
-                            cursor:
-                              "pointer",
-
-                            fontWeight:
-                              "bold",
-                          }}
-                        >
-                          Mark Paid
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }
-              )
-            )}
-          </tbody>
-        </table>
-      </div>
+                    fontWeight:
+                      "bold",
+                  }}
+                >
+                  Mark Paid
+                </button>
+              </td>
+            </tr>
+          );
+        }
+      )}
+    </tbody>
+  </table>
+</div>
+      )}
     </div>
   );
 }
-
-/* TABLE */
-const th = {
-  padding: "18px",
-  textAlign: "left",
-};
-
-const td = {
-  padding: "18px",
-};
 
 export default Debts;

@@ -1,53 +1,71 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
 
 function Suppliers({
-  suppliers,
+  suppliers = [],
   setSuppliers,
   toast,
+  darkMode = false,
 }) {
 
-  const [search,
-    setSearch] =
-    useState("");
+  /* =========================
+     STATES
+  ========================= */
 
-  const [showModal,
-    setShowModal] =
-    useState(false);
+  const [
+    search,
+    setSearch,
+  ] = useState("");
 
-  const [form,
-    setForm] =
-    useState({
-      name: "",
-      contact: "",
-      email: "",
-      city: "",
-    });
+  const [
+    showModal,
+    setShowModal,
+  ] = useState(false);
 
-  /* FILTER */
+  const [
+    form,
+    setForm,
+  ] = useState({
+    name: "",
+    contact: "",
+    email: "",
+    city: "",
+  });
+
+  /* =========================
+     FILTER
+  ========================= */
+
   const filteredSuppliers =
     suppliers.filter(
       (supplier) =>
         supplier.name
-          .toLowerCase()
+          ?.toLowerCase()
           .includes(
             search.toLowerCase()
           )
     );
 
-  /* HANDLE CHANGE */
-  const handleChange = (
-    e
-  ) => {
+  /* =========================
+     HANDLE CHANGE
+  ========================= */
 
-    setForm({
-      ...form,
+  const handleChange =
+    (e) => {
 
-      [e.target.name]:
-        e.target.value,
-    });
-  };
+      setForm({
+        ...form,
 
-  /* ADD SUPPLIER */
+        [e.target.name]:
+          e.target.value,
+      });
+    };
+
+  /* =========================
+     ADD SUPPLIER
+  ========================= */
+
   const addSupplier =
     () => {
 
@@ -55,7 +73,8 @@ function Suppliers({
         form.name.trim() ===
         ""
       ) {
-        toast(
+
+        toast?.(
           "Supplier name required",
           "error"
         );
@@ -95,8 +114,9 @@ function Suppliers({
         ]
       );
 
-      toast(
-        "Supplier added"
+      toast?.(
+        "Supplier added",
+        "success"
       );
 
       setForm({
@@ -111,9 +131,22 @@ function Suppliers({
       );
     };
 
-  /* DELETE */
+  /* =========================
+     DELETE
+  ========================= */
+
   const deleteSupplier =
     (id) => {
+
+      const confirmDelete =
+        window.confirm(
+          "Delete supplier?"
+        );
+
+      if (
+        !confirmDelete
+      )
+        return;
 
       setSuppliers(
         (prev) =>
@@ -124,32 +157,76 @@ function Suppliers({
           )
       );
 
-      toast(
-        "Supplier deleted"
+      toast?.(
+        "Supplier deleted",
+        "success"
       );
     };
 
   return (
-    <div>
+    <div
+      style={{
+        minHeight:
+          "100vh",
+
+        width: "100%",
+
+        background:
+          darkMode
+            ? "#020617"
+            : "#f3f4f6",
+
+        color:
+          darkMode
+            ? "#ffffff"
+            : "#111827",
+
+        padding:
+          "24px",
+
+        boxSizing:
+          "border-box",
+
+        transition:
+          "0.3s ease",
+      }}
+    >
 
       {/* HEADER */}
+
       <div
         style={{
           display: "flex",
+
           justifyContent:
             "space-between",
-          alignItems: "center",
+
+          alignItems:
+            "center",
+
+          flexWrap:
+            "wrap",
+
+          gap: "18px",
+
           marginBottom:
             "30px",
         }}
       >
 
         <div>
+
           <h1
             style={{
               margin: 0,
-              fontSize: "38px",
-              color: "#111827",
+
+              fontSize:
+                "38px",
+
+              color:
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
             }}
           >
             Suppliers 🏭
@@ -157,9 +234,16 @@ function Suppliers({
 
           <p
             style={{
-              marginTop: "10px",
-              color: "#6b7280",
-              fontSize: "16px",
+              marginTop:
+                "10px",
+
+              color:
+                darkMode
+                  ? "#d1d5db"
+                  : "#6b7280",
+
+              fontSize:
+                "16px",
             }}
           >
             Manage pharmacy suppliers
@@ -167,17 +251,19 @@ function Suppliers({
         </div>
 
         {/* BUTTON */}
+
         <button
           onClick={() =>
             setShowModal(
               true
             )
           }
+
           style={{
             background:
               "#16a34a",
 
-            color: "#fff",
+            color: "#ffffff",
 
             border: "none",
 
@@ -202,46 +288,76 @@ function Suppliers({
       </div>
 
       {/* SEARCH */}
+
       <div
         style={{
           marginBottom:
             "24px",
         }}
       >
+
         <input
           type="text"
+
           placeholder="Search supplier..."
+
           value={search}
+
           onChange={(e) =>
             setSearch(
               e.target.value
             )
           }
+
           style={{
             width: "100%",
-            maxWidth: "360px",
+
+            maxWidth:
+              "360px",
+
             padding:
               "14px",
+
             borderRadius:
               "14px",
+
             border:
-              "1px solid #d1d5db",
+              darkMode
+
+                ? "1px solid #374151"
+
+                : "1px solid #d1d5db",
+
             outline:
               "none",
+
             fontSize:
               "15px",
+
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
           }}
         />
       </div>
 
       {/* EMPTY */}
+
       {filteredSuppliers.length ===
       0 ? (
 
         <div
           style={{
             background:
-              "#fff",
+              darkMode
+                ? "#111827"
+                : "#ffffff",
 
             borderRadius:
               "24px",
@@ -253,10 +369,17 @@ function Suppliers({
               "center",
 
             color:
-              "#9ca3af",
+              darkMode
+                ? "#d1d5db"
+                : "#9ca3af",
 
             fontSize:
               "18px",
+
+            border:
+              darkMode
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
           }}
         >
           No suppliers available
@@ -265,10 +388,13 @@ function Suppliers({
       ) : (
 
         /* TABLE */
+
         <div
           style={{
             background:
-              "#fff",
+              darkMode
+                ? "#111827"
+                : "#ffffff",
 
             borderRadius:
               "24px",
@@ -276,12 +402,20 @@ function Suppliers({
             overflow:
               "hidden",
 
+            border:
+              darkMode
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
+
             boxShadow:
-              "0 8px 24px rgba(0,0,0,0.05)",
+              darkMode
+                ? "0 4px 20px rgba(0,0,0,0.35)"
+                : "0 8px 24px rgba(0,0,0,0.05)",
           }}
         >
 
           {/* HEAD */}
+
           <div
             style={{
               display: "grid",
@@ -293,18 +427,27 @@ function Suppliers({
                 "20px",
 
               background:
-                "#f9fafb",
+                darkMode
+                  ? "#0f172a"
+                  : "#f9fafb",
 
               fontWeight:
                 "bold",
 
               color:
-                "#111827",
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
 
               borderBottom:
-                "1px solid #f3f4f6",
+                darkMode
+
+                  ? "1px solid #1f2937"
+
+                  : "1px solid #f3f4f6",
             }}
           >
+
             <div>
               Supplier Name
             </div>
@@ -331,6 +474,7 @@ function Suppliers({
           </div>
 
           {/* ROWS */}
+
           {filteredSuppliers.map(
             (
               supplier
@@ -340,6 +484,7 @@ function Suppliers({
                 key={
                   supplier.id
                 }
+
                 style={{
                   display:
                     "grid",
@@ -354,17 +499,27 @@ function Suppliers({
                     "center",
 
                   borderBottom:
-                    "1px solid #f3f4f6",
+                    darkMode
+
+                      ? "1px solid #1f2937"
+
+                      : "1px solid #f3f4f6",
                 }}
               >
 
                 {/* NAME */}
+
                 <div>
+
                   <h3
                     style={{
                       margin: 0,
+
                       color:
-                        "#111827",
+                        darkMode
+                          ? "#ffffff"
+                          : "#111827",
+
                       fontSize:
                         "18px",
                     }}
@@ -376,10 +531,13 @@ function Suppliers({
                 </div>
 
                 {/* CONTACT */}
+
                 <div
                   style={{
                     color:
-                      "#6b7280",
+                      darkMode
+                        ? "#d1d5db"
+                        : "#6b7280",
                   }}
                 >
                   {supplier.contact ||
@@ -387,10 +545,13 @@ function Suppliers({
                 </div>
 
                 {/* EMAIL */}
+
                 <div
                   style={{
                     color:
-                      "#6b7280",
+                      darkMode
+                        ? "#d1d5db"
+                        : "#6b7280",
                   }}
                 >
                   {supplier.email ||
@@ -398,10 +559,13 @@ function Suppliers({
                 </div>
 
                 {/* CITY */}
+
                 <div
                   style={{
                     color:
-                      "#111827",
+                      darkMode
+                        ? "#ffffff"
+                        : "#111827",
                   }}
                 >
                   {supplier.city ||
@@ -409,10 +573,13 @@ function Suppliers({
                 </div>
 
                 {/* JOINED */}
+
                 <div
                   style={{
                     color:
-                      "#111827",
+                      darkMode
+                        ? "#ffffff"
+                        : "#111827",
                   }}
                 >
                   {
@@ -421,19 +588,22 @@ function Suppliers({
                 </div>
 
                 {/* ACTION */}
+
                 <div>
+
                   <button
                     onClick={() =>
                       deleteSupplier(
                         supplier.id
                       )
                     }
+
                     style={{
                       background:
                         "#dc2626",
 
                       color:
-                        "#fff",
+                        "#ffffff",
 
                       border:
                         "none",
@@ -461,6 +631,7 @@ function Suppliers({
       )}
 
       {/* MODAL */}
+
       {showModal && (
 
         <div
@@ -471,7 +642,7 @@ function Suppliers({
             inset: 0,
 
             background:
-              "rgba(0,0,0,0.5)",
+              "rgba(0,0,0,0.6)",
 
             display:
               "flex",
@@ -483,13 +654,18 @@ function Suppliers({
               "center",
 
             zIndex: 999,
+
+            padding:
+              "20px",
           }}
         >
 
           <div
             style={{
               background:
-                "#fff",
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
 
               width: "100%",
 
@@ -501,14 +677,25 @@ function Suppliers({
 
               padding:
                 "30px",
+
+              border:
+                darkMode
+                  ? "1px solid #1f2937"
+                  : "1px solid #e5e7eb",
             }}
           >
 
             <h2
               style={{
                 marginTop: 0,
+
                 marginBottom:
                   "24px",
+
+                color:
+                  darkMode
+                    ? "#ffffff"
+                    : "#111827",
               }}
             >
               Add Supplier
@@ -517,76 +704,100 @@ function Suppliers({
             <div
               style={{
                 display: "grid",
+
                 gap: "16px",
               }}
             >
 
               <input
                 type="text"
+
                 name="name"
+
                 placeholder="Supplier name"
+
                 value={
                   form.name
                 }
+
                 onChange={
                   handleChange
                 }
-                style={
-                  inputStyle
-                }
+
+                style={inputStyle(
+                  darkMode
+                )}
               />
 
               <input
                 type="text"
+
                 name="contact"
+
                 placeholder="Contact number"
+
                 value={
                   form.contact
                 }
+
                 onChange={
                   handleChange
                 }
-                style={
-                  inputStyle
-                }
+
+                style={inputStyle(
+                  darkMode
+                )}
               />
 
               <input
                 type="email"
+
                 name="email"
+
                 placeholder="Email address"
+
                 value={
                   form.email
                 }
+
                 onChange={
                   handleChange
                 }
-                style={
-                  inputStyle
-                }
+
+                style={inputStyle(
+                  darkMode
+                )}
               />
 
               <input
                 type="text"
+
                 name="city"
+
                 placeholder="City"
+
                 value={
                   form.city
                 }
+
                 onChange={
                   handleChange
                 }
-                style={
-                  inputStyle
-                }
+
+                style={inputStyle(
+                  darkMode
+                )}
               />
             </div>
 
             {/* BUTTONS */}
+
             <div
               style={{
                 display: "flex",
+
                 gap: "14px",
+
                 marginTop:
                   "26px",
               }}
@@ -596,15 +807,18 @@ function Suppliers({
                 onClick={
                   addSupplier
                 }
+
                 style={{
                   flex: 1,
 
                   background:
                     "#16a34a",
 
-                  color: "#fff",
+                  color:
+                    "#ffffff",
 
-                  border: "none",
+                  border:
+                    "none",
 
                   padding:
                     "14px",
@@ -631,16 +845,22 @@ function Suppliers({
                     false
                   )
                 }
+
                 style={{
                   flex: 1,
 
                   background:
-                    "#f3f4f6",
+                    darkMode
+                      ? "#1f2937"
+                      : "#f3f4f6",
 
                   color:
-                    "#111827",
+                    darkMode
+                      ? "#ffffff"
+                      : "#111827",
 
-                  border: "none",
+                  border:
+                    "none",
 
                   padding:
                     "14px",
@@ -668,14 +888,44 @@ function Suppliers({
   );
 }
 
-const inputStyle = {
+/* =========================
+   INPUT STYLE
+========================= */
+
+const inputStyle = (
+  darkMode
+) => ({
   width: "100%",
+
   padding: "14px",
-  borderRadius: "12px",
+
+  borderRadius:
+    "12px",
+
   border:
-    "1px solid #d1d5db",
+    darkMode
+
+      ? "1px solid #374151"
+
+      : "1px solid #d1d5db",
+
   outline: "none",
-  fontSize: "14px",
-};
+
+  fontSize:
+    "14px",
+
+  background:
+    darkMode
+      ? "#0f172a"
+      : "#ffffff",
+
+  color:
+    darkMode
+      ? "#ffffff"
+      : "#111827",
+
+  boxSizing:
+    "border-box",
+});
 
 export default Suppliers;

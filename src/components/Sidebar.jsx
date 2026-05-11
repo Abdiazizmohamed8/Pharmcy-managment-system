@@ -1,11 +1,25 @@
-import { useState } from "react";
 function Sidebar({
   page,
   setPage,
   currentUser,
+  dark,
 }) {
 
+  /* =========================
+     CHECK ADMIN
+  ========================= */
+
+  const isAdmin =
+    currentUser?.role
+      ?.toLowerCase() ===
+    "admin";
+
+  /* =========================
+     NAV ITEMS
+  ========================= */
+
   const navItems = [
+
     {
       id: "dashboard",
       label: "Dashboard",
@@ -66,8 +80,11 @@ function Sidebar({
       icon: "📈",
     },
 
-    ...(currentUser?.role ===
-    "Admin"
+    /* =========================
+       ADMIN ONLY
+    ========================= */
+
+    ...(isAdmin
 
       ? [
           {
@@ -89,160 +106,412 @@ function Sidebar({
   return (
     <div
       style={{
-        width: "240px",
-
-        background:
-          "#052e16",
-
-        color: "#fff",
+        width: "260px",
 
         minHeight:
           "100vh",
 
-        padding:
-          "20px 10px",
+        background:
+          dark
+            ? "#020617"
+            : "linear-gradient(180deg,#052e16,#064e3b)",
 
-        display: "flex",
+        color: "#ffffff",
+
+        padding:
+          "20px 14px",
+
+        display:
+          "flex",
 
         flexDirection:
           "column",
+
+        justifyContent:
+          "space-between",
+
+        borderRight:
+          dark
+            ? "1px solid #1e293b"
+            : "none",
+
+        boxShadow:
+          dark
+            ? "4px 0 20px rgba(0,0,0,0.4)"
+            : "4px 0 15px rgba(0,0,0,0.08)",
+
+        position:
+          "sticky",
+
+        top: 0,
+
+        overflowY:
+          "auto",
       }}
     >
 
-      {/* LOGO */}
-      <div
-        style={{
-          textAlign:
-            "center",
+      {/* TOP */}
 
-          marginBottom:
-            "35px",
-        }}
-      >
+      <div>
 
-        <h2
+        {/* LOGO */}
+
+        <div
           style={{
-            color:
-              "#22c55e",
+            textAlign:
+              "center",
 
-            margin: 0,
-
-            fontSize:
-              "26px",
-
-            fontWeight:
-              "bold",
+            marginBottom:
+              "35px",
           }}
         >
-          💊 ANFAC
-        </h2>
 
-        <p
+          <div
+            style={{
+              width: "78px",
+
+              height:
+                "78px",
+
+              margin:
+                "0 auto 14px",
+
+              borderRadius:
+                "22px",
+
+              background:
+                "#16a34a",
+
+              display:
+                "flex",
+
+              alignItems:
+                "center",
+
+              justifyContent:
+                "center",
+
+              fontSize:
+                "34px",
+
+              boxShadow:
+                "0 10px 25px rgba(0,0,0,0.25)",
+            }}
+          >
+            💊
+          </div>
+
+          <h2
+            style={{
+              margin: 0,
+
+              fontSize:
+                "28px",
+
+              fontWeight:
+                "bold",
+
+              color:
+                "#ffffff",
+            }}
+          >
+            ANFAC
+          </h2>
+
+          <p
+            style={{
+              color:
+                "#bbf7d0",
+
+              marginTop:
+                "6px",
+
+              fontSize:
+                "13px",
+            }}
+          >
+            Pharmacy System
+          </p>
+        </div>
+
+        {/* NAVIGATION */}
+
+        <div
           style={{
-            fontSize:
-              "12px",
+            display:
+              "flex",
 
-            color:
-              "#86efac",
+            flexDirection:
+              "column",
 
-            marginTop:
-              "6px",
+            gap: "8px",
           }}
         >
-          Pharmacy System
-        </p>
+
+          {navItems.map(
+            (item) => {
+
+              const active =
+                page ===
+                item.id;
+
+              return (
+                <div
+                  key={
+                    item.id
+                  }
+
+                  onClick={() =>
+                    setPage(
+                      item.id
+                    )
+                  }
+
+                  style={{
+                    display:
+                      "flex",
+
+                    alignItems:
+                      "center",
+
+                    gap: "14px",
+
+                    padding:
+                      "14px 16px",
+
+                    borderRadius:
+                      "18px",
+
+                    cursor:
+                      "pointer",
+
+                    background:
+                      active
+                        ? "#16a34a"
+                        : dark
+                        ? "#0f172a"
+                        : "transparent",
+
+                    color:
+                      "#ffffff",
+
+                    transition:
+                      "0.2s",
+
+                    fontWeight:
+                      active
+                        ? "700"
+                        : "500",
+
+                    border:
+                      active
+                        ? "1px solid rgba(255,255,255,0.15)"
+                        : dark
+                        ? "1px solid #1e293b"
+                        : "1px solid transparent",
+                  }}
+                >
+
+                  {/* ICON */}
+
+                  <div
+                    style={{
+                      width: "38px",
+
+                      height:
+                        "38px",
+
+                      borderRadius:
+                        "12px",
+
+                      background:
+                        active
+                          ? "rgba(255,255,255,0.18)"
+                          : dark
+                          ? "#111827"
+                          : "rgba(255,255,255,0.08)",
+
+                      display:
+                        "flex",
+
+                      alignItems:
+                        "center",
+
+                      justifyContent:
+                        "center",
+
+                      fontSize:
+                        "18px",
+                    }}
+                  >
+                    {
+                      item.icon
+                    }
+                  </div>
+
+                  {/* LABEL */}
+
+                  <span
+                    style={{
+                      fontSize:
+                        "15px",
+                    }}
+                  >
+                    {
+                      item.label
+                    }
+                  </span>
+                </div>
+              );
+            }
+          )}
+        </div>
       </div>
 
-      {/* NAVIGATION */}
+      {/* USER */}
+
       <div
         style={{
-          display: "flex",
+          marginTop:
+            "20px",
 
-          flexDirection:
-            "column",
+          padding:
+            "16px",
 
-          gap: "6px",
+          borderRadius:
+            "20px",
+
+          background:
+            dark
+              ? "#111827"
+              : "rgba(255,255,255,0.08)",
+
+          border:
+            dark
+              ? "1px solid #1f2937"
+              : "1px solid rgba(255,255,255,0.08)",
         }}
       >
 
-        {navItems.map(
-          (item) => (
+        <div
+          style={{
+            display:
+              "flex",
 
-            <div
-              key={item.id}
+            alignItems:
+              "center",
 
-              onClick={() =>
-                setPage(
-                  item.id
-                )
+            gap: "12px",
+          }}
+        >
+
+          {/* AVATAR */}
+
+          {currentUser?.image ? (
+
+            <img
+              src={
+                currentUser.image
               }
 
+              alt="user"
+
               style={{
+                width: "52px",
+
+                height:
+                  "52px",
+
+                borderRadius:
+                  "50%",
+
+                objectFit:
+                  "cover",
+
+                border:
+                  "2px solid #22c55e",
+              }}
+            />
+
+          ) : (
+
+            <div
+              style={{
+                width: "52px",
+
+                height:
+                  "52px",
+
+                borderRadius:
+                  "50%",
+
+                background:
+                  "#16a34a",
+
                 display:
                   "flex",
 
                 alignItems:
                   "center",
 
-                gap: "12px",
-
-                padding:
-                  "14px 16px",
-
-                borderRadius:
-                  "12px",
-
-                cursor:
-                  "pointer",
+                justifyContent:
+                  "center",
 
                 fontWeight:
-                  page ===
-                  item.id
+                  "bold",
 
-                    ? "bold"
+                fontSize:
+                  "18px",
 
-                    : "500",
+                color:
+                  "#ffffff",
+              }}
+            >
+              {currentUser?.name
+                ?.charAt(0)
+                ?.toUpperCase()}
+            </div>
+          )}
+
+          {/* INFO */}
+
+          <div>
+
+            <div
+              style={{
+                fontWeight:
+                  "700",
 
                 fontSize:
                   "15px",
 
-                background:
-                  page ===
-                  item.id
-
-                    ? "#16a34a"
-
-                    : "transparent",
-
                 color:
-                  "#fff",
-
-                transition:
-                  "0.2s",
+                  "#ffffff",
               }}
             >
-
-              {/* ICON */}
-              <span
-                style={{
-                  fontSize:
-                    "18px",
-                }}
-              >
-                {
-                  item.icon
-                }
-              </span>
-
-              {/* LABEL */}
-              <span>
-                {
-                  item.label
-                }
-              </span>
+              {
+                currentUser?.name
+              }
             </div>
-          )
-        )}
+
+            <div
+              style={{
+                color:
+                  "#bbf7d0",
+
+                fontSize:
+                  "13px",
+
+                marginTop:
+                  "3px",
+              }}
+            >
+              {
+                currentUser?.role
+              }
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,7 +1,24 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
+
+import {
+  signInWithEmailAndPassword,
+} from "firebase/auth";
+
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+
+import {
+  auth,
+  db,
+} from "../firebase";
 
 function Login({
-  users,
   setAuthed,
   setCurrentUser,
   toast,
@@ -11,45 +28,208 @@ function Login({
     form,
     setForm,
   ] = useState({
-    username: "",
+    email: "",
     password: "",
   });
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
   /* =========================
      LOGIN
   ========================= */
 
-  const handleLogin = () => {
+  const handleLogin =
+    async () => {
 
-    const foundUser =
-      users.find(
-        (user) =>
-          user.username ===
-            form.username &&
-          user.password ===
+      if (
+        !form.email ||
+        !form.password
+      ) {
+
+        toast(
+          "Please fill all fields",
+          "error"
+        );
+
+        return;
+      }
+
+      try {
+
+        setLoading(true);
+
+        /* =========================
+           FIREBASE AUTH
+        ========================= */
+
+        const userCredential =
+          await signInWithEmailAndPassword(
+            auth,
+            form.email.trim(),
             form.password
-      );
+          );
 
-    if (!foundUser) {
+        const firebaseUser =
+          userCredential.user;
 
-      toast(
-        "Wrong username or password",
-        "error"
-      );
+        /* =========================
+           GET USER FROM FIRESTORE
+        ========================= */
 
-      return;
-    }
+        const q = query(
+          collection(
+            db,
+            "users"
+          ),
+          where(
+            "email",
+            "==",
+            firebaseUser.email
+          )
+        );
 
-    setCurrentUser(
-      foundUser
-    );
+        const querySnapshot =
+          await getDocs(q);
 
-    setAuthed(true);
+        /* =========================
+           USER NOT FOUND
+        ========================= */
 
-    toast(
-      "Login successful"
-    );
-  };
+        if (
+          querySnapshot.empty
+        ) {
+
+          toast(
+            "User data not found in database",
+            "error"
+          );
+
+          return;
+        }
+
+        /* =========================
+           USER DATA
+        ========================= */
+
+        const userData =
+          querySnapshot
+            .docs[0]
+            .data();
+
+        /* =========================
+           BLOCK DISABLED USER
+        ========================= */
+
+        if (
+          userData.status ===
+          "disabled"
+        ) {
+
+          toast(
+            "Account disabled",
+            "error"
+          );
+
+          return;
+        }
+
+        /* =========================
+           LOGIN SUCCESS
+        ========================= */
+
+        setCurrentUser({
+          uid:
+            firebaseUser.uid,
+
+          ...userData,
+        });
+
+        setAuthed(true);
+
+        toast(
+          "Login successful",
+          "success"
+        );
+
+      } catch (error) {
+
+        console.log(error);
+
+        /* =========================
+           FIREBASE ERRORS
+        ========================= */
+
+        if (
+          error.code ===
+          "auth/user-not-found"
+        ) {
+
+          toast(
+            "User not found",
+            "error"
+          );
+
+        } else if (
+          error.code ===
+          "auth/wrong-password"
+        ) {
+
+          toast(
+            "Wrong password",
+            "error"
+          );
+
+        } else if (
+          error.code ===
+          "auth/invalid-credential"
+        ) {
+
+          toast(
+            "Invalid email or password",
+            "error"
+          );
+
+        } else if (
+          error.code ===
+          "auth/invalid-email"
+        ) {
+
+          toast(
+            "Invalid email format",
+            "error"
+          );
+
+        } else {
+
+          toast(
+            "Login failed",
+            "error"
+          );
+        }
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
+  /* =========================
+     ENTER KEY
+  ========================= */
+
+  const handleKeyDown =
+    (e) => {
+
+      if (
+        e.key === "Enter"
+      ) {
+
+        handleLogin();
+      }
+    };
 
   return (
     <div
@@ -66,33 +246,31 @@ function Login({
           "center",
 
         background:
-          "linear-gradient(135deg,#052e16,#16a34a)",
+          "linear-gradient(135deg,#020617,#052e16,#16a34a)",
 
         padding:
           "20px",
       }}
     >
 
-      {/* LOGIN CARD */}
-
       <div
         style={{
           width: "100%",
 
           maxWidth:
-            "420px",
+            "430px",
 
           background:
             "#ffffff",
 
           borderRadius:
-            "24px",
+            "30px",
 
           padding:
-            "40px 35px",
+            "40px 30px",
 
           boxShadow:
-            "0 20px 50px rgba(0,0,0,0.15)",
+            "0 15px 40px rgba(0,0,0,0.25)",
         }}
       >
 
@@ -104,19 +282,22 @@ function Login({
               "center",
 
             marginBottom:
-              "30px",
+              "32px",
           }}
         >
 
           <div
             style={{
-              width: "90px",
+              width: "95px",
 
               height:
-                "90px",
+                "95px",
+
+              margin:
+                "0 auto",
 
               borderRadius:
-                "50%",
+                "28px",
 
               background:
                 "#16a34a",
@@ -130,13 +311,11 @@ function Login({
               alignItems:
                 "center",
 
-              margin:
-                "0 auto 18px",
-
               fontSize:
-                "42px",
+                "44px",
 
-              color: "#fff",
+              marginBottom:
+                "18px",
             }}
           >
             💊
@@ -144,16 +323,16 @@ function Login({
 
           <h1
             style={{
-              color:
-                "#111827",
-
               margin: 0,
 
               fontSize:
-                "34px",
+                "40px",
+
+              color:
+                "#111827",
 
               fontWeight:
-                "bold",
+                "800",
             }}
           >
             ANFAC
@@ -165,18 +344,14 @@ function Login({
                 "#6b7280",
 
               marginTop:
-                "8px",
-
-              fontSize:
-                "15px",
+                "10px",
             }}
           >
-            Pharmacy Management
-            System
+            Pharmacy Management System
           </p>
         </div>
 
-        {/* USERNAME */}
+        {/* EMAIL */}
 
         <div
           style={{
@@ -187,39 +362,40 @@ function Login({
 
           <label
             style={{
-              color:
-                "#111827",
-
-              fontSize:
-                "14px",
-
               fontWeight:
-                "bold",
+                "700",
+
+              marginBottom:
+                "8px",
 
               display:
                 "block",
 
-              marginBottom:
-                "8px",
+              color:
+                "#374151",
             }}
           >
-            Username
+            Email
           </label>
 
           <input
-            type="text"
+            type="email"
 
-            placeholder="Enter username"
+            placeholder="Enter email"
 
             value={
-              form.username
+              form.email
+            }
+
+            onKeyDown={
+              handleKeyDown
             }
 
             onChange={(e) =>
               setForm({
                 ...form,
 
-                username:
+                email:
                   e.target
                     .value,
               })
@@ -235,16 +411,19 @@ function Login({
                 "1px solid #d1d5db",
 
               borderRadius:
-                "14px",
-
-              outline:
-                "none",
-
-              fontSize:
-                "15px",
+                "16px",
 
               background:
                 "#f9fafb",
+
+              color:
+                "#111827",
+
+              boxSizing:
+                "border-box",
+
+              outline:
+                "none",
             }}
           />
         </div>
@@ -254,26 +433,23 @@ function Login({
         <div
           style={{
             marginBottom:
-              "24px",
+              "26px",
           }}
         >
 
           <label
             style={{
-              color:
-                "#111827",
-
-              fontSize:
-                "14px",
-
               fontWeight:
-                "bold",
+                "700",
+
+              marginBottom:
+                "8px",
 
               display:
                 "block",
 
-              marginBottom:
-                "8px",
+              color:
+                "#374151",
             }}
           >
             Password
@@ -286,6 +462,10 @@ function Login({
 
             value={
               form.password
+            }
+
+            onKeyDown={
+              handleKeyDown
             }
 
             onChange={(e) =>
@@ -308,113 +488,68 @@ function Login({
                 "1px solid #d1d5db",
 
               borderRadius:
-                "14px",
-
-              outline:
-                "none",
-
-              fontSize:
-                "15px",
+                "16px",
 
               background:
                 "#f9fafb",
+
+              color:
+                "#111827",
+
+              boxSizing:
+                "border-box",
+
+              outline:
+                "none",
             }}
           />
         </div>
 
-        {/* LOGIN BUTTON */}
+        {/* BUTTON */}
 
         <button
           onClick={
             handleLogin
           }
 
+          disabled={
+            loading
+          }
+
           style={{
             width: "100%",
 
             padding:
-              "15px",
-
-            background:
-              "#16a34a",
-
-            color: "#fff",
+              "16px",
 
             border: "none",
 
             borderRadius:
-              "14px",
+              "16px",
+
+            background:
+              loading
+                ? "#86efac"
+                : "#16a34a",
+
+            color: "#fff",
+
+            fontSize:
+              "17px",
 
             fontWeight:
               "bold",
 
             cursor:
               "pointer",
-
-            fontSize:
-              "16px",
           }}
         >
-          Login
+          {
+            loading
+              ? "Loading..."
+              : "Login"
+          }
         </button>
-
-        {/* DEMO LOGIN */}
-
-        <div
-          style={{
-            marginTop:
-              "24px",
-
-            background:
-              "#f3f4f6",
-
-            padding:
-              "16px",
-
-            borderRadius:
-              "14px",
-
-            fontSize:
-              "14px",
-
-            lineHeight:
-              "24px",
-
-            color:
-              "#374151",
-          }}
-        >
-
-          <div
-            style={{
-              fontWeight:
-                "bold",
-
-              marginBottom:
-                "8px",
-            }}
-          >
-            Demo Accounts
-          </div>
-
-          <div>
-            👑 Admin:
-            <strong>
-              {" "}
-              admin
-            </strong>{" "}
-            / 1234
-          </div>
-
-          <div>
-            💳 Cashier:
-            <strong>
-              {" "}
-              cashier
-            </strong>{" "}
-            / 1234
-          </div>
-        </div>
       </div>
     </div>
   );

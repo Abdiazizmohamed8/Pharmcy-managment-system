@@ -1,4 +1,25 @@
-import { useState } from "react";
+import {
+  useState,
+  useEffect,
+} from "react";
+
+/* =========================
+   FIREBASE
+========================= */
+
+import {
+  collection,
+  onSnapshot,
+} from "firebase/firestore";
+
+import {
+  onAuthStateChanged,
+} from "firebase/auth";
+
+import {
+  db,
+  auth,
+} from "./firebase";
 
 /* =========================
    COMPONENTS
@@ -27,19 +48,6 @@ import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 
 /* =========================
-   DATA
-========================= */
-
-import {
-  USERS,
-  MEDICINES_INIT,
-  CUSTOMERS_INIT,
-  SUPPLIERS_INIT,
-  SALES_INIT,
-  EXPENSES_INIT,
-} from "./data/mockData";
-
-/* =========================
    CSS
 ========================= */
 
@@ -51,81 +59,62 @@ function App() {
      AUTH
   ========================= */
 
-  const [
-    authed,
-    setAuthed,
-  ] = useState(false);
+  const [authed, setAuthed] =
+    useState(false);
 
   const [
     currentUser,
     setCurrentUser,
   ] = useState(null);
 
+  const [
+    authLoading,
+    setAuthLoading,
+  ] = useState(true);
+
   /* =========================
      THEME
   ========================= */
 
-  const [
-    dark,
-    setDark,
-  ] = useState(false);
+  const [dark, setDark] =
+    useState(true);
 
   /* =========================
      PAGE
   ========================= */
 
-  const [
-    page,
-    setPage,
-  ] = useState(
-    "dashboard"
-  );
+  const [page, setPage] =
+    useState("dashboard");
 
   /* =========================
-     DATA
+     FIREBASE DATA
   ========================= */
 
-  const [
-    users,
-    setUsers,
-  ] = useState(
-    USERS
-  );
+  const [users, setUsers] =
+    useState([]);
 
   const [
     medicines,
     setMedicines,
-  ] = useState(
-    MEDICINES_INIT
-  );
+  ] = useState([]);
 
   const [
     customers,
     setCustomers,
-  ] = useState(
-    CUSTOMERS_INIT
-  );
+  ] = useState([]);
 
   const [
     suppliers,
     setSuppliers,
-  ] = useState(
-    SUPPLIERS_INIT
-  );
+  ] = useState([]);
 
-  const [
-    sales,
-    setSales,
-  ] = useState(
-    SALES_INIT
-  );
+  const [sales, setSales] =
+    useState([]);
 
   const [
     expenses,
     setExpenses,
-  ] = useState(
-    EXPENSES_INIT
-  );
+  ] = useState([]);
 
   /* =========================
      TOAST
@@ -163,7 +152,252 @@ function App() {
   };
 
   /* =========================
-     LOGIN PAGE
+     USERS
+  ========================= */
+
+  useEffect(() => {
+
+    const unsubscribe =
+      onSnapshot(
+        collection(
+          db,
+          "users"
+        ),
+
+        (snapshot) => {
+
+          const data =
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            );
+
+          setUsers(data);
+        }
+      );
+
+    return () =>
+      unsubscribe();
+
+  }, []);
+
+  /* =========================
+     AUTH SESSION
+  ========================= */
+
+  useEffect(() => {
+
+    const unsubscribe =
+      onAuthStateChanged(
+        auth,
+
+        async (user) => {
+
+          if (user) {
+
+            const userDoc =
+              users.find(
+                (u) =>
+
+                  u.email
+                    ?.trim()
+                    ?.toLowerCase()
+
+                  ===
+
+                  user.email
+                    ?.trim()
+                    ?.toLowerCase()
+              );
+
+            if (
+              userDoc
+            ) {
+
+              setCurrentUser({
+                id:
+                  user.uid,
+
+                ...userDoc,
+              });
+
+              setAuthed(
+                true
+              );
+            }
+          }
+
+          setAuthLoading(
+            false
+          );
+        }
+      );
+
+    return () =>
+      unsubscribe();
+
+  }, [users]);
+
+  /* =========================
+     FIREBASE LOAD
+  ========================= */
+
+  useEffect(() => {
+
+    const unsubMedicines =
+      onSnapshot(
+        collection(
+          db,
+          "medicines"
+        ),
+
+        (snapshot) => {
+
+          setMedicines(
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            )
+          );
+        }
+      );
+
+    const unsubCustomers =
+      onSnapshot(
+        collection(
+          db,
+          "customers"
+        ),
+
+        (snapshot) => {
+
+          setCustomers(
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            )
+          );
+        }
+      );
+
+    const unsubSuppliers =
+      onSnapshot(
+        collection(
+          db,
+          "suppliers"
+        ),
+
+        (snapshot) => {
+
+          setSuppliers(
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            )
+          );
+        }
+      );
+
+    const unsubSales =
+      onSnapshot(
+        collection(
+          db,
+          "sales"
+        ),
+
+        (snapshot) => {
+
+          setSales(
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            )
+          );
+        }
+      );
+
+    const unsubExpenses =
+      onSnapshot(
+        collection(
+          db,
+          "expenses"
+        ),
+
+        (snapshot) => {
+
+          setExpenses(
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            )
+          );
+        }
+      );
+
+    return () => {
+
+      unsubMedicines();
+      unsubCustomers();
+      unsubSuppliers();
+      unsubSales();
+      unsubExpenses();
+    };
+
+  }, []);
+
+  /* =========================
+     LOADING
+  ========================= */
+
+  if (authLoading) {
+
+    return (
+      <div
+        style={{
+          minHeight:
+            "100vh",
+
+          display:
+            "flex",
+
+          justifyContent:
+            "center",
+
+          alignItems:
+            "center",
+
+          background:
+            "#020617",
+
+          color:
+            "#ffffff",
+
+          fontSize:
+            "24px",
+
+          fontWeight:
+            "bold",
+        }}
+      >
+        Loading...
+      </div>
+    );
+  }
+
+  /* =========================
+     LOGIN
   ========================= */
 
   if (!authed) {
@@ -171,13 +405,14 @@ function App() {
     return (
       <>
         <Login
-          users={users}
           setAuthed={
             setAuthed
           }
+
           setCurrentUser={
             setCurrentUser
           }
+
           toast={toast}
         />
 
@@ -187,6 +422,7 @@ function App() {
             message={
               toastData.message
             }
+
             type={
               toastData.type
             }
@@ -211,10 +447,14 @@ function App() {
             medicines={
               medicines
             }
+
             customers={
               customers
             }
+
             sales={sales}
+
+            dark={dark}
           />
         );
 
@@ -225,20 +465,28 @@ function App() {
             medicines={
               medicines
             }
+
             setMedicines={
               setMedicines
             }
+
             customers={
               customers
             }
+
             setCustomers={
               setCustomers
             }
+
             sales={sales}
+
             setSales={
               setSales
             }
+
             toast={toast}
+
+            dark={dark}
           />
         );
 
@@ -249,10 +497,14 @@ function App() {
             medicines={
               medicines
             }
+
             setMedicines={
               setMedicines
             }
+
             toast={toast}
+
+            dark={dark}
           />
         );
 
@@ -263,6 +515,10 @@ function App() {
             medicines={
               medicines
             }
+
+            darkMode={dark}
+
+            toast={toast}
           />
         );
 
@@ -273,33 +529,48 @@ function App() {
             customers={
               customers
             }
+
             setCustomers={
               setCustomers
             }
+
             toast={toast}
+
+            darkMode={dark}
           />
         );
 
-      case "suppliers":
+     case "suppliers":
 
-        return (
-          <Suppliers
-            suppliers={
-              suppliers
-            }
-            setSuppliers={
-              setSuppliers
-            }
-            toast={toast}
-          />
-        );
+  return (
+    <Suppliers
+      suppliers={
+        suppliers
+      }
+
+      setSuppliers={
+        setSuppliers
+      }
+
+      toast={toast}
+
+      darkMode={dark}
+    />
+  );
 
       case "sales":
 
         return (
           <SalesHistory
             sales={sales}
+
+            setSales={
+              setSales
+            }
+
             toast={toast}
+
+            dark={dark}
           />
         );
 
@@ -310,67 +581,110 @@ function App() {
             customers={
               customers
             }
+
             setCustomers={
               setCustomers
             }
+
             sales={sales}
+
             setSales={
               setSales
             }
+
             toast={toast}
+
+            dark={dark}
           />
         );
 
-      case "expenses":
+    <Expenses
+  expenses={
+    expenses
+  }
 
-        return (
-          <Expenses
-            expenses={
-              expenses
-            }
-            setExpenses={
-              setExpenses
-            }
-            toast={toast}
-          />
-        );
+  setExpenses={
+    setExpenses
+  }
+
+  toast={toast}
+
+  dark={dark}
+/>
+      
 
       case "reports":
 
         return (
           <Reports
             sales={sales}
+
             medicines={
               medicines
             }
+
             expenses={
               expenses
             }
+
+            dark={dark}
           />
         );
 
       case "users":
 
+        if (
+          currentUser?.role
+            ?.toLowerCase() !==
+          "admin"
+        ) {
+
+          return (
+            <div
+              style={{
+                color:
+                  "#ef4444",
+
+                fontSize:
+                  "28px",
+
+                fontWeight:
+                  "bold",
+              }}
+            >
+              Access Denied 🚫
+            </div>
+          );
+        }
+
         return (
           <Users
-            users={users}
-            setUsers={
-              setUsers
-            }
             currentUser={
               currentUser
             }
-            setCurrentUser={
-              setCurrentUser
-            }
+
             toast={toast}
+
+            darkMode={dark}
           />
         );
 
       case "settings":
 
         return (
-          <Settings />
+          <Settings
+            dark={dark}
+
+            setDark={
+              setDark
+            }
+
+            currentUser={
+              currentUser
+            }
+
+            toast={toast}
+          />
         );
 
       default:
@@ -380,10 +694,14 @@ function App() {
             medicines={
               medicines
             }
+
             customers={
               customers
             }
+
             sales={sales}
+
+            dark={dark}
           />
         );
     }
@@ -399,8 +717,13 @@ function App() {
 
         background:
           dark
-            ? "#111827"
+            ? "#020617"
             : "#f3f4f6",
+
+        color:
+          dark
+            ? "#ffffff"
+            : "#111827",
       }}
     >
 
@@ -408,12 +731,14 @@ function App() {
 
       <Sidebar
         page={page}
-        setPage={
-          setPage
-        }
+
+        setPage={setPage}
+
         currentUser={
           currentUser
         }
+
+        dark={dark}
       />
 
       {/* MAIN */}
@@ -426,35 +751,63 @@ function App() {
 
           flexDirection:
             "column",
+
+          background:
+            dark
+              ? "#020617"
+              : "#f3f4f6",
         }}
       >
 
         {/* TOPBAR */}
 
-        <Topbar
-          dark={dark}
-          setDark={
-            setDark
-          }
-          setAuthed={
-            setAuthed
-          }
-          currentUser={
-            currentUser
-          }
-          medicines={
-            medicines
-          }
-        />
+       <Topbar
+  dark={dark}
+
+  setDark={
+    setDark
+  }
+
+  setAuthed={
+    setAuthed
+  }
+
+  setCurrentUser={
+    setCurrentUser
+  }
+
+  currentUser={
+    currentUser
+  }
+
+  medicines={
+    medicines
+  }
+
+  sales={sales}
+/>
 
         {/* CONTENT */}
 
-        <div
-          style={{
-            padding:
-              "24px",
-          }}
-        >
+       <div
+  style={{
+    flex: 1,
+
+    overflowY:
+      "auto",
+
+    overflowX:
+      "hidden",
+
+    background:
+      dark
+        ? "#020617"
+        : "#f3f4f6",
+
+    padding:
+      "24px",
+  }}
+>
           {renderPage()}
         </div>
       </div>
@@ -467,6 +820,7 @@ function App() {
           message={
             toastData.message
           }
+
           type={
             toastData.type
           }

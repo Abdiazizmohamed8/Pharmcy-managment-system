@@ -1,14 +1,72 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
 
-import { fmt } from "../utils/helpers";
+import {
+  fmt,
+} from "../utils/helpers";
 
 function Expenses({
   expenses,
   setExpenses,
   toast,
+  darkMode = false,
 }) {
-  const [showModal, setShowModal] =
-    useState(false);
+
+  /* =========================
+     STATES
+  ========================= */
+
+  const [
+    showModal,
+    setShowModal,
+  ] = useState(false);
+
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+
+  /* =========================
+     FILTER
+  ========================= */
+
+  const filteredExpenses =
+    expenses.filter(
+      (expense) =>
+
+        expense.category
+          ?.toLowerCase()
+          .includes(
+            search.toLowerCase()
+          ) ||
+
+        expense.description
+          ?.toLowerCase()
+          .includes(
+            search.toLowerCase()
+          )
+    );
+
+  /* =========================
+     TOTAL
+  ========================= */
+
+  const totalExpenses =
+    expenses.reduce(
+      (acc, expense) =>
+
+        acc +
+        Number(
+          expense.amount || 0
+        ),
+
+      0
+    );
+
+  /* =========================
+     FORM
+  ========================= */
 
   const [form, setForm] =
     useState({
@@ -17,18 +75,17 @@ function Expenses({
       amount: "",
     });
 
-  const totalExpenses =
-    expenses.reduce(
-      (acc, exp) =>
-        acc + exp.amount,
-      0
-    );
+  /* =========================
+     SAVE
+  ========================= */
 
   const handleSave = () => {
+
     if (
       !form.category ||
       !form.amount
     ) {
+
       toast(
         "Please fill all fields",
         "error"
@@ -37,76 +94,137 @@ function Expenses({
       return;
     }
 
-    const newExpense = {
-      id: Date.now(),
+    const newExpense =
+      {
+        id:
+          Date.now(),
 
-      date: new Date()
-        .toISOString()
-        .split("T")[0],
+        category:
+          form.category,
 
-      category:
-        form.category,
+        description:
+          form.description,
 
-      description:
-        form.description,
+        amount:
+          Number(
+            form.amount
+          ),
 
-      amount: Number(
-        form.amount
-      ),
+        date:
+          new Date()
+            .toISOString()
+            .split("T")[0],
+      };
 
-      user: "Admin",
-    };
-
-    setExpenses((prev) => [
-      newExpense,
-      ...prev,
-    ]);
-
-    toast(
-      "Expense added successfully"
+    setExpenses(
+      (prev) => [
+        newExpense,
+        ...prev,
+      ]
     );
 
-    setShowModal(false);
+    toast(
+      "Expense added"
+    );
 
     setForm({
       category: "",
       description: "",
       amount: "",
     });
-  };
 
-  const deleteExpense = (
-    id
-  ) => {
-    setExpenses((prev) =>
-      prev.filter(
-        (expense) =>
-          expense.id !== id
-      )
-    );
-
-    toast(
-      "Expense deleted",
-      "error"
+    setShowModal(
+      false
     );
   };
+
+  /* =========================
+     DELETE
+  ========================= */
+
+  const deleteExpense =
+    (id) => {
+
+      setExpenses(
+        (prev) =>
+          prev.filter(
+            (expense) =>
+              expense.id !== id
+          )
+      );
+
+      toast(
+        "Expense deleted",
+        "error"
+      );
+    };
 
   return (
-    <div>
-      {/* Header */}
+    <div
+      style={{
+        width: "100%",
+
+        minHeight:
+          "100vh",
+
+        background:
+          darkMode
+            ? "#020617"
+            : "#f3f4f6",
+
+        color:
+          darkMode
+            ? "#ffffff"
+            : "#111827",
+
+        transition:
+          "0.3s ease",
+
+        padding:
+          "24px",
+
+        boxSizing:
+          "border-box",
+      }}
+    >
+
+      {/* HEADER */}
+
       <div
         style={{
           display: "flex",
+
           justifyContent:
             "space-between",
-          alignItems: "center",
-          marginBottom: "20px",
+
+          alignItems:
+            "center",
+
+          flexWrap:
+            "wrap",
+
+          gap: "16px",
+
+          marginBottom:
+            "24px",
         }}
       >
+
+        {/* LEFT */}
+
         <div>
+
           <h1
             style={{
               margin: 0,
+
+              fontSize:
+                "34px",
+
+              color:
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
             }}
           >
             Expenses 💸
@@ -114,8 +232,16 @@ function Expenses({
 
           <p
             style={{
-              color: "#6b7280",
-              marginTop: "6px",
+              marginTop:
+                "8px",
+
+              color:
+                darkMode
+                  ? "#d1d5db"
+                  : "#6b7280",
+
+              fontSize:
+                "15px",
             }}
           >
             Manage pharmacy
@@ -123,331 +249,651 @@ function Expenses({
           </p>
         </div>
 
-        <button
-          onClick={() =>
-            setShowModal(true)
-          }
+        {/* RIGHT */}
+
+        <div
           style={{
-            background: "#16a34a",
-            color: "#fff",
-            border: "none",
-            padding:
-              "12px 18px",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "bold",
+            display: "flex",
+
+            gap: "14px",
+
+            flexWrap:
+              "wrap",
+
+            alignItems:
+              "center",
           }}
         >
-          + Add Expense
-        </button>
-      </div>
 
-      {/* Total */}
-      <div
-        style={{
-          background: "#dc2626",
-          color: "#fff",
-          padding: "18px",
-          borderRadius: "14px",
-          marginBottom: "20px",
-          fontSize: "22px",
-          fontWeight: "bold",
-        }}
-      >
-        Total Expenses:
-        {" "}
-        {fmt(totalExpenses)}
-      </div>
+          {/* TOTAL */}
 
-      {/* Table */}
-      <div
-        style={{
-          background: "#fff",
-          borderRadius: "14px",
-          overflow: "hidden",
-          boxShadow:
-            "0 4px 12px rgba(0,0,0,0.05)",
-        }}
-      >
-        <table
-          style={{
-            width: "100%",
-            borderCollapse:
-              "collapse",
-          }}
-        >
-          <thead
+          <div
             style={{
               background:
-                "#f3f4f6",
+                "#dc2626",
+
+              color: "#fff",
+
+              padding:
+                "16px 20px",
+
+              borderRadius:
+                "18px",
+
+              minWidth:
+                "180px",
+
+              boxShadow:
+                darkMode
+
+                  ? "0 4px 18px rgba(0,0,0,0.35)"
+
+                  : "0 4px 18px rgba(220,38,38,0.2)",
             }}
           >
-            <tr>
-              <th
-                style={thStyle}
-              >
-                Date
-              </th>
 
-              <th
-                style={thStyle}
-              >
-                Category
-              </th>
+            <div
+              style={{
+                fontSize:
+                  "13px",
 
-              <th
-                style={thStyle}
-              >
-                Description
-              </th>
+                opacity: 0.9,
 
-              <th
-                style={thStyle}
-              >
-                Amount
-              </th>
+                marginBottom:
+                  "6px",
+              }}
+            >
+              Total Expenses
+            </div>
 
-              <th
-                style={thStyle}
-              >
-                User
-              </th>
+            <div
+              style={{
+                fontSize:
+                  "26px",
 
-              <th
-                style={thStyle}
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
+                fontWeight:
+                  "bold",
+              }}
+            >
+              {fmt(
+                totalExpenses
+              )}
+            </div>
+          </div>
 
-          <tbody>
-            {expenses.map(
-              (expense) => (
-                <tr
-                  key={
-                    expense.id
-                  }
+          {/* BUTTON */}
+
+          <button
+            onClick={() =>
+              setShowModal(
+                true
+              )
+            }
+
+            style={{
+              background:
+                "#16a34a",
+
+              color: "#fff",
+
+              border: "none",
+
+              padding:
+                "14px 22px",
+
+              borderRadius:
+                "16px",
+
+              cursor:
+                "pointer",
+
+              fontWeight:
+                "bold",
+
+              fontSize:
+                "14px",
+            }}
+          >
+            + Add Expense
+          </button>
+        </div>
+      </div>
+
+      {/* SEARCH */}
+
+      <div
+        style={{
+          marginBottom:
+            "22px",
+        }}
+      >
+
+        <input
+          type="text"
+
+          placeholder="Search expense..."
+
+          value={search}
+
+          onChange={(e) =>
+            setSearch(
+              e.target.value
+            )
+          }
+
+          style={{
+            width: "100%",
+
+            maxWidth:
+              "420px",
+
+            padding:
+              "15px",
+
+            borderRadius:
+              "16px",
+
+            border:
+              darkMode
+
+                ? "1px solid #374151"
+
+                : "1px solid #d1d5db",
+
+            outline:
+              "none",
+
+            fontSize:
+              "14px",
+
+            background:
+              darkMode
+                ? "#111827"
+                : "#fff",
+
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
+          }}
+        />
+      </div>
+
+      {/* EMPTY */}
+
+      {filteredExpenses.length ===
+      0 ? (
+
+        <div
+          style={{
+            background:
+              darkMode
+                ? "#111827"
+                : "#fff",
+
+            borderRadius:
+              "24px",
+
+            padding:
+              "80px 20px",
+
+            textAlign:
+              "center",
+
+            color:
+              darkMode
+                ? "#d1d5db"
+                : "#9ca3af",
+
+            fontSize:
+              "18px",
+
+            border:
+              darkMode
+                ? "1px solid #1f2937"
+                : "none",
+
+            boxShadow:
+              darkMode
+
+                ? "0 4px 18px rgba(0,0,0,0.35)"
+
+                : "0 4px 18px rgba(0,0,0,0.05)",
+          }}
+        >
+          No expenses found
+        </div>
+
+      ) : (
+
+        <div
+          style={{
+            display: "grid",
+
+            gridTemplateColumns:
+              "repeat(auto-fit,minmax(300px,1fr))",
+
+            gap: "18px",
+          }}
+        >
+
+          {filteredExpenses.map(
+            (
+              expense
+            ) => (
+
+              <div
+                key={
+                  expense.id
+                }
+
+                style={{
+                  background:
+                    darkMode
+                      ? "#111827"
+                      : "#fff",
+
+                  borderRadius:
+                    "24px",
+
+                  padding:
+                    "20px",
+
+                  border:
+                    darkMode
+                      ? "1px solid #1f2937"
+                      : "none",
+
+                  boxShadow:
+                    darkMode
+
+                      ? "0 4px 18px rgba(0,0,0,0.35)"
+
+                      : "0 4px 18px rgba(0,0,0,0.05)",
+
+                  display:
+                    "flex",
+
+                  flexDirection:
+                    "column",
+
+                  gap: "18px",
+                }}
+              >
+
+                {/* TOP */}
+
+                <div
+                  style={{
+                    display:
+                      "flex",
+
+                    justifyContent:
+                      "space-between",
+
+                    alignItems:
+                      "center",
+
+                    flexWrap:
+                      "wrap",
+
+                    gap: "12px",
+                  }}
                 >
-                  <td
-                    style={
-                      tdStyle
-                    }
-                  >
-                    {
-                      expense.date
-                    }
-                  </td>
 
-                  <td
-                    style={
-                      tdStyle
-                    }
+                  <span
+                    style={{
+                      background:
+                        darkMode
+                          ? "#14532d"
+                          : "#dcfce7",
+
+                      color:
+                        "#16a34a",
+
+                      padding:
+                        "8px 14px",
+
+                      borderRadius:
+                        "999px",
+
+                      fontSize:
+                        "13px",
+
+                      fontWeight:
+                        "bold",
+                    }}
                   >
                     {
                       expense.category
                     }
-                  </td>
+                  </span>
 
-                  <td
-                    style={
-                      tdStyle
-                    }
+                  <div
+                    style={{
+                      color:
+                        darkMode
+                          ? "#d1d5db"
+                          : "#6b7280",
+
+                      fontSize:
+                        "13px",
+                    }}
                   >
                     {
-                      expense.description
+                      expense.date
                     }
-                  </td>
+                  </div>
+                </div>
 
-                  <td
+                {/* DESCRIPTION */}
+
+                <div
+                  style={{
+                    color:
+                      darkMode
+                        ? "#ffffff"
+                        : "#374151",
+
+                    fontSize:
+                      "15px",
+
+                    lineHeight:
+                      "24px",
+                  }}
+                >
+                  {expense.description ||
+                    "No description"}
+                </div>
+
+                {/* BOTTOM */}
+
+                <div
+                  style={{
+                    display:
+                      "flex",
+
+                    justifyContent:
+                      "space-between",
+
+                    alignItems:
+                      "center",
+
+                    flexWrap:
+                      "wrap",
+
+                    gap: "12px",
+                  }}
+                >
+
+                  {/* AMOUNT */}
+
+                  <div
                     style={{
-                      ...tdStyle,
+                      background:
+                        darkMode
+                          ? "#7f1d1d"
+                          : "#fee2e2",
+
                       color:
                         "#dc2626",
+
+                      padding:
+                        "10px 16px",
+
+                      borderRadius:
+                        "999px",
+
                       fontWeight:
                         "bold",
+
+                      fontSize:
+                        "14px",
                     }}
                   >
                     {fmt(
                       expense.amount
                     )}
-                  </td>
+                  </div>
 
-                  <td
-                    style={
-                      tdStyle
+                  {/* DELETE */}
+
+                  <button
+                    onClick={() =>
+                      deleteExpense(
+                        expense.id
+                      )
                     }
+
+                    style={{
+                      background:
+                        "#dc2626",
+
+                      color:
+                        "#fff",
+
+                      border:
+                        "none",
+
+                      padding:
+                        "11px 18px",
+
+                      borderRadius:
+                        "14px",
+
+                      cursor:
+                        "pointer",
+
+                      fontWeight:
+                        "bold",
+
+                      fontSize:
+                        "13px",
+                    }}
                   >
-                    {
-                      expense.user
-                    }
-                  </td>
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+      )}
 
-                  <td
-                    style={
-                      tdStyle
-                    }
-                  >
-                    <button
-                      onClick={() =>
-                        deleteExpense(
-                          expense.id
-                        )
-                      }
-                      style={{
-                        background:
-                          "#dc2626",
-                        color:
-                          "#fff",
-                        border:
-                          "none",
-                        padding:
-                          "8px 12px",
-                        borderRadius:
-                          "6px",
-                        cursor:
-                          "pointer",
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              )
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* MODAL */}
 
-      {/* Modal */}
       {showModal && (
+
         <div
           style={{
             position:
               "fixed",
+
             inset: 0,
+
             background:
               "rgba(0,0,0,0.5)",
-            display: "flex",
+
+            display:
+              "flex",
+
             justifyContent:
               "center",
+
             alignItems:
               "center",
+
+            zIndex: 999,
+
+            padding:
+              "20px",
           }}
         >
+
           <div
             style={{
               background:
-                "#fff",
+                darkMode
+                  ? "#111827"
+                  : "#fff",
+
+              width: "100%",
+
+              maxWidth:
+                "460px",
+
+              borderRadius:
+                "24px",
+
               padding:
                 "30px",
-              borderRadius:
-                "14px",
-              width: "100%",
-              maxWidth:
-                "420px",
+
+              border:
+                darkMode
+                  ? "1px solid #1f2937"
+                  : "none",
             }}
           >
+
             <h2
               style={{
+                marginTop: 0,
+
                 marginBottom:
-                  "20px",
+                  "24px",
+
+                color:
+                  darkMode
+                    ? "#ffffff"
+                    : "#111827",
               }}
             >
               Add Expense
             </h2>
 
+            {/* FORM */}
+
             <div
               style={{
-                display: "flex",
-                flexDirection:
-                  "column",
-                gap: "14px",
+                display: "grid",
+
+                gap: "16px",
               }}
             >
+
               <input
                 type="text"
+
                 placeholder="Category"
+
                 value={
                   form.category
                 }
-                onChange={(
-                  e
-                ) =>
+
+                onChange={(e) =>
                   setForm({
                     ...form,
+
                     category:
-                      e
-                        .target
+                      e.target
                         .value,
                   })
                 }
-                style={
-                  inputStyle
-                }
+
+                style={inputStyle(
+                  darkMode
+                )}
               />
 
               <input
                 type="text"
+
                 placeholder="Description"
+
                 value={
                   form.description
                 }
-                onChange={(
-                  e
-                ) =>
+
+                onChange={(e) =>
                   setForm({
                     ...form,
+
                     description:
-                      e
-                        .target
+                      e.target
                         .value,
                   })
                 }
-                style={
-                  inputStyle
-                }
+
+                style={inputStyle(
+                  darkMode
+                )}
               />
 
               <input
                 type="number"
+
                 placeholder="Amount"
+
                 value={
                   form.amount
                 }
-                onChange={(
-                  e
-                ) =>
+
+                onChange={(e) =>
                   setForm({
                     ...form,
+
                     amount:
-                      e
-                        .target
+                      e.target
                         .value,
                   })
                 }
-                style={
-                  inputStyle
-                }
+
+                style={inputStyle(
+                  darkMode
+                )}
               />
+            </div>
+
+            {/* BUTTONS */}
+
+            <div
+              style={{
+                display: "flex",
+
+                gap: "14px",
+
+                marginTop:
+                  "24px",
+
+                flexWrap:
+                  "wrap",
+              }}
+            >
 
               <button
                 onClick={
                   handleSave
                 }
+
                 style={{
+                  flex: 1,
+
                   background:
                     "#16a34a",
-                  color:
-                    "#fff",
-                  border:
-                    "none",
+
+                  color: "#fff",
+
+                  border: "none",
+
                   padding:
-                    "12px",
+                    "14px",
+
                   borderRadius:
-                    "8px",
+                    "14px",
+
                   fontWeight:
                     "bold",
+
                   cursor:
                     "pointer",
                 }}
@@ -461,15 +907,31 @@ function Expenses({
                     false
                   )
                 }
+
                 style={{
+                  flex: 1,
+
                   background:
-                    "#e5e7eb",
-                  border:
-                    "none",
+                    darkMode
+                      ? "#1f2937"
+                      : "#f3f4f6",
+
+                  color:
+                    darkMode
+                      ? "#ffffff"
+                      : "#111827",
+
+                  border: "none",
+
                   padding:
-                    "12px",
+                    "14px",
+
                   borderRadius:
-                    "8px",
+                    "14px",
+
+                  fontWeight:
+                    "bold",
+
                   cursor:
                     "pointer",
                 }}
@@ -484,24 +946,37 @@ function Expenses({
   );
 }
 
-const thStyle = {
-  textAlign: "left",
-  padding: "14px",
-  fontSize: "14px",
-};
+/* =========================
+   INPUT STYLE
+========================= */
 
-const tdStyle = {
-  padding: "14px",
-  borderTop:
-    "1px solid #f3f4f6",
-};
-
-const inputStyle = {
+const inputStyle = (
+  darkMode
+) => ({
   width: "100%",
-  padding: "12px",
-  borderRadius: "8px",
-  border: "1px solid #d1d5db",
+  padding: "14px",
+  borderRadius: "14px",
+
+  border:
+    darkMode
+
+      ? "1px solid #374151"
+
+      : "1px solid #d1d5db",
+
   outline: "none",
-};
+
+  fontSize: "14px",
+
+  background:
+    darkMode
+      ? "#0f172a"
+      : "#ffffff",
+
+  color:
+    darkMode
+      ? "#ffffff"
+      : "#111827",
+});
 
 export default Expenses;

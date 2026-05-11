@@ -1,4 +1,18 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
+
+import {
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  setDoc,
+} from "firebase/firestore";
+
+import {
+  db,
+} from "../firebase";
 
 function POS({
   medicines,
@@ -8,7 +22,12 @@ function POS({
   customers,
   setCustomers,
   toast,
+  dark,
 }) {
+
+  /* =========================
+     STATES
+  ========================= */
 
   const [search, setSearch] =
     useState("");
@@ -41,21 +60,55 @@ function POS({
     setPaidAmount,
   ] = useState("");
 
-  /* SEARCH */
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  /* =========================
+     SEARCH
+  ========================= */
+
   const filteredMedicines =
     medicines.filter(
-      (medicine) =>
-        medicine.name
-          .toLowerCase()
-          .includes(
-            search.toLowerCase()
-          )
+      (medicine) => {
+
+        const text =
+          search
+            .toLowerCase()
+            .trim();
+
+        return (
+          medicine.name
+            ?.toLowerCase()
+            .includes(text) ||
+
+          medicine.category
+            ?.toLowerCase()
+            .includes(text)
+        );
+      }
     );
 
-  /* ADD TO CART */
+  /* =========================
+     ADD TO CART
+  ========================= */
+
   const addToCart = (
     medicine
   ) => {
+
+    if (
+      medicine.stock <= 0
+    ) {
+
+      toast(
+        "Out of stock",
+        "error"
+      );
+
+      return;
+    }
 
     const exists =
       cart.find(
@@ -66,6 +119,19 @@ function POS({
 
     if (exists) {
 
+      if (
+        exists.qty >=
+        medicine.stock
+      ) {
+
+        toast(
+          "Stock limit reached",
+          "error"
+        );
+
+        return;
+      }
+
       setCart(
         cart.map((item) =>
 
@@ -75,8 +141,7 @@ function POS({
             ? {
                 ...item,
                 qty:
-                  item.qty +
-                  1,
+                  item.qty + 1,
               }
 
             : item
@@ -94,27 +159,49 @@ function POS({
         },
       ]);
     }
+
+    toast(
+      `${medicine.name} added`
+    );
   };
 
-  /* QTY */
+  /* =========================
+     QUANTITY
+  ========================= */
+
   const increaseQty = (
     id
   ) => {
 
     setCart(
-      cart.map((item) =>
+      cart.map((item) => {
 
-        item.id === id
+        if (
+          item.id === id
+        ) {
 
-          ? {
-              ...item,
-              qty:
-                item.qty +
-                1,
-            }
+          if (
+            item.qty >=
+            item.stock
+          ) {
 
-          : item
-      )
+            toast(
+              "No more stock",
+              "error"
+            );
+
+            return item;
+          }
+
+          return {
+            ...item,
+            qty:
+              item.qty + 1,
+          };
+        }
+
+        return item;
+      })
     );
   };
 
@@ -131,8 +218,7 @@ function POS({
             ? {
                 ...item,
                 qty:
-                  item.qty -
-                  1,
+                  item.qty - 1,
               }
 
             : item
@@ -144,7 +230,10 @@ function POS({
     );
   };
 
-  /* TOTAL */
+  /* =========================
+     TOTAL
+  ========================= */
+
   const total =
     cart.reduce(
       (acc, item) =>
@@ -156,16 +245,20 @@ function POS({
       0
     );
 
-  /* COMPLETE SALE */
+  /* =========================
+     COMPLETE SALE
+  ========================= */
+
   const completeSale =
-    () => {
+    async () => {
 
       if (
         cart.length === 0
       ) {
 
         toast(
-          "Cart is empty"
+          "Cart is empty",
+          "error"
         );
 
         return;
@@ -176,259 +269,277 @@ function POS({
       ) {
 
         toast(
-          "Enter customer name"
+          "Customer required",
+          "error"
         );
 
         return;
       }
 
-      const paid =
-        Number(
-          paidAmount
-        ) || 0;
+      const totalAmount =
+        Number(total);
 
-      let status =
-        "Paid";
+    const paid =
+  Math.max(
+    0,
 
-      let debtAmount =
-        0;
+    Number(
+      paidAmount || 0
+    )
+  );
 
-      /* FULL DEBT */
-      if (
-        paymentMethod ===
-        "Debt"
-      ) {
+const debtAmount =
+  totalAmount - paid;
 
-        status =
-          "Unpaid";
+/* =========================
+   STATUS
+========================= */
 
-        debtAmount =
-          total;
-      }
+let status =
+  "paid";
 
-      /* PARTIAL */
-      else if (
-        paid < total
-      ) {
+if (paid <= 0) {
 
-        status =
-          "Partial";
+  status =
+    "unpaid";
 
-        debtAmount =
-          total - paid;
-      }
+} else if (
+  paid < totalAmount
+) {
 
-      /* SALE */
-      const newSale = {
-        id:
-          "INV-" +
-          Date.now(),
+  status =
+    "partial";
 
-        customer:
-          customerName,
+} else {
 
-        phone:
-          customerPhone,
+  status =
+    "paid";
+}
 
-        address:
-          customerAddress,
+      try {
 
-        items: cart,
+        setLoading(true);
 
-        total,
+        /* =========================
+           SALE OBJECT
+        ========================= */
 
-        paid,
-
-        debt:
-          debtAmount,
-
-        method:
-          paymentMethod,
-
-        status,
-
-        date:
-          new Date()
-            .toISOString()
-            .split(
-              "T"
-            )[0],
-      };
-
-      /* SAVE SALES */
-      setSales([
-        newSale,
-        ...sales,
-      ]);
-
-      /* UPDATE STOCK */
-      const updatedMedicines =
-        medicines.map(
-          (medicine) => {
-
-            const cartItem =
-              cart.find(
-                (item) =>
-                  item.id ===
-                  medicine.id
-              );
-
-            if (
-              cartItem
-            ) {
-
-              return {
-                ...medicine,
-
-                stock:
-                  medicine.stock -
-                  cartItem.qty,
-              };
-            }
-
-            return medicine;
-          }
-        );
-
-      setMedicines(
-        updatedMedicines
-      );
-
-      /* CUSTOMER */
-      const existingCustomer =
-        customers.find(
-          (customer) =>
-
-            customer.name ===
+        const newSale = {
+    invoice:
+    `INV-${sales.length + 1}`,
+          customer:
             customerName
-        );
+              .trim(),
 
-      if (
-        existingCustomer
-      ) {
+          phone:
+            customerPhone
+              .trim(),
 
-        const updatedCustomers =
-          customers.map(
-            (
-              customer
-            ) => {
+          address:
+            customerAddress
+              .trim(),
 
-              if (
-                customer.name ===
-                customerName
-              ) {
+          items: cart,
 
-                return {
-                  ...customer,
+          total:
+            totalAmount,
 
-                  phone:
-                    customerPhone,
+          paid:
+            paymentMethod ===
+            "Debt"
 
-                  address:
-                    customerAddress,
+              ? 0
 
-                  debt:
-                    Number(
-                      customer.debt ||
-                        0
-                    ) +
-                    debtAmount,
-                };
-              }
+              : paid ||
+                totalAmount,
 
-              return customer;
-            }
+          debt:
+            debtAmount,
+
+          method:
+            paymentMethod,
+
+          status,
+
+          date:
+            new Date()
+              .toISOString(),
+
+          createdAt:
+            Date.now(),
+        };
+        
+
+        /* =========================
+           SAVE FIREBASE
+        ========================= */
+
+        const saleRef =
+          await addDoc(
+            collection(
+              db,
+              "sales"
+            ),
+
+            newSale
           );
 
-        setCustomers(
-          updatedCustomers
-        );
+        /* =========================
+           UPDATE STOCK
+        ========================= */
 
-      } else {
+        for (
+          const item of cart
+        ) {
 
-        const newCustomer =
+          const newStock =
+            item.stock -
+            item.qty;
+
+          await updateDoc(
+            doc(
+              db,
+              "medicines",
+              item.id
+            ),
+
+            {
+              stock:
+                newStock,
+            }
+          );
+        }
+
+        /* =========================
+           SAVE CUSTOMER
+        ========================= */
+
+        const customerData =
           {
-            id:
-              Date.now(),
-
             name:
-              customerName,
+              customerName
+                .trim(),
 
             phone:
-              customerPhone,
+              customerPhone
+                .trim(),
 
             address:
-              customerAddress,
+              customerAddress
+                .trim(),
 
             debt:
               debtAmount,
 
-            joined:
-              new Date()
-                .toISOString()
-                .split(
-                  "T"
-                )[0],
+            updatedAt:
+              Date.now(),
           };
 
-        setCustomers([
-          ...customers,
-          newCustomer,
+        await setDoc(
+          doc(
+            db,
+            "customers",
+
+            customerPhone ||
+              customerName
+          ),
+
+          customerData,
+
+          {
+            merge: true,
+          }
+        );
+
+        /* =========================
+           LOCAL UPDATE
+        ========================= */
+
+        setSales([
+          {
+            id:
+              saleRef.id,
+
+            ...newSale,
+          },
+
+          ...sales,
         ]);
+
+        const updatedMedicines =
+          medicines.map(
+            (medicine) => {
+
+              const cartItem =
+                cart.find(
+                  (item) =>
+                    item.id ===
+                    medicine.id
+                );
+
+              if (
+                cartItem
+              ) {
+
+                return {
+                  ...medicine,
+
+                  stock:
+                    medicine.stock -
+                    cartItem.qty,
+                };
+              }
+
+              return medicine;
+            }
+          );
+
+        setMedicines(
+          updatedMedicines
+        );
+
+        /* =========================
+           SUCCESS
+        ========================= */
+
+        toast(
+          "Sale completed",
+          "success"
+        );
+
+        /* =========================
+           RESET
+        ========================= */
+
+        setCart([]);
+
+        setCustomerName("");
+
+        setCustomerPhone("");
+
+        setCustomerAddress("");
+
+        setPaidAmount("");
+
+        setPaymentMethod(
+          "Cash"
+        );
+
+      } catch (error) {
+
+        console.log(
+          error
+        );
+
+        toast(
+          "Sale failed",
+          "error"
+        );
+
+      } finally {
+
+        setLoading(false);
       }
-
-      /* SUCCESS MESSAGE */
-      if (
-        status ===
-        "Partial"
-      ) {
-
-        toast(
-          `Paid $${paid.toFixed(
-            2
-          )} | Remaining Debt $${debtAmount.toFixed(
-            2
-          )}`
-        );
-
-      } else if (
-        status ===
-        "Unpaid"
-      ) {
-
-        toast(
-          `Debt added $${debtAmount.toFixed(
-            2
-          )}`
-        );
-
-      } else {
-
-        toast(
-          "Sale completed"
-        );
-      }
-
-      /* RESET */
-      setCart([]);
-
-      setCustomerName(
-        ""
-      );
-
-      setCustomerPhone(
-        ""
-      );
-
-      setCustomerAddress(
-        ""
-      );
-
-      setPaidAmount("");
-
-      setPaymentMethod(
-        "Cash"
-      );
     };
 
   return (
@@ -437,367 +548,446 @@ function POS({
         display: "grid",
 
         gridTemplateColumns:
-          "2fr 1fr",
+          "1.7fr 1fr",
 
-        gap: "24px",
+        gap: "20px",
+
+        alignItems:
+          "start",
+
+        background:
+          dark
+            ? "#020617"
+            : "#f3f4f6",
+
+        minHeight:
+          "100vh",
       }}
     >
 
       {/* LEFT */}
+
       <div>
 
-        <h1
-          style={{
-            fontSize: "48px",
-            marginBottom:
-              "10px",
-          }}
-        >
-          POS / Sales 🛒
-        </h1>
+        {/* HEADER */}
 
-        <p
+        <div
           style={{
-            color: "#6b7280",
             marginBottom:
-              "24px",
+              "20px",
           }}
         >
-          Pharmacy sales system
-        </p>
+
+          <h1
+            style={{
+              margin: 0,
+
+              fontSize:
+                "32px",
+
+              color:
+                dark
+                  ? "#ffffff"
+                  : "#111827",
+            }}
+          >
+            POS / Sales 🛒
+          </h1>
+
+          <p
+            style={{
+              marginTop:
+                "8px",
+
+              color:
+                dark
+                  ? "#d1d5db"
+                  : "#6b7280",
+            }}
+          >
+            Pharmacy sales system
+          </p>
+        </div>
 
         {/* SEARCH */}
+
         <input
           type="text"
+
           placeholder="Search medicine..."
+
           value={search}
+
           onChange={(e) =>
             setSearch(
               e.target.value
             )
           }
+
           style={{
             width: "100%",
-            padding: "18px",
+
+            padding:
+              "15px 16px",
+
             borderRadius:
-              "16px",
+              "14px",
+
             border:
-              "1px solid #d1d5db",
-            marginBottom:
-              "28px",
+              dark
+
+                ? "1px solid #374151"
+
+                : "1px solid #d1d5db",
+
+            background:
+              dark
+
+                ? "#111827"
+
+                : "#ffffff",
+
+            color:
+              dark
+
+                ? "#ffffff"
+
+                : "#111827",
+
             fontSize:
-              "16px",
+              "15px",
+
+            outline:
+              "none",
+
+            marginBottom:
+              "20px",
+
+            boxSizing:
+              "border-box",
           }}
         />
 
-        {/* MEDICINES */}
+        {/* TABLE */}
+
         <div
           style={{
-            display: "grid",
+            overflowX:
+              "auto",
 
-            gridTemplateColumns:
-              "repeat(auto-fill,minmax(260px,1fr))",
+            borderRadius:
+              "20px",
 
-            gap: "20px",
+            background:
+              dark
+                ? "#111827"
+                : "#ffffff",
+
+            border:
+              dark
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
           }}
         >
 
-          {filteredMedicines.map(
-            (medicine) => (
+          <table
+            style={{
+              width: "100%",
 
-              <div
-                key={
-                  medicine.id
-                }
-                onClick={() =>
-                  addToCart(
-                    medicine
-                  )
-                }
-                style={{
-                  background:
-                    "#fff",
+              minWidth:
+                "700px",
 
-                  borderRadius:
-                    "24px",
+              borderCollapse:
+                "collapse",
+            }}
+          >
 
-                  padding:
-                    "22px",
+            <thead
+              style={{
+                background:
+                  dark
+                    ? "#0f172a"
+                    : "#f9fafb",
+              }}
+            >
 
-                  cursor:
-                    "pointer",
+              <tr>
 
-                  boxShadow:
-                    "0 8px 24px rgba(0,0,0,0.05)",
-                }}
-              >
+                <th style={th(
+                  dark
+                )}>
+                  Medicine
+                </th>
 
-                <div
-                  style={{
-                    width: "70px",
-                    height:
-                      "70px",
+                <th style={th(
+                  dark
+                )}>
+                  Category
+                </th>
 
-                    borderRadius:
-                      "20px",
+                <th style={th(
+                  dark
+                )}>
+                  Stock
+                </th>
 
-                    background:
-                      "#dcfce7",
+                <th style={th(
+                  dark
+                )}>
+                  Price
+                </th>
 
-                    display:
-                      "flex",
+                <th style={th(
+                  dark
+                )}>
+                  Add
+                </th>
+              </tr>
+            </thead>
 
-                    alignItems:
-                      "center",
+            <tbody>
 
-                    justifyContent:
-                      "center",
+              {filteredMedicines.map(
+                (
+                  medicine
+                ) => (
 
-                    fontSize:
-                      "38px",
+                  <tr
+                    key={
+                      medicine.id
+                    }
 
-                    marginBottom:
-                      "20px",
-                  }}
-                >
-                  💊
-                </div>
+                    style={{
+                      borderBottom:
+                        dark
 
-                <p
-                  style={{
-                    color:
-                      "#9ca3af",
+                          ? "1px solid #1f2937"
 
-                    fontWeight:
-                      "bold",
+                          : "1px solid #f3f4f6",
+                    }}
+                  >
 
-                    marginBottom:
-                      "8px",
-                  }}
-                >
-                  MEDICINE NAME
-                </p>
+                    <td
+                      style={td(
+                        dark
+                      )}
+                    >
+                      {
+                        medicine.name
+                      }
+                    </td>
 
-                <h2>
-                  {
-                    medicine.name
-                  }
-                </h2>
+                    <td
+                      style={td(
+                        dark
+                      )}
+                    >
+                      {
+                        medicine.category
+                      }
+                    </td>
 
-                <p
-                  style={{
-                    color:
-                      "#9ca3af",
-
-                    fontWeight:
-                      "bold",
-
-                    marginTop:
-                      "20px",
-
-                    marginBottom:
-                      "8px",
-                  }}
-                >
-                  CATEGORY
-                </p>
-
-                <div
-                  style={{
-                    display:
-                      "inline-block",
-
-                    background:
-                      "#dcfce7",
-
-                    color:
-                      "#16a34a",
-
-                    padding:
-                      "8px 14px",
-
-                    borderRadius:
-                      "999px",
-
-                    fontWeight:
-                      "bold",
-                  }}
-                >
-                  {
-                    medicine.category
-                  }
-                </div>
-
-                <div
-                  style={{
-                    display:
-                      "flex",
-
-                    justifyContent:
-                      "space-between",
-
-                    marginTop:
-                      "24px",
-                  }}
-                >
-
-                  <div>
-                    <p
+                    <td
                       style={{
+                        ...td(
+                          dark
+                        ),
+
                         color:
-                          "#9ca3af",
+                          "#22c55e",
 
                         fontWeight:
                           "bold",
-                      }}
-                    >
-                      STOCK
-                    </p>
-
-                    <h2
-                      style={{
-                        color:
-                          "#16a34a",
                       }}
                     >
                       {
                         medicine.stock
                       }
-                    </h2>
-                  </div>
+                    </td>
 
-                  <div>
-                    <p
+                    <td
                       style={{
+                        ...td(
+                          dark
+                        ),
+
                         color:
-                          "#9ca3af",
+                          "#22c55e",
 
                         fontWeight:
                           "bold",
-                      }}
-                    >
-                      SELL PRICE
-                    </p>
-
-                    <h2
-                      style={{
-                        color:
-                          "#16a34a",
                       }}
                     >
                       $
                       {
                         medicine.sellPrice
                       }
-                    </h2>
-                  </div>
-                </div>
-              </div>
-            )
-          )}
+                    </td>
+
+                    <td
+                      style={td(
+                        dark
+                      )}
+                    >
+
+                      <button
+                        onClick={() =>
+                          addToCart(
+                            medicine
+                          )
+                        }
+
+                        style={{
+                          background:
+                            "#16a34a",
+
+                          color:
+                            "#ffffff",
+
+                          border:
+                            "none",
+
+                          padding:
+                            "10px 14px",
+
+                          borderRadius:
+                            "10px",
+
+                          cursor:
+                            "pointer",
+
+                          fontWeight:
+                            "bold",
+                        }}
+                      >
+                        Add
+                      </button>
+                    </td>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
       {/* RIGHT */}
+
       <div
         style={{
           background:
-            "#fff",
+            dark
+              ? "#111827"
+              : "#ffffff",
 
           borderRadius:
-            "28px",
+            "20px",
 
           padding:
-            "28px",
+            "20px",
 
-          height:
-            "fit-content",
+          border:
+            dark
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
 
-          boxShadow:
-            "0 8px 24px rgba(0,0,0,0.05)",
+          position:
+            "sticky",
+
+          top: "20px",
         }}
       >
 
         <h2
           style={{
             marginTop: 0,
+
             marginBottom:
-              "24px",
+              "20px",
+
+            color:
+              dark
+                ? "#ffffff"
+                : "#111827",
           }}
         >
           Cart 🛒
         </h2>
 
-        {/* CUSTOMER */}
-        <label style={label}>
-          Customer Name
-        </label>
-
         <input
           type="text"
+
+          placeholder="Customer Name"
+
           value={
             customerName
           }
+
           onChange={(e) =>
             setCustomerName(
               e.target.value
             )
           }
-          placeholder="Enter customer name"
-          style={input}
-        />
 
-        <label style={label}>
-          Phone Number
-        </label>
+          style={input(
+            dark
+          )}
+        />
 
         <input
           type="text"
+
+          placeholder="Phone Number"
+
           value={
             customerPhone
           }
+
           onChange={(e) =>
             setCustomerPhone(
               e.target.value
             )
           }
-          placeholder="Enter phone"
-          style={input}
-        />
 
-        <label style={label}>
-          Address
-        </label>
+          style={input(
+            dark
+          )}
+        />
 
         <input
           type="text"
+
+          placeholder="Address"
+
           value={
             customerAddress
           }
+
           onChange={(e) =>
             setCustomerAddress(
               e.target.value
             )
           }
-          placeholder="Enter address"
-          style={input}
-        />
 
-        {/* PAYMENT */}
-        <label style={label}>
-          Payment Method
-        </label>
+          style={input(
+            dark
+          )}
+        />
 
         <select
           value={
             paymentMethod
           }
+
           onChange={(e) =>
             setPaymentMethod(
               e.target.value
             )
           }
-          style={input}
+
+          style={input(
+            dark
+          )}
         >
 
           <option>
@@ -817,30 +1007,38 @@ function POS({
           </option>
         </select>
 
-        {/* PAID */}
-        <label style={label}>
-          Paid Amount
-        </label>
-
         <input
           type="number"
+
+          placeholder="Paid Amount"
+
           value={
             paidAmount
           }
+
           onChange={(e) =>
             setPaidAmount(
               e.target.value
             )
           }
-          placeholder="Enter paid amount"
-          style={input}
+
+          style={input(
+            dark
+          )}
         />
 
         {/* CART */}
+
         <div
           style={{
             marginTop:
               "20px",
+
+            maxHeight:
+              "320px",
+
+            overflowY:
+              "auto",
           }}
         >
 
@@ -853,10 +1051,12 @@ function POS({
                   "center",
 
                 color:
-                  "#9ca3af",
+                  dark
+                    ? "#d1d5db"
+                    : "#6b7280",
 
                 padding:
-                  "40px 0",
+                  "30px 0",
               }}
             >
               Cart is empty
@@ -869,6 +1069,7 @@ function POS({
 
                 <div
                   key={item.id}
+
                   style={{
                     display:
                       "flex",
@@ -879,35 +1080,45 @@ function POS({
                     alignItems:
                       "center",
 
-                    borderBottom:
-                      "1px solid #f3f4f6",
-
                     padding:
-                      "16px 0",
+                      "14px 0",
+
+                    borderBottom:
+                      dark
+
+                        ? "1px solid #374151"
+
+                        : "1px solid #f3f4f6",
                   }}
                 >
 
                   <div>
 
-                    <h3
+                    <h4
                       style={{
                         margin:
                           "0 0 6px",
+
+                        color:
+                          dark
+                            ? "#ffffff"
+                            : "#111827",
                       }}
                     >
                       {
                         item.name
                       }
-                    </h3>
+                    </h4>
 
                     <p
                       style={{
+                        margin: 0,
+
                         color:
                           "#16a34a",
 
                         fontWeight:
                           "bold",
-                        margin: 0,
                       }}
                     >
                       $
@@ -925,7 +1136,7 @@ function POS({
                       alignItems:
                         "center",
 
-                      gap: "10px",
+                      gap: "8px",
                     }}
                   >
 
@@ -935,6 +1146,7 @@ function POS({
                           item.id
                         )
                       }
+
                       style={
                         qtyBtn
                       }
@@ -942,7 +1154,14 @@ function POS({
                       -
                     </button>
 
-                    <strong>
+                    <strong
+                      style={{
+                        color:
+                          dark
+                            ? "#ffffff"
+                            : "#111827",
+                      }}
+                    >
                       {
                         item.qty
                       }
@@ -954,6 +1173,7 @@ function POS({
                           item.id
                         )
                       }
+
                       style={
                         qtyBtn
                       }
@@ -968,102 +1188,67 @@ function POS({
         </div>
 
         {/* TOTAL */}
+
         <div
           style={{
             marginTop:
-              "24px",
+              "20px",
 
             borderTop:
-              "1px solid #e5e7eb",
+              dark
+
+                ? "1px solid #374151"
+
+                : "1px solid #e5e7eb",
 
             paddingTop:
-              "20px",
+              "18px",
           }}
         >
 
-          <h2>
+          <h2
+            style={{
+              color:
+                dark
+                  ? "#ffffff"
+                  : "#111827",
+            }}
+          >
             Total: $
             {total.toFixed(
               2
             )}
           </h2>
 
-          {/* PARTIAL INFO */}
-          {paidAmount &&
-            Number(
-              paidAmount
-            ) < total &&
-            paymentMethod !==
-              "Debt" && (
-
-              <div
-                style={{
-                  marginTop:
-                    "10px",
-
-                  background:
-                    "#fef3c7",
-
-                  padding:
-                    "14px",
-
-                  borderRadius:
-                    "12px",
-
-                  color:
-                    "#92400e",
-
-                  fontWeight:
-                    "bold",
-                }}
-              >
-                Paid:
-                {" "}
-                $
-                {Number(
-                  paidAmount
-                ).toFixed(
-                  2
-                )}
-
-                <br />
-
-                Remaining Debt:
-                {" "}
-                $
-                {(
-                  total -
-                  Number(
-                    paidAmount
-                  )
-                ).toFixed(
-                  2
-                )}
-              </div>
-            )}
-
           <button
             onClick={
               completeSale
             }
+
+            disabled={
+              loading
+            }
+
             style={{
               width: "100%",
 
               background:
                 "#16a34a",
 
-              color: "#fff",
+              color:
+                "#ffffff",
 
-              border: "none",
+              border:
+                "none",
 
               padding:
-                "18px",
-
-              borderRadius:
                 "16px",
 
+              borderRadius:
+                "14px",
+
               fontSize:
-                "20px",
+                "16px",
 
               fontWeight:
                 "bold",
@@ -1072,10 +1257,17 @@ function POS({
                 "pointer",
 
               marginTop:
-                "20px",
+                "14px",
+
+              opacity:
+                loading
+                  ? 0.7
+                  : 1,
             }}
           >
-            Complete Sale
+            {loading
+              ? "Processing..."
+              : "Complete Sale"}
           </button>
         </div>
       </div>
@@ -1083,32 +1275,97 @@ function POS({
   );
 }
 
-/* STYLES */
-const input = {
-  width: "100%",
-  padding: "16px",
-  borderRadius: "14px",
-  border:
-    "1px solid #d1d5db",
-  marginBottom: "18px",
-  fontSize: "16px",
-};
+/* =========================
+   STYLES
+========================= */
 
-const label = {
-  display: "block",
-  marginBottom: "8px",
-  fontWeight: "bold",
-};
+const th = (
+  dark
+) => ({
+  textAlign: "left",
+
+  padding: "16px",
+
+  color:
+    dark
+      ? "#ffffff"
+      : "#374151",
+
+  background:
+    dark
+      ? "#111827"
+      : "#f9fafb",
+});
+
+const td = (
+  dark
+) => ({
+  padding: "16px",
+
+  color:
+    dark
+      ? "#ffffff"
+      : "#111827",
+});
+
+const input = (
+  dark
+) => ({
+  width: "100%",
+
+  padding:
+    "14px",
+
+  borderRadius:
+    "14px",
+
+  border:
+    dark
+
+      ? "1px solid #374151"
+
+      : "1px solid #d1d5db",
+
+  marginBottom:
+    "14px",
+
+  background:
+    dark
+      ? "#0f172a"
+      : "#ffffff",
+
+  color:
+    dark
+      ? "#ffffff"
+      : "#111827",
+
+  outline: "none",
+
+  boxSizing:
+    "border-box",
+});
 
 const qtyBtn = {
-  width: "36px",
-  height: "36px",
-  borderRadius: "10px",
+  width: "30px",
+
+  height: "30px",
+
   border: "none",
-  background: "#16a34a",
-  color: "#fff",
-  fontSize: "22px",
-  cursor: "pointer",
+
+  borderRadius:
+    "8px",
+
+  background:
+    "#16a34a",
+
+  color:
+    "#ffffff",
+
+  fontWeight:
+    "bold",
+
+  cursor:
+    "pointer",
 };
 
 export default POS;

@@ -1,12 +1,39 @@
-import { useState } from "react";
+import {
+  useState,
+  useEffect,
+} from "react";
+
+import {
+  collection,
+  onSnapshot,
+  doc,
+  setDoc,
+  deleteDoc,
+} from "firebase/firestore";
+
+import {
+  createUserWithEmailAndPassword,
+} from "firebase/auth";
+
+import {
+  db,
+  auth,
+} from "../firebase";
 
 function Users({
-  users,
-  setUsers,
   currentUser,
-  setCurrentUser,
   toast,
+  darkMode,
 }) {
+
+  /* =========================
+     STATES
+  ========================= */
+
+  const [
+    users,
+    setUsers,
+  ] = useState([]);
 
   const [
     showModal,
@@ -14,137 +41,285 @@ function Users({
   ] = useState(false);
 
   const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  const [
     form,
     setForm,
   ] = useState({
     name: "",
-    username: "",
+    email: "",
     password: "",
-    role: "Cashier",
-    image: "",
+    role: "user",
   });
+
+  /* =========================
+     ADMIN CHECK
+  ========================= */
+
+  const isAdmin =
+    currentUser?.role
+      ?.toLowerCase() ===
+    "admin";
+
+  /* =========================
+     GET USERS
+  ========================= */
+
+  useEffect(() => {
+
+    const unsubscribe =
+      onSnapshot(
+        collection(
+          db,
+          "users"
+        ),
+
+        (snapshot) => {
+
+          const data =
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            );
+
+          setUsers(data);
+        }
+      );
+
+    return () =>
+      unsubscribe();
+
+  }, []);
 
   /* =========================
      ADD USER
   ========================= */
 
-  const addUser = () => {
+  const addUser =
+    async () => {
 
-    if (
-      !form.name ||
-      !form.username ||
-      !form.password
-    ) {
+      if (
+        !form.name.trim() ||
+        !form.email.trim() ||
+        !form.password.trim()
+      ) {
 
-      toast(
-        "Fill all fields",
-        "error"
-      );
+        toast(
+          "Please fill all fields",
+          "error"
+        );
 
-      return;
-    }
+        return;
+      }
 
-    const newUser = {
-      id: Date.now(),
+      try {
 
-      name: form.name,
+        setLoading(true);
 
-      username:
-        form.username,
+        const cleanEmail =
+          form.email
+            .trim()
+            .toLowerCase();
 
-      password:
-        form.password,
+        const cleanName =
+          form.name.trim();
 
-      role: form.role,
+        /* =========================
+           CREATE AUTH USER
+        ========================= */
 
-      image:
-        form.image,
+        const userCredential =
+          await createUserWithEmailAndPassword(
+            auth,
+            cleanEmail,
+            form.password
+          );
 
-      active: true,
+        const firebaseUser =
+          userCredential.user;
+
+        /* =========================
+           SAVE FIRESTORE
+        ========================= */
+
+        const newUser = {
+
+          uid:
+            firebaseUser.uid,
+
+          name:
+            cleanName,
+
+          email:
+            cleanEmail,
+
+          role:
+            form.role
+              .toLowerCase(),
+
+          status:
+            "active",
+        };
+
+        await setDoc(
+          doc(
+            db,
+            "users",
+            firebaseUser.uid
+          ),
+
+          newUser
+        );
+
+        toast(
+          "User created successfully",
+          "success"
+        );
+
+        /* =========================
+           RESET
+        ========================= */
+
+        setForm({
+          name: "",
+          email: "",
+          password: "",
+          role: "user",
+        });
+
+        setShowModal(
+          false
+        );
+
+      } catch (error) {
+
+        console.log(
+          error
+        );
+
+        if (
+          error.code ===
+          "auth/email-already-in-use"
+        ) {
+
+          toast(
+            "Email already exists",
+            "error"
+          );
+
+        } else {
+
+          toast(
+            error.message,
+            "error"
+          );
+        }
+
+      } finally {
+
+        setLoading(false);
+      }
     };
-
-    /* SAVE USER */
-    setUsers((prev) => [
-      ...prev,
-      newUser,
-    ]);
-
-    /* UPDATE CURRENT USER */
-    setCurrentUser(
-      newUser
-    );
-
-    toast(
-      "User added successfully"
-    );
-
-    setShowModal(false);
-
-    setForm({
-      name: "",
-      username: "",
-      password: "",
-      role: "Cashier",
-      image: "",
-    });
-  };
 
   /* =========================
      DELETE USER
   ========================= */
 
-  const deleteUser = (
-    id
-  ) => {
+  const deleteUser =
+    async (id) => {
 
-    setUsers((prev) =>
-      prev.filter(
-        (user) =>
-          user.id !== id
-      )
-    );
+      if (
+        currentUser?.id === id
+      ) {
 
-    toast(
-      "User deleted",
-      "error"
-    );
-  };
+        toast(
+          "Cannot delete your own account",
+          "error"
+        );
+
+        return;
+      }
+
+      const confirmDelete =
+        window.confirm(
+          "Delete this user?"
+        );
+
+      if (!confirmDelete)
+        return;
+
+      try {
+
+        await deleteDoc(
+          doc(
+            db,
+            "users",
+            id
+          )
+        );
+
+        toast(
+          "User deleted",
+          "success"
+        );
+
+      } catch (error) {
+
+        console.log(
+          error
+        );
+
+        toast(
+          "Delete failed",
+          "error"
+        );
+      }
+    };
 
   /* =========================
-     TOGGLE STATUS
+     ACCESS DENIED
   ========================= */
 
-  const toggleStatus = (
-    id
-  ) => {
+  if (!isAdmin) {
 
-    setUsers((prev) =>
-      prev.map((user) =>
+    return (
+      <div
+        style={{
+          padding:
+            "40px",
 
-        user.id === id
+          borderRadius:
+            "24px",
 
-          ? {
-              ...user,
+          background:
+            darkMode
+              ? "#111827"
+              : "#ffffff",
 
-              active:
-                !user.active,
-            }
+          color:
+            "#ef4444",
 
-          : user
-      )
+          fontWeight:
+            "bold",
+
+          fontSize:
+            "30px",
+        }}
+      >
+        Access Denied 🚫
+      </div>
     );
-
-    toast(
-      "User status updated"
-    );
-  };
+  }
 
   return (
     <div>
 
-      {/* =========================
-          HEADER
-      ========================= */}
+      {/* HEADER */}
 
       <div
         style={{
@@ -158,6 +333,11 @@ function Users({
 
           marginBottom:
             "24px",
+
+          flexWrap:
+            "wrap",
+
+          gap: "16px",
         }}
       >
 
@@ -167,8 +347,13 @@ function Users({
             style={{
               margin: 0,
 
+              color:
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
+
               fontSize:
-                "30px",
+                "34px",
             }}
           >
             Users 👤
@@ -176,38 +361,39 @@ function Users({
 
           <p
             style={{
-              color:
-                "#6b7280",
-
               marginTop:
-                "6px",
+                "8px",
+
+              color:
+                darkMode
+                  ? "#9ca3af"
+                  : "#6b7280",
             }}
           >
-            Manage pharmacy
-            users
+            Manage admins and users
           </p>
         </div>
 
         <button
           onClick={() =>
-            setShowModal(
-              true
-            )
+            setShowModal(true)
           }
 
           style={{
             background:
               "#16a34a",
 
-            color: "#fff",
+            color:
+              "#ffffff",
 
-            border: "none",
+            border:
+              "none",
 
             padding:
-              "13px 20px",
+              "14px 22px",
 
             borderRadius:
-              "12px",
+              "14px",
 
             cursor:
               "pointer",
@@ -220,23 +406,25 @@ function Users({
         </button>
       </div>
 
-      {/* =========================
-          TABLE
-      ========================= */}
+      {/* TABLE */}
 
       <div
         style={{
           background:
-            "#fff",
+            darkMode
+              ? "#111827"
+              : "#ffffff",
 
           borderRadius:
-            "18px",
+            "24px",
 
-          overflow:
-            "hidden",
+          overflowX:
+            "auto",
 
-          boxShadow:
-            "0 4px 12px rgba(0,0,0,0.05)",
+          border:
+            darkMode
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
         }}
       >
 
@@ -246,56 +434,41 @@ function Users({
 
             borderCollapse:
               "collapse",
+
+            minWidth:
+              "850px",
           }}
         >
 
           <thead
             style={{
               background:
-                "#f3f4f6",
+                darkMode
+                  ? "#0f172a"
+                  : "#f9fafb",
             }}
           >
 
             <tr>
 
-              <th
-                style={
-                  thStyle
-                }
-              >
-                User
+              <th style={th(darkMode)}>
+                Name
               </th>
 
-              <th
-                style={
-                  thStyle
-                }
-              >
-                Username
+              <th style={th(darkMode)}>
+                Email
               </th>
 
-              <th
-                style={
-                  thStyle
-                }
-              >
+              <th style={th(darkMode)}>
                 Role
               </th>
 
-              <th
-                style={
-                  thStyle
-                }
-              >
+              <th style={th(darkMode)}>
                 Status
               </th>
 
-              <th
-                style={
-                  thStyle
-                }
-              >
-                Actions
+              <th style={th(darkMode)}>
+                Action
               </th>
             </tr>
           </thead>
@@ -307,298 +480,65 @@ function Users({
 
                 <tr
                   key={user.id}
+
+                  style={{
+                    borderTop:
+                      darkMode
+                        ? "1px solid #1f2937"
+                        : "1px solid #e5e7eb",
+                  }}
                 >
 
-                  {/* USER */}
-                  <td
-                    style={
-                      tdStyle
-                    }
-                  >
-
-                    <div
-                      style={{
-                        display:
-                          "flex",
-
-                        alignItems:
-                          "center",
-
-                        gap: "12px",
-                      }}
-                    >
-
-                      {/* IMAGE */}
-                      {user.image ? (
-
-                        <img
-                          src={
-                            user.image
-                          }
-
-                          alt="user"
-
-                          style={{
-                            width:
-                              "52px",
-
-                            height:
-                              "52px",
-
-                            borderRadius:
-                              "50%",
-
-                            objectFit:
-                              "cover",
-
-                            border:
-                              "2px solid #16a34a",
-                          }}
-                        />
-
-                      ) : (
-
-                        <div
-                          style={{
-                            width:
-                              "52px",
-
-                            height:
-                              "52px",
-
-                            borderRadius:
-                              "50%",
-
-                            background:
-                              "#16a34a",
-
-                            color:
-                              "#fff",
-
-                            display:
-                              "flex",
-
-                            alignItems:
-                              "center",
-
-                            justifyContent:
-                              "center",
-
-                            fontWeight:
-                              "bold",
-
-                            fontSize:
-                              "18px",
-                          }}
-                        >
-                          {
-                            user.name?.charAt(
-                              0
-                            )
-                          }
-                        </div>
-                      )}
-
-                      <div>
-
-                        <h4
-                          style={{
-                            margin: 0,
-
-                            fontSize:
-                              "15px",
-                          }}
-                        >
-                          {
-                            user.name
-                          }
-                        </h4>
-                      </div>
-                    </div>
+                  <td style={td(darkMode)}>
+                    {user.name}
                   </td>
 
-                  {/* USERNAME */}
-                  <td
-                    style={
-                      tdStyle
-                    }
-                  >
-                    {
-                      user.username
-                    }
+                  <td style={td(darkMode)}>
+                    {user.email}
                   </td>
 
-                  {/* ROLE */}
-                  <td
-                    style={
-                      tdStyle
-                    }
-                  >
+                  <td style={td(darkMode)}>
+                    {user.role}
+                  </td>
 
-                    <span
+                  <td style={td(darkMode)}>
+                    {user.status}
+                  </td>
+
+                  <td style={td(darkMode)}>
+
+                    <button
+                      onClick={() =>
+                        deleteUser(
+                          user.id
+                        )
+                      }
+
                       style={{
                         background:
-                          user.role ===
-                          "Admin"
-
-                            ? "#dcfce7"
-
-                            : "#dbeafe",
+                          "#dc2626",
 
                         color:
-                          user.role ===
-                          "Admin"
+                          "#ffffff",
 
-                            ? "#166534"
-
-                            : "#1d4ed8",
+                        border:
+                          "none",
 
                         padding:
-                          "6px 12px",
+                          "10px 14px",
 
                         borderRadius:
-                          "999px",
-
-                        fontSize:
                           "12px",
+
+                        cursor:
+                          "pointer",
 
                         fontWeight:
                           "bold",
                       }}
                     >
-                      {user.role ===
-                      "Admin"
-
-                        ? "👑 Admin"
-
-                        : "💳 Cashier"}
-                    </span>
-                  </td>
-
-                  {/* STATUS */}
-                  <td
-                    style={
-                      tdStyle
-                    }
-                  >
-
-                    <span
-                      style={{
-                        background:
-                          user.active
-
-                            ? "#dcfce7"
-
-                            : "#fee2e2",
-
-                        color:
-                          user.active
-
-                            ? "#16a34a"
-
-                            : "#dc2626",
-
-                        padding:
-                          "6px 12px",
-
-                        borderRadius:
-                          "999px",
-
-                        fontSize:
-                          "12px",
-
-                        fontWeight:
-                          "bold",
-                      }}
-                    >
-                      {user.active
-                        ? "Active"
-                        : "Inactive"}
-                    </span>
-                  </td>
-
-                  {/* ACTIONS */}
-                  <td
-                    style={
-                      tdStyle
-                    }
-                  >
-
-                    <div
-                      style={{
-                        display:
-                          "flex",
-
-                        gap: "8px",
-                      }}
-                    >
-
-                      <button
-                        onClick={() =>
-                          toggleStatus(
-                            user.id
-                          )
-                        }
-
-                        style={{
-                          background:
-                            "#2563eb",
-
-                          color:
-                            "#fff",
-
-                          border:
-                            "none",
-
-                          padding:
-                            "8px 12px",
-
-                          borderRadius:
-                            "8px",
-
-                          cursor:
-                            "pointer",
-
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        Toggle
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          deleteUser(
-                            user.id
-                          )
-                        }
-
-                        style={{
-                          background:
-                            "#dc2626",
-
-                          color:
-                            "#fff",
-
-                          border:
-                            "none",
-
-                          padding:
-                            "8px 12px",
-
-                          borderRadius:
-                            "8px",
-
-                          cursor:
-                            "pointer",
-
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        Delete
-                      </button>
-                    </div>
+                      Delete
+                    </button>
                   </td>
                 </tr>
               )
@@ -607,9 +547,7 @@ function Users({
         </table>
       </div>
 
-      {/* =========================
-          MODAL
-      ========================= */}
+      {/* MODAL */}
 
       {showModal && (
 
@@ -621,7 +559,7 @@ function Users({
             inset: 0,
 
             background:
-              "rgba(0,0,0,0.5)",
+              "rgba(0,0,0,0.6)",
 
             display:
               "flex",
@@ -638,26 +576,35 @@ function Users({
 
           <div
             style={{
-              background:
-                "#fff",
-
-              padding:
-                "30px",
-
-              borderRadius:
-                "18px",
-
               width: "100%",
 
               maxWidth:
-                "430px",
+                "500px",
+
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
+
+              borderRadius:
+                "24px",
+
+              padding:
+                "30px",
             }}
           >
 
             <h2
               style={{
+                marginTop: 0,
+
                 marginBottom:
-                  "20px",
+                  "24px",
+
+                color:
+                  darkMode
+                    ? "#ffffff"
+                    : "#111827",
               }}
             >
               Add User
@@ -665,259 +612,124 @@ function Users({
 
             <div
               style={{
-                display:
-                  "flex",
+                display: "grid",
 
-                flexDirection:
-                  "column",
-
-                gap: "14px",
+                gap: "16px",
               }}
             >
 
-              {/* NAME */}
               <input
                 type="text"
 
-                placeholder="Full Name"
+                placeholder="Full name"
 
-                value={
-                  form.name
-                }
+                value={form.name}
 
                 onChange={(e) =>
                   setForm({
                     ...form,
-
                     name:
-                      e.target
-                        .value,
+                      e.target.value,
                   })
                 }
 
-                style={
-                  inputStyle
-                }
+                style={input(darkMode)}
               />
 
-              {/* USERNAME */}
               <input
-                type="text"
+                type="email"
 
-                placeholder="Username"
+                placeholder="Email"
 
-                value={
-                  form.username
-                }
+                value={form.email}
 
                 onChange={(e) =>
                   setForm({
                     ...form,
-
-                    username:
-                      e.target
-                        .value,
+                    email:
+                      e.target.value,
                   })
                 }
 
-                style={
-                  inputStyle
-                }
+                style={input(darkMode)}
               />
 
-              {/* PASSWORD */}
               <input
                 type="password"
 
                 placeholder="Password"
 
-                value={
-                  form.password
-                }
+                value={form.password}
 
                 onChange={(e) =>
                   setForm({
                     ...form,
-
                     password:
-                      e.target
-                        .value,
+                      e.target.value,
                   })
                 }
 
-                style={
-                  inputStyle
-                }
+                style={input(darkMode)}
               />
 
-              {/* IMAGE */}
-              <div>
-
-                <label
-                  style={{
-                    fontSize:
-                      "14px",
-
-                    fontWeight:
-                      "bold",
-
-                    display:
-                      "block",
-
-                    marginBottom:
-                      "8px",
-                  }}
-                >
-                  Upload Photo
-                </label>
-
-                <input
-                  type="file"
-
-                  accept="image/*"
-
-                  onChange={(
-                    e
-                  ) => {
-
-                    const file =
-                      e.target
-                        .files[0];
-
-                    if (
-                      file
-                    ) {
-
-                      const reader =
-                        new FileReader();
-
-                      reader.onloadend =
-                        () => {
-
-                          setForm({
-                            ...form,
-
-                            image:
-                              reader.result,
-                          });
-                        };
-
-                      reader.readAsDataURL(
-                        file
-                      );
-                    }
-                  }}
-
-                  style={{
-                    width:
-                      "100%",
-
-                    padding:
-                      "10px",
-
-                    border:
-                      "1px solid #d1d5db",
-
-                    borderRadius:
-                      "10px",
-                  }}
-                />
-
-                {/* PREVIEW */}
-                {form.image && (
-
-                  <div
-                    style={{
-                      marginTop:
-                        "12px",
-
-                      display:
-                        "flex",
-
-                      justifyContent:
-                        "center",
-                    }}
-                  >
-
-                    <img
-                      src={
-                        form.image
-                      }
-
-                      alt="preview"
-
-                      style={{
-                        width:
-                          "90px",
-
-                        height:
-                          "90px",
-
-                        borderRadius:
-                          "50%",
-
-                        objectFit:
-                          "cover",
-
-                        border:
-                          "3px solid #16a34a",
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* ROLE */}
               <select
-                value={
-                  form.role
-                }
+                value={form.role}
 
                 onChange={(e) =>
                   setForm({
                     ...form,
-
                     role:
-                      e.target
-                        .value,
+                      e.target.value,
                   })
                 }
 
-                style={
-                  inputStyle
-                }
+                style={input(darkMode)}
               >
 
-                <option>
+                <option value="user">
+                  User
+                </option>
+
+                <option value="admin">
                   Admin
                 </option>
 
-                <option>
-                  Cashier
-                </option>
               </select>
+            </div>
 
-              {/* SAVE */}
+            <div
+              style={{
+                display: "flex",
+
+                gap: "14px",
+
+                marginTop:
+                  "24px",
+              }}
+            >
+
               <button
-                onClick={
-                  addUser
-                }
+                onClick={addUser}
+
+                disabled={loading}
 
                 style={{
+                  flex: 1,
+
                   background:
                     "#16a34a",
 
                   color:
-                    "#fff",
+                    "#ffffff",
 
                   border:
                     "none",
 
                   padding:
-                    "13px",
+                    "14px",
 
                   borderRadius:
-                    "10px",
+                    "14px",
 
                   fontWeight:
                     "bold",
@@ -926,39 +738,50 @@ function Users({
                     "pointer",
                 }}
               >
-                Save User
+                {
+                  loading
+                    ? "Saving..."
+                    : "Save User"
+                }
               </button>
 
-              {/* CANCEL */}
               <button
                 onClick={() =>
-                  setShowModal(
-                    false
-                  )
+                  setShowModal(false)
                 }
 
                 style={{
+                  flex: 1,
+
                   background:
-                    "#e5e7eb",
+                    darkMode
+                      ? "#1f2937"
+                      : "#f3f4f6",
+
+                  color:
+                    darkMode
+                      ? "#ffffff"
+                      : "#111827",
 
                   border:
                     "none",
 
                   padding:
-                    "13px",
+                    "14px",
 
                   borderRadius:
-                    "10px",
-
-                  cursor:
-                    "pointer",
+                    "14px",
 
                   fontWeight:
                     "bold",
+
+                  cursor:
+                    "pointer",
                 }}
               >
                 Cancel
               </button>
+
             </div>
           </div>
         </div>
@@ -971,29 +794,45 @@ function Users({
    STYLES
 ========================= */
 
-const thStyle = {
+const th = (
+  darkMode
+) => ({
+  padding: "18px",
   textAlign: "left",
-  padding: "16px",
-  fontSize: "14px",
-  fontWeight: "bold",
-};
+  color: darkMode
+    ? "#ffffff"
+    : "#111827",
+});
 
-const tdStyle = {
-  padding: "16px",
-  borderTop:
-    "1px solid #f3f4f6",
-};
+const td = (
+  darkMode
+) => ({
+  padding: "18px",
+  color: darkMode
+    ? "#e5e7eb"
+    : "#111827",
+});
 
-const inputStyle = {
+const input = (
+  darkMode
+) => ({
   width: "100%",
-  padding: "13px",
-  borderRadius:
-    "10px",
-  border:
-    "1px solid #d1d5db",
+  padding: "14px",
+  borderRadius: "14px",
+  border: darkMode
+    ? "1px solid #374151"
+    : "1px solid #d1d5db",
+  background:
+    darkMode
+      ? "#0f172a"
+      : "#ffffff",
+  color:
+    darkMode
+      ? "#ffffff"
+      : "#111827",
   outline: "none",
-  fontSize:
-    "14px",
-};
+  boxSizing:
+    "border-box",
+});
 
 export default Users;
