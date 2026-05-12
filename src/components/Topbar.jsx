@@ -1,246 +1,622 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { auth, db } from "../firebase";
 
-function Login({ setAuthed, setCurrentUser, toast }) {
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
+import {
+  signOut,
+} from "firebase/auth";
+
+import {
+  auth,
+} from "../firebase";
+
+function Topbar({
+  dark,
+  setDark,
+  setAuthed,
+  setCurrentUser,
+  currentUser,
+  medicines = [],
+  sales = [],
+}) {
+
+  const [
+    showNotifications,
+    setShowNotifications,
+  ] = useState(false);
+
+  const notifications = [];
+
+  /* LOW STOCK + EXPIRY */
+
+  medicines.forEach((medicine) => {
+
+    if (
+      Number(medicine.stock) <=
+      Number(medicine.minStock || 5)
+    ) {
+
+      notifications.push({
+        type: "danger",
+        message:
+          `${medicine.name} stock is low`,
+      });
+    }
+
+    const expiryDate =
+      medicine.expiryDate ||
+      medicine.expiry;
+
+    if (expiryDate) {
+
+      const today =
+        new Date();
+
+      today.setHours(
+        0,
+        0,
+        0,
+        0
+      );
+
+      const expiry =
+        new Date(
+          `${expiryDate}T00:00:00`
+        );
+
+      const diff =
+        expiry - today;
+
+      const days =
+        Math.ceil(
+          diff /
+          (1000 * 60 * 60 * 24)
+        );
+
+      if (days < 0) {
+
+        notifications.push({
+          type: "danger",
+          message:
+            `${medicine.name} expired`,
+        });
+
+      } else if (days <= 60) {
+
+        notifications.push({
+          type: "warning",
+          message:
+            `${medicine.name} expiring soon`,
+        });
+      }
+    }
   });
 
-  const [loading, setLoading] = useState(false);
+  /* DEBTS */
 
-  const handleLogin = async () => {
-    if (!form.email || !form.password) {
-      toast("Please fill all fields", "error");
-      return;
-    }
+  sales.forEach((sale) => {
 
-    try {
-      setLoading(true);
+    if (
+      sale.paymentMethod === "Debt" &&
+      sale.paymentStatus
+        ?.toLowerCase() !== "paid"
+    ) {
 
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        form.email.trim(),
-        form.password
-      );
-
-      const firebaseUser = userCredential.user;
-
-      const q = query(
-        collection(db, "users"),
-        where("email", "==", firebaseUser.email)
-      );
-
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        toast("Your password or username is invalid", "error");
-        setLoading(false);
-        return;
-      }
-
-      const userData = querySnapshot.docs[0].data();
-
-      if (userData.status === "disabled") {
-        toast("Account disabled", "error");
-        setLoading(false);
-        return;
-      }
-
-      setCurrentUser({
-        uid: firebaseUser.uid,
-        ...userData,
+      notifications.push({
+        type: "danger",
+        message:
+          `${sale.customerName} unpaid debt`,
       });
+    }
+  });
 
-      setAuthed(true);
-      toast("Login successful", "success");
-    } catch (error) {
-      console.log(error);
+  /* LOGOUT */
 
-      if (
-        error.code === "auth/user-not-found" ||
-        error.code === "auth/wrong-password" ||
-        error.code === "auth/invalid-credential" ||
-        error.code === "auth/invalid-email"
-      ) {
-        toast("Your password or username is invalid", "error");
-      } else {
-        toast("Login failed", "error");
+  const handleLogout =
+    async () => {
+
+      try {
+
+        await signOut(auth);
+
+        setAuthed(false);
+
+        setCurrentUser(null);
+
+      } catch (error) {
+
+        console.log(error);
       }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleLogin();
-    }
-  };
+    };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <div style={styles.logoSection}>
-          <div style={styles.logo}>💊</div>
-          <h1 style={styles.title}>ANFAC</h1>
-          <p style={styles.subtitle}>Pharmacy Management System</p>
-        </div>
 
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>Email</label>
+    <div style={{
+      ...styles.container,
 
-          <input
-            type="email"
-            placeholder="Enter email"
-            value={form.email}
-            onKeyDown={handleKeyDown}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                email: e.target.value,
-              })
+      background:
+        dark
+          ? "#020617"
+          : "#ffffff",
+
+      borderBottom:
+        dark
+          ? "1px solid #1e293b"
+          : "1px solid #e5e7eb",
+    }}>
+
+      {/* LEFT */}
+
+      <div style={styles.left}>
+
+        <h1 style={{
+          ...styles.title,
+
+          color:
+            dark
+              ? "#ffffff"
+              : "#111827",
+        }}>
+          Welcome 👋
+        </h1>
+
+        <p style={{
+          ...styles.subtitle,
+
+          color:
+            dark
+              ? "#94a3b8"
+              : "#6b7280",
+        }}>
+          Pharmacy management system
+        </p>
+
+      </div>
+
+      {/* RIGHT */}
+
+      <div style={styles.right}>
+
+        {/* NOTIFICATION */}
+
+        <div style={styles.notificationWrapper}>
+
+          <button
+            onClick={() =>
+              setShowNotifications(
+                !showNotifications
+              )
             }
-            style={styles.input}
-          />
+            style={{
+              ...styles.iconButton,
+
+              border:
+                dark
+                  ? "1px solid #1e293b"
+                  : "1px solid #e5e7eb",
+
+              background:
+                dark
+                  ? "#111827"
+                  : "#f9fafb",
+
+              color:
+                dark
+                  ? "#ffffff"
+                  : "#111827",
+            }}
+          >
+
+            🔔
+
+            {notifications.length > 0 && (
+
+              <div style={styles.badge}>
+                {notifications.length}
+              </div>
+
+            )}
+
+          </button>
+
+          {/* DROPDOWN */}
+
+          {showNotifications && (
+
+            <div style={{
+              ...styles.dropdown,
+
+              background:
+                dark
+                  ? "#111827"
+                  : "#ffffff",
+
+              border:
+                dark
+                  ? "1px solid #1f2937"
+                  : "1px solid #e5e7eb",
+            }}>
+
+              <h3 style={{
+                ...styles.dropdownTitle,
+
+                color:
+                  dark
+                    ? "#ffffff"
+                    : "#111827",
+              }}>
+                Notifications
+              </h3>
+
+              {notifications.length === 0 ? (
+
+                <div style={{
+                  color:
+                    dark
+                      ? "#94a3b8"
+                      : "#6b7280",
+                }}>
+                  No alerts
+                </div>
+
+              ) : (
+
+                notifications.map(
+                  (
+                    notification,
+                    index
+                  ) => (
+
+                    <div
+                      key={index}
+                      style={{
+                        ...styles.notificationItem,
+
+                        background:
+                          notification.type ===
+                          "danger"
+
+                            ? "#7f1d1d"
+
+                            : "#92400e",
+                      }}
+                    >
+
+                      {
+                        notification.type ===
+                        "danger"
+
+                          ? "🔥 "
+
+                          : "⏰ "
+                      }
+
+                      {
+                        notification.message
+                      }
+
+                    </div>
+                  )
+                )
+              )}
+
+            </div>
+          )}
+
         </div>
 
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>Password</label>
-
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={form.password}
-            onKeyDown={handleKeyDown}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                password: e.target.value,
-              })
-            }
-            style={styles.input}
-          />
-        </div>
+        {/* DARK MODE */}
 
         <button
-          onClick={handleLogin}
-          disabled={loading}
+          onClick={() =>
+            setDark(!dark)
+          }
           style={{
-            ...styles.button,
-            background: loading ? "#86efac" : "#16a34a",
-            cursor: loading ? "not-allowed" : "pointer",
+            ...styles.iconButton,
+
+            border:
+              dark
+                ? "1px solid #1e293b"
+                : "1px solid #e5e7eb",
+
+            background:
+              dark
+                ? "#16a34a"
+                : "#f9fafb",
           }}
         >
-          {loading ? "Loading..." : "Login"}
+          {
+            dark
+              ? "🌙"
+              : "☀️"
+          }
         </button>
+
+        {/* USER */}
+
+        <div style={{
+          ...styles.userCard,
+
+          background:
+            dark
+              ? "#111827"
+              : "#f9fafb",
+        }}>
+
+          <div style={styles.avatar}>
+
+            {
+              currentUser?.name
+                ?.charAt(0)
+                ?.toUpperCase()
+            }
+
+          </div>
+
+          <div style={styles.userInfo}>
+
+            <div style={{
+              ...styles.userName,
+
+              color:
+                dark
+                  ? "#ffffff"
+                  : "#111827",
+            }}>
+              {currentUser?.name}
+            </div>
+
+            <div style={styles.userRole}>
+              {currentUser?.role}
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* LOGOUT */}
+
+        <button
+          onClick={handleLogout}
+          style={styles.logoutButton}
+        >
+          Logout
+        </button>
+
       </div>
+
     </div>
   );
 }
 
 const styles = {
+
   container: {
-    minHeight: "100vh",
-    width: "100%",
+    padding: "16px 20px",
+
     display: "flex",
-    justifyContent: "center",
+
+    justifyContent:
+      "space-between",
+
     alignItems: "center",
-    padding: "20px",
-    background: "linear-gradient(135deg, #020617, #052e16, #16a34a)",
+
+    flexWrap: "wrap",
+
+    gap: "16px",
+
+    width: "100%",
+
+    overflowX: "hidden",
+
     boxSizing: "border-box",
   },
 
-  card: {
-    width: "100%",
-    maxWidth: "400px",
-    background: "#ffffff",
-    borderRadius: "24px",
-    padding: "40px 25px",
-    boxShadow:
-      "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-    boxSizing: "border-box",
-  },
-
-  logoSection: {
-    textAlign: "center",
-    marginBottom: "10px",
-  },
-
-  logo: {
-    width: "80px",
-    height: "80px",
-    margin: "0 auto",
-    borderRadius: "20px",
-    background: "#16a34a",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontSize: "40px",
-    marginBottom: "12px",
+  left: {
+    flex: 1,
+    minWidth: 0,
   },
 
   title: {
     margin: 0,
-    fontSize: "32px",
-    color: "#111827",
-    fontWeight: "800",
-    letterSpacing: "-0.5px",
+
+    fontSize:
+      "clamp(22px,4vw,30px)",
+
+    fontWeight: "700",
   },
 
   subtitle: {
-    color: "#6b7280",
-    marginTop: "8px",
+    marginTop: "6px",
+
     fontSize: "14px",
   },
 
-  inputGroup: {
-    width: "100%",
-    textAlign: "left",
+  right: {
+    display: "flex",
+
+    alignItems: "center",
+
+    gap: "12px",
+
+    flexWrap: "wrap",
+
+    justifyContent:
+      "flex-end",
   },
 
-  label: {
-    fontWeight: "600",
-    marginBottom: "6px",
-    display: "block",
-    color: "#374151",
-    fontSize: "14px",
+  notificationWrapper: {
+    position: "relative",
   },
 
-  input: {
-    width: "100%",
-    padding: "14px",
-    border: "1.5px solid #e5e7eb",
-    borderRadius: "12px",
-    background: "#f9fafb",
-    color: "#111827",
-    boxSizing: "border-box",
-    outline: "none",
-    fontSize: "16px",
-    transition: "border-color 0.2s",
+  iconButton: {
+    width: "52px",
+
+    height: "52px",
+
+    borderRadius: "16px",
+
+    fontSize: "20px",
+
+    cursor: "pointer",
+
+    position: "relative",
+
+    flexShrink: 0,
   },
 
-  button: {
-    width: "100%",
-    padding: "16px",
-    border: "none",
-    borderRadius: "12px",
+  badge: {
+    position: "absolute",
+
+    top: "-5px",
+
+    right: "-5px",
+
+    width: "22px",
+
+    height: "22px",
+
+    borderRadius: "50%",
+
+    background: "#ef4444",
+
     color: "#ffffff",
-    fontSize: "16px",
+
+    display: "flex",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    fontSize: "11px",
+
+    fontWeight: "bold",
+  },
+
+  dropdown: {
+    position: "absolute",
+
+    top: "65px",
+
+    right: 0,
+
+    width: "320px",
+
+    maxWidth: "90vw",
+
+    maxHeight: "420px",
+
+    overflowY: "auto",
+
+    borderRadius: "20px",
+
+    padding: "18px",
+
+    boxShadow:
+      "0 10px 35px rgba(0,0,0,0.3)",
+
+    zIndex: 999,
+
+    boxSizing: "border-box",
+  },
+
+  dropdownTitle: {
+    marginTop: 0,
+
+    marginBottom: "16px",
+  },
+
+  notificationItem: {
+    padding: "14px",
+
+    borderRadius: "14px",
+
+    marginBottom: "12px",
+
+    color: "#ffffff",
+
     fontWeight: "600",
-    transition: "0.2s",
-    marginTop: "10px",
-    boxShadow: "0 4px 6px -1px rgba(22,163,74,0.2)",
+
+    fontSize: "14px",
+
+    wordBreak: "break-word",
+  },
+
+  userCard: {
+    display: "flex",
+
+    alignItems: "center",
+
+    gap: "10px",
+
+    padding: "10px 14px",
+
+    borderRadius: "18px",
+
+    maxWidth: "220px",
+
+    overflow: "hidden",
+  },
+
+  avatar: {
+    width: "48px",
+
+    height: "48px",
+
+    borderRadius: "50%",
+
+    background: "#16a34a",
+
+    color: "#ffffff",
+
+    display: "flex",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    fontWeight: "bold",
+
+    flexShrink: 0,
+  },
+
+  userInfo: {
+    overflow: "hidden",
+  },
+
+  userName: {
+    fontWeight: "700",
+
+    whiteSpace: "nowrap",
+
+    overflow: "hidden",
+
+    textOverflow: "ellipsis",
+  },
+
+  userRole: {
+    fontSize: "13px",
+
+    color: "#94a3b8",
+
+    marginTop: "3px",
+  },
+
+  logoutButton: {
+    background: "#dc2626",
+
+    color: "#ffffff",
+
+    border: "none",
+
+    padding: "12px 20px",
+
+    borderRadius: "14px",
+
+    fontWeight: "700",
+
+    cursor: "pointer",
+
+    whiteSpace: "nowrap",
   },
 };
 
-export default Login;
-
-
-
-
+export default Topbar;

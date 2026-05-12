@@ -379,15 +379,7 @@ function App() {
   if (!authed) {
 
     return (
-
-      <div
-        style={{
-          width: "100%",
-          minHeight: "100dvh",
-          overflow: "hidden",
-        }}
-      >
-
+      <>
         <Login
           setAuthed={setAuthed}
           setCurrentUser={setCurrentUser}
@@ -405,8 +397,7 @@ function App() {
 
           </div>
         )}
-
-      </div>
+      </>
     );
   }
 
@@ -584,9 +575,9 @@ function App() {
 
     <div style={styles.app}>
 
-      {/* MOBILE HIDE SIDEBAR */}
+      {/* SIDEBAR */}
 
-      {window.innerWidth > 768 && (
+      <div className="sidebar-wrapper">
 
         <Sidebar
           page={page}
@@ -595,7 +586,7 @@ function App() {
           dark={dark}
         />
 
-      )}
+      </div>
 
       {/* MAIN */}
 
@@ -645,10 +636,8 @@ const styles = {
     display: "flex",
     minHeight: "100dvh",
     width: "100%",
-    overflowX: "hidden",
-    overflowY: "auto",
+    overflow: "hidden",
     flexDirection: "row",
-    flexWrap: "wrap",
     background: "#020617",
     color: "#ffffff",
   },
@@ -659,7 +648,8 @@ const styles = {
     flexDirection: "column",
     minWidth: 0,
     width: "100%",
-    overflowX: "hidden",
+    height: "100dvh",
+    overflowY: "auto",
   },
 
   content: {

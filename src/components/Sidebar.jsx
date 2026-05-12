@@ -5,18 +5,10 @@ function Sidebar({
   dark,
 }) {
 
-  /* =========================
-        CHECK ADMIN
-  ========================= */
-
   const isAdmin =
     currentUser?.role
       ?.toLowerCase() ===
     "admin";
-
-  /* =========================
-        NAV ITEMS
-  ========================= */
 
   const navItems = [
 
@@ -80,10 +72,6 @@ function Sidebar({
       icon: "📈",
     },
 
-    /* =========================
-          ADMIN ONLY
-    ========================= */
-
     ...(isAdmin
       ? [
           {
@@ -105,11 +93,9 @@ function Sidebar({
 
     <div style={styles.sidebar}>
 
-      {/* TOP SECTION */}
+      {/* TOP */}
 
       <div>
-
-        {/* LOGO */}
 
         <div style={styles.logoContainer}>
 
@@ -127,7 +113,7 @@ function Sidebar({
 
         </div>
 
-        {/* NAVIGATION */}
+        {/* NAV */}
 
         <div style={styles.navContainer}>
 
@@ -156,8 +142,6 @@ function Sidebar({
                   border:
                     active
                       ? "1px solid rgba(255,255,255,0.15)"
-                      : dark
-                      ? "1px solid #1e293b"
                       : "1px solid transparent",
 
                   fontWeight:
@@ -167,8 +151,6 @@ function Sidebar({
                 }}
               >
 
-                {/* ICON */}
-
                 <div
                   style={{
                     ...styles.iconBox,
@@ -176,15 +158,11 @@ function Sidebar({
                     background:
                       active
                         ? "rgba(255,255,255,0.18)"
-                        : dark
-                        ? "#111827"
-                        : "rgba(255,255,255,0.08)",
+                        : "#111827",
                   }}
                 >
                   {item.icon}
                 </div>
-
-                {/* LABEL */}
 
                 <span style={styles.navLabel}>
                   {item.label}
@@ -198,50 +176,32 @@ function Sidebar({
 
       </div>
 
-      {/* USER SECTION */}
+      {/* USER */}
 
-      <div style={{
-        ...styles.userCard,
-
-        background:
-          dark
-            ? "#111827"
-            : "rgba(255,255,255,0.08)",
-
-        border:
-          dark
-            ? "1px solid #1f2937"
-            : "1px solid rgba(255,255,255,0.08)",
-      }}>
+      <div style={styles.userCard}>
 
         <div style={styles.userRow}>
 
-          {/* USER IMAGE */}
+          {currentUser?.image ? (
 
-          {
-            currentUser?.image ? (
+            <img
+              src={currentUser.image}
+              alt="user"
+              style={styles.userImage}
+            />
 
-              <img
-                src={currentUser.image}
-                alt="user"
-                style={styles.userImage}
-              />
+          ) : (
 
-            ) : (
+            <div style={styles.avatar}>
 
-              <div style={styles.avatar}>
+              {
+                currentUser?.name
+                  ?.charAt(0)
+                  ?.toUpperCase()
+              }
 
-                {
-                  currentUser?.name
-                    ?.charAt(0)
-                    ?.toUpperCase()
-                }
-
-              </div>
-            )
-          }
-
-          {/* USER INFO */}
+            </div>
+          )}
 
           <div style={{
             overflow: "hidden",
@@ -265,16 +225,11 @@ function Sidebar({
   );
 }
 
-/* =========================
-      RESPONSIVE STYLES
-========================= */
-
 const styles = {
 
   sidebar: {
-    width: "100%",
-    maxWidth: "260px",
-    minHeight: "100vh",
+    width: "280px",
+    height: "100dvh",
 
     background:
       "linear-gradient(180deg,#052e16,#064e3b)",
@@ -291,9 +246,7 @@ const styles = {
 
     overflowY: "auto",
 
-    position: "sticky",
-
-    top: 0,
+    flexShrink: 0,
 
     boxSizing: "border-box",
 
@@ -323,9 +276,6 @@ const styles = {
     justifyContent: "center",
 
     fontSize: "34px",
-
-    boxShadow:
-      "0 10px 25px rgba(0,0,0,0.25)",
   },
 
   logoText: {
@@ -409,6 +359,10 @@ const styles = {
     padding: "16px",
 
     borderRadius: "20px",
+
+    background: "#111827",
+
+    border: "1px solid #1f2937",
 
     boxSizing: "border-box",
   },
