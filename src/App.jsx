@@ -59,10 +59,8 @@ function App() {
         AUTH
   ========================= */
 
-  const [
-    authed,
-    setAuthed,
-  ] = useState(false);
+  const [authed, setAuthed] =
+    useState(false);
 
   const [
     currentUser,
@@ -78,28 +76,22 @@ function App() {
         THEME
   ========================= */
 
-  const [
-    dark,
-    setDark,
-  ] = useState(true);
+  const [dark, setDark] =
+    useState(true);
 
   /* =========================
         PAGE
   ========================= */
 
-  const [
-    page,
-    setPage,
-  ] = useState("dashboard");
+  const [page, setPage] =
+    useState("dashboard");
 
   /* =========================
         FIREBASE DATA
   ========================= */
 
-  const [
-    users,
-    setUsers,
-  ] = useState([]);
+  const [users, setUsers] =
+    useState([]);
 
   const [
     medicines,
@@ -116,10 +108,8 @@ function App() {
     setSuppliers,
   ] = useState([]);
 
-  const [
-    sales,
-    setSales,
-  ] = useState([]);
+  const [sales, setSales] =
+    useState([]);
 
   const [
     expenses,
@@ -224,26 +214,20 @@ function App() {
                     ?.toLowerCase()
               );
 
-            if (
-              userDoc
-            ) {
+            setCurrentUser({
+              id: user.uid,
+              ...(userDoc || {}),
+            });
 
-              setCurrentUser({
-                id:
-                  user.uid,
+            setAuthed(true);
 
-                ...userDoc,
-              });
+          } else {
 
-              setAuthed(
-                true
-              );
-            }
+            setAuthed(false);
+            setCurrentUser(null);
           }
 
-          setAuthLoading(
-            false
-          );
+          setAuthLoading(false);
         }
       );
 
@@ -382,18 +366,8 @@ function App() {
 
     return (
 
-      <div style={{
-        ...styles.loadingContainer,
-
-        background:
-          "#020617",
-
-        color:
-          "#ffffff",
-      }}>
-
+      <div style={styles.loadingContainer}>
         Loading...
-
       </div>
     );
   }
@@ -405,37 +379,31 @@ function App() {
   if (!authed) {
 
     return (
-
       <>
-
         <Login
-          setAuthed={
-            setAuthed
-          }
-
+          setAuthed={setAuthed}
           setCurrentUser={
             setCurrentUser
           }
-
           toast={toast}
         />
-{toastData.show && (
 
-  <div style={styles.toastWrapper}>
+        {toastData.show && (
 
-    <Toast
-      message={
-        toastData.message
-      }
+          <div style={styles.toastWrapper}>
 
-      type={
-        toastData.type
-      }
-    />
+            <Toast
+              message={
+                toastData.message
+              }
 
-  </div>
-)}
+              type={
+                toastData.type
+              }
+            />
 
+          </div>
+        )}
       </>
     );
   }
@@ -449,195 +417,144 @@ function App() {
     switch (page) {
 
       case "dashboard":
-
         return (
           <Dashboard
             medicines={
               medicines
             }
-
             customers={
               customers
             }
-
             sales={sales}
-
             dark={dark}
           />
         );
 
       case "pos":
-
         return (
           <POS
             medicines={
               medicines
             }
-
             setMedicines={
               setMedicines
             }
-
             customers={
               customers
             }
-
             setCustomers={
               setCustomers
             }
-
             sales={sales}
-
-            setSales={
-              setSales
-            }
-
+            setSales={setSales}
             toast={toast}
-
             dark={dark}
           />
         );
 
       case "medicines":
-
         return (
           <Medicines
             medicines={
               medicines
             }
-
             setMedicines={
               setMedicines
             }
-
             toast={toast}
-
             dark={dark}
           />
         );
 
       case "inventory":
-
         return (
           <Inventory
             medicines={
               medicines
             }
-
             darkMode={dark}
-
             toast={toast}
           />
         );
 
       case "customers":
-
         return (
           <Customers
             customers={
               customers
             }
-
             setCustomers={
               setCustomers
             }
-
             toast={toast}
-
             darkMode={dark}
           />
         );
 
       case "suppliers":
-
         return (
           <Suppliers
             suppliers={
               suppliers
             }
-
             setSuppliers={
               setSuppliers
             }
-
             toast={toast}
-
             darkMode={dark}
           />
         );
 
       case "sales":
-
         return (
           <SalesHistory
             sales={sales}
-
-            setSales={
-              setSales
-            }
-
+            setSales={setSales}
             toast={toast}
-
             dark={dark}
           />
         );
 
       case "debts":
-
         return (
           <Debts
             customers={
               customers
             }
-
             setCustomers={
               setCustomers
             }
-
             sales={sales}
-
-            setSales={
-              setSales
-            }
-
+            setSales={setSales}
             toast={toast}
-
             dark={dark}
           />
         );
 
       case "expenses":
-
         return (
           <Expenses
             expenses={
               expenses
             }
-
             setExpenses={
               setExpenses
             }
-
             toast={toast}
-
             dark={dark}
           />
         );
 
       case "reports":
-
         return (
           <Reports
             sales={sales}
-
             medicines={
               medicines
             }
-
             expenses={
               expenses
             }
-
             dark={dark}
           />
         );
@@ -651,16 +568,8 @@ function App() {
         ) {
 
           return (
-
-            <div style={{
-              ...styles.accessDenied,
-
-              color:
-                "#ef4444",
-            }}>
-
+            <div style={styles.accessDenied}>
               Access Denied 🚫
-
             </div>
           );
         }
@@ -670,45 +579,33 @@ function App() {
             currentUser={
               currentUser
             }
-
             toast={toast}
-
             darkMode={dark}
           />
         );
 
       case "settings":
-
         return (
           <Settings
             dark={dark}
-
-            setDark={
-              setDark
-            }
-
+            setDark={setDark}
             currentUser={
               currentUser
             }
-
             toast={toast}
           />
         );
 
       default:
-
         return (
           <Dashboard
             medicines={
               medicines
             }
-
             customers={
               customers
             }
-
             sales={sales}
-
             dark={dark}
           />
         );
@@ -717,86 +614,41 @@ function App() {
 
   return (
 
-    <div style={{
-      ...styles.app,
-
-      background:
-        dark
-          ? "#020617"
-          : "#f3f4f6",
-
-      color:
-        dark
-          ? "#ffffff"
-          : "#111827",
-    }}>
+    <div style={styles.app}>
 
       {/* SIDEBAR */}
 
       <Sidebar
         page={page}
-
         setPage={setPage}
-
         currentUser={
           currentUser
         }
-
         dark={dark}
       />
 
       {/* MAIN */}
 
-      <div style={{
-        ...styles.main,
-
-        background:
-          dark
-            ? "#020617"
-            : "#f3f4f6",
-      }}>
-
-        {/* TOPBAR */}
+      <div style={styles.main}>
 
         <Topbar
           dark={dark}
-
-          setDark={
-            setDark
-          }
-
-          setAuthed={
-            setAuthed
-          }
-
+          setDark={setDark}
+          setAuthed={setAuthed}
           setCurrentUser={
             setCurrentUser
           }
-
           currentUser={
             currentUser
           }
-
           medicines={
             medicines
           }
-
           sales={sales}
         />
 
-        {/* CONTENT */}
-
-        <div style={{
-          ...styles.content,
-
-          background:
-            dark
-              ? "#020617"
-              : "#f3f4f6",
-        }}>
-
+        <div style={styles.content}>
           {renderPage()}
-
         </div>
 
       </div>
@@ -805,15 +657,19 @@ function App() {
 
       {toastData.show && (
 
-        <Toast
-          message={
-            toastData.message
-          }
+        <div style={styles.toastWrapper}>
 
-          type={
-            toastData.type
-          }
-        />
+          <Toast
+            message={
+              toastData.message
+            }
+
+            type={
+              toastData.type
+            }
+          />
+
+        </div>
       )}
 
     </div>
@@ -828,103 +684,67 @@ const styles = {
 
   app: {
     display: "flex",
-
     minHeight: "100vh",
-
     width: "100%",
-
     overflow: "hidden",
-
     flexDirection: "row",
+    background:
+      "#020617",
+    color: "#ffffff",
   },
 
   main: {
     flex: 1,
-
     display: "flex",
-
     flexDirection:
       "column",
-
     minWidth: 0,
-
     width: "100%",
   },
 
   content: {
     flex: 1,
-
     overflowY: "auto",
-
     overflowX: "hidden",
-
     padding:
       "clamp(14px,3vw,24px)",
-
     width: "100%",
-
     boxSizing:
       "border-box",
   },
+
   toastWrapper: {
-
-  position: "fixed",
-
-  top: "20px",
-
-  right: "20px",
-
-  zIndex: 9999,
-
-  width: "auto",
-
-  height: "auto",
-
-  display: "flex",
-
-  justifyContent: "flex-end",
-
-  alignItems: "flex-end",
-
-  background: "transparent",
-
-  pointerEvents: "none",
-},
+    position: "fixed",
+    top: "20px",
+    right: "20px",
+    zIndex: 9999,
+  },
 
   loadingContainer: {
     minHeight: "100vh",
-
     display: "flex",
-
     justifyContent:
       "center",
-
     alignItems:
       "center",
-
     fontSize:
       "clamp(22px,5vw,28px)",
-
     fontWeight:
       "bold",
-
-    padding: "20px",
-
-    textAlign:
-      "center",
+    background:
+      "#020617",
+    color: "#ffffff",
   },
 
   accessDenied: {
     fontSize:
       "clamp(22px,5vw,28px)",
-
     fontWeight:
       "bold",
-
     padding: "30px",
-
     textAlign:
       "center",
+    color: "#ef4444",
   },
 };
 
