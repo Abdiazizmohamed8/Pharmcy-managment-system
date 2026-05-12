@@ -19,6 +19,7 @@ function Login({ setAuthed, setCurrentUser, toast }) {
 
     try {
       setLoading(true);
+
       const userCredential = await signInWithEmailAndPassword(
         auth,
         form.email.trim(),
@@ -35,7 +36,7 @@ function Login({ setAuthed, setCurrentUser, toast }) {
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        toast("User data not found in database", "error");
+        toast("Your username or password is invalid", "error");
         setLoading(false);
         return;
       }
@@ -54,16 +55,14 @@ function Login({ setAuthed, setCurrentUser, toast }) {
       });
 
       setAuthed(true);
+
       toast("Login successful", "success");
+
     } catch (error) {
       console.log(error);
-      if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
-        toast("Invalid email or password", "error");
-      } else if (error.code === "auth/invalid-email") {
-        toast("Invalid email format", "error");
-      } else {
-        toast("Login failed", "error");
-      }
+
+      toast("Your username or password is invalid", "error");
+
     } finally {
       setLoading(false);
     }
@@ -78,32 +77,49 @@ function Login({ setAuthed, setCurrentUser, toast }) {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
+
         <div style={styles.logoSection}>
           <div style={styles.logo}>💊</div>
+
           <h1 style={styles.title}>ANFAC</h1>
-          <p style={styles.subtitle}>Pharmacy Management System</p>
+
+          <p style={styles.subtitle}>
+            Pharmacy Management System
+          </p>
         </div>
 
         <div style={styles.inputGroup}>
           <label style={styles.label}>Email</label>
+
           <input
             type="email"
             placeholder="Enter email"
             value={form.email}
             onKeyDown={handleKeyDown}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                email: e.target.value,
+              })
+            }
             style={styles.input}
           />
         </div>
 
         <div style={styles.inputGroup}>
           <label style={styles.label}>Password</label>
+
           <input
             type="password"
             placeholder="Enter password"
             value={form.password}
             onKeyDown={handleKeyDown}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                password: e.target.value,
+              })
+            }
             style={styles.input}
           />
         </div>
@@ -119,6 +135,7 @@ function Login({ setAuthed, setCurrentUser, toast }) {
         >
           {loading ? "Loading..." : "Login"}
         </button>
+
       </div>
     </div>
   );
@@ -133,7 +150,7 @@ const styles = {
     alignItems: "center",
     padding: "20px",
     background: "linear-gradient(135deg, #020617, #052e16, #16a34a)",
-    boxSizing: "border-box", // Aad u muhiim ah si aanu padding-ku u weyneyn container-ka
+    boxSizing: "border-box",
   },
 
   card: {
@@ -142,7 +159,8 @@ const styles = {
     background: "#ffffff",
     borderRadius: "24px",
     padding: "40px 25px",
-    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+    boxShadow:
+      "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)",
     display: "flex",
     flexDirection: "column",
     gap: "20px",
@@ -201,7 +219,7 @@ const styles = {
     borderRadius: "12px",
     background: "#f9fafb",
     color: "#111827",
-    boxSizing: "border-box", // Waxay ka hortagtaa in input-ku ka baxo card-ka
+    boxSizing: "border-box",
     outline: "none",
     fontSize: "16px",
     transition: "border-color 0.2s",
@@ -217,7 +235,7 @@ const styles = {
     fontWeight: "600",
     transition: "0.2s",
     marginTop: "10px",
-    boxShadow: "0 4px 6px -1px rgba(22, 163, 74, 0.2)",
+    boxShadow: "0 4px 6px -1px rgba(22,163,74,0.2)",
   },
 };
 
