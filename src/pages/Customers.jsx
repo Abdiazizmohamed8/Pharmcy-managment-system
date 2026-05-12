@@ -21,7 +21,7 @@ function Customers({
 }) {
 
   /* =========================
-     STATES
+        STATES
   ========================= */
 
   const [
@@ -54,7 +54,7 @@ function Customers({
   });
 
   /* =========================
-     FIREBASE REALTIME
+        FIREBASE REALTIME
   ========================= */
 
   useEffect(() => {
@@ -76,9 +76,7 @@ function Customers({
               })
             );
 
-          setCustomers(
-            data
-          );
+          setCustomers(data);
         }
       );
 
@@ -88,7 +86,7 @@ function Customers({
   }, []);
 
   /* =========================
-     FILTER
+        FILTER CUSTOMERS
   ========================= */
 
   const filteredCustomers =
@@ -117,7 +115,7 @@ function Customers({
     );
 
   /* =========================
-     TOTAL DEBT
+        TOTAL DEBT
   ========================= */
 
   const totalDebt =
@@ -136,7 +134,7 @@ function Customers({
     );
 
   /* =========================
-     HANDLE CHANGE
+        HANDLE CHANGE
   ========================= */
 
   const handleChange =
@@ -151,15 +149,13 @@ function Customers({
     };
 
   /* =========================
-     ADD CUSTOMER
+        ADD CUSTOMER
   ========================= */
 
   const addCustomer =
     async () => {
 
-      if (
-        !form.name
-      ) {
+      if (!form.name) {
 
         toast?.(
           "Customer name required",
@@ -173,27 +169,27 @@ function Customers({
 
         setLoading(true);
 
-        const newCustomer =
-          {
-            name:
-              form.name,
+        const newCustomer = {
 
-            phone:
-              form.phone,
+          name:
+            form.name,
 
-            address:
-              form.address,
+          phone:
+            form.phone,
 
-            debt: 0,
+          address:
+            form.address,
 
-            joined:
-              new Date()
-                .toISOString()
-                .split("T")[0],
+          debt: 0,
 
-            createdAt:
-              Date.now(),
-          };
+          joined:
+            new Date()
+              .toISOString()
+              .split("T")[0],
+
+          createdAt:
+            Date.now(),
+        };
 
         await addDoc(
           collection(
@@ -215,15 +211,11 @@ function Customers({
           address: "",
         });
 
-        setShowModal(
-          false
-        );
+        setShowModal(false);
 
       } catch (error) {
 
-        console.log(
-          error
-        );
+        console.log(error);
 
         toast?.(
           "Failed to add customer",
@@ -237,7 +229,7 @@ function Customers({
     };
 
   /* =========================
-     DELETE CUSTOMER
+        DELETE CUSTOMER
   ========================= */
 
   const deleteCustomer =
@@ -248,9 +240,7 @@ function Customers({
           "Delete customer?"
         );
 
-      if (
-        !confirmDelete
-      )
+      if (!confirmDelete)
         return;
 
       try {
@@ -270,9 +260,7 @@ function Customers({
 
       } catch (error) {
 
-        console.log(
-          error
-        );
+        console.log(error);
 
         toast?.(
           "Delete failed",
@@ -282,167 +270,73 @@ function Customers({
     };
 
   return (
-    <div
-      style={{
-        minHeight:
-          "100vh",
 
-        width: "100%",
+    <div style={{
+      ...styles.container,
 
-        background:
-          darkMode
-            ? "#020617"
-            : "#f3f4f6",
+      background:
+        darkMode
+          ? "#020617"
+          : "#f3f4f6",
 
-        color:
-          darkMode
-            ? "#ffffff"
-            : "#111827",
-
-        padding:
-          "24px",
-
-        boxSizing:
-          "border-box",
-
-        transition:
-          "0.3s ease",
-      }}
-    >
+      color:
+        darkMode
+          ? "#ffffff"
+          : "#111827",
+    }}>
 
       {/* HEADER */}
 
-      <div
-        style={{
-          display: "flex",
-
-          justifyContent:
-            "space-between",
-
-          alignItems:
-            "center",
-
-          flexWrap:
-            "wrap",
-
-          gap: "16px",
-
-          marginBottom:
-            "24px",
-        }}
-      >
+      <div style={styles.header}>
 
         <div>
 
-          <h1
-            style={{
-              margin: 0,
+          <h1 style={{
+            ...styles.title,
 
-              fontSize:
-                "34px",
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}
-          >
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
+          }}>
             Customers 👥
           </h1>
 
-          <p
-            style={{
-              marginTop:
-                "8px",
+          <p style={{
+            ...styles.subtitle,
 
-              color:
-                darkMode
-                  ? "#d1d5db"
-                  : "#6b7280",
-            }}
-          >
+            color:
+              darkMode
+                ? "#d1d5db"
+                : "#6b7280",
+          }}>
             Manage pharmacy customers
           </p>
+
         </div>
 
-        <div
-          style={{
-            display: "flex",
-
-            gap: "14px",
-
-            flexWrap:
-              "wrap",
-          }}
-        >
+        <div style={styles.headerActions}>
 
           {/* TOTAL DEBT */}
 
-          <div
-            style={{
-              background:
-                "#dc2626",
-
-              color:
-                "#ffffff",
-
-              padding:
-                "14px 20px",
-
-              borderRadius:
-                "16px",
-
-              fontWeight:
-                "bold",
-
-              minWidth:
-                "160px",
-
-              textAlign:
-                "center",
-            }}
-          >
+          <div style={styles.debtBox}>
             Debt: $
-            {totalDebt.toFixed(
-              2
-            )}
+            {totalDebt.toFixed(2)}
           </div>
 
           {/* ADD BUTTON */}
 
           <button
             onClick={() =>
-              setShowModal(
-                true
-              )
+              setShowModal(true)
             }
-
-            style={{
-              background:
-                "#16a34a",
-
-              color:
-                "#ffffff",
-
-              border:
-                "none",
-
-              padding:
-                "14px 18px",
-
-              borderRadius:
-                "14px",
-
-              fontWeight:
-                "bold",
-
-              cursor:
-                "pointer",
-            }}
+            style={styles.addButton}
           >
             + Add Customer
           </button>
+
         </div>
+
       </div>
 
       {/* SEARCH */}
@@ -461,96 +355,49 @@ function Customers({
         }
 
         style={{
-          width: "100%",
-
-          maxWidth:
-            "420px",
-
-          padding:
-            "14px",
-
-          borderRadius:
-            "14px",
+          ...styles.searchInput,
 
           border:
             darkMode
-
               ? "1px solid #374151"
-
               : "1px solid #d1d5db",
 
           background:
             darkMode
-
               ? "#111827"
-
               : "#ffffff",
 
           color:
             darkMode
-
               ? "#ffffff"
-
               : "#111827",
-
-          outline:
-            "none",
-
-          marginBottom:
-            "22px",
-
-          boxSizing:
-            "border-box",
         }}
       />
 
       {/* TABLE */}
 
-      <div
-        style={{
-          overflowX:
-            "auto",
+      <div style={{
+        ...styles.tableWrapper,
 
-          borderRadius:
-            "22px",
+        background:
+          darkMode
+            ? "#111827"
+            : "#ffffff",
 
-          background:
-            darkMode
-              ? "#111827"
-              : "#ffffff",
+        border:
+          darkMode
+            ? "1px solid #1f2937"
+            : "1px solid #e5e7eb",
+      }}>
 
-          border:
-            darkMode
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
+        <table style={styles.table}>
 
-          boxShadow:
-            darkMode
-              ? "0 4px 20px rgba(0,0,0,0.35)"
-              : "0 4px 18px rgba(0,0,0,0.05)",
-        }}
-      >
-
-        <table
-          style={{
-            width: "100%",
-
-            minWidth:
-              "850px",
-
-            borderCollapse:
-              "collapse",
-          }}
-        >
-
-          <thead
-            style={{
-              background:
-                darkMode
-                  ? "#0f172a"
-                  : "#f9fafb",
-            }}
-          >
+          <thead style={{
+            background:
+              darkMode
+                ? "#0f172a"
+                : "#f9fafb",
+          }}>
 
             <tr>
 
@@ -561,592 +408,611 @@ function Customers({
                 "Debt",
                 "Joined",
                 "Action",
-              ].map(
-                (
-                  item
-                ) => (
+              ].map((item) => (
 
-                  <th
-                    key={
-                      item
-                    }
+                <th
+                  key={item}
+                  style={th(darkMode)}
+                >
+                  {item}
+                </th>
+              ))}
 
-                    style={th(
-                      darkMode
-                    )}
-                  >
-                    {item}
-                  </th>
-                )
-              )}
             </tr>
+
           </thead>
 
           <tbody>
 
-            {filteredCustomers.length ===
-            0 ? (
+            {
+              filteredCustomers.length === 0 ? (
 
-              <tr>
+                <tr>
 
-                <td
-                  colSpan="6"
+                  <td
+                    colSpan="6"
+                    style={styles.empty}
+                  >
+                    No customers found
+                  </td>
 
-                  style={{
-                    padding:
-                      "60px",
+                </tr>
 
-                    textAlign:
-                      "center",
+              ) : (
 
-                    color:
-                      darkMode
-                        ? "#d1d5db"
-                        : "#6b7280",
-                  }}
-                >
-                  No customers found
-                </td>
-              </tr>
+                filteredCustomers.map(
+                  (customer) => {
 
-            ) : (
+                    const hasDebt =
+                      Number(
+                        customer.debt
+                      ) > 0;
 
-              filteredCustomers.map(
-                (
-                  customer
-                ) => {
+                    return (
 
-                  const hasDebt =
-                    Number(
-                      customer.debt
-                    ) > 0;
-
-                  return (
-                    <tr
-                      key={
-                        customer.id
-                      }
-
-                      style={{
-                        borderBottom:
-                          darkMode
-
-                            ? "1px solid #374151"
-
-                            : "1px solid #f3f4f6",
-                      }}
-                    >
-
-                      <td
-                        style={td(
-                          darkMode
-                        )}
+                      <tr
+                        key={customer.id}
+                        style={{
+                          borderBottom:
+                            darkMode
+                              ? "1px solid #374151"
+                              : "1px solid #f3f4f6",
+                        }}
                       >
 
-                        <div
-                          style={{
-                            display:
-                              "flex",
+                        {/* CUSTOMER */}
 
-                            alignItems:
-                              "center",
+                        <td style={td(darkMode)}>
 
-                            gap: "12px",
-                          }}
-                        >
+                          <div style={styles.customerRow}>
 
-                          <div
-                            style={{
-                              width:
-                                "44px",
+                            <div style={styles.avatar}>
+                              {customer.name
+                                ?.charAt(0)
+                                ?.toUpperCase()}
+                            </div>
 
-                              height:
-                                "44px",
+                            <div>
 
-                              borderRadius:
-                                "50%",
-
-                              background:
-                                "#16a34a",
-
-                              color:
-                                "#ffffff",
-
-                              display:
-                                "flex",
-
-                              alignItems:
-                                "center",
-
-                              justifyContent:
-                                "center",
-
-                              fontWeight:
-                                "bold",
-                            }}
-                          >
-                            {customer.name
-                              ?.charAt(
-                                0
-                              )
-                              ?.toUpperCase()}
-                          </div>
-
-                          <div>
-
-                            <div
-                              style={{
+                              <div style={{
                                 fontWeight:
                                   "bold",
+                              }}>
+                                {
+                                  customer.name
+                                }
+                              </div>
 
-                                color:
-                                  darkMode
-                                    ? "#ffffff"
-                                    : "#111827",
-                              }}
-                            >
-                              {
-                                customer.name
-                              }
+                              <div style={styles.customerText}>
+                                Customer
+                              </div>
+
                             </div>
 
-                            <div
-                              style={{
-                                fontSize:
-                                  "12px",
-
-                                color:
-                                  darkMode
-                                    ? "#d1d5db"
-                                    : "#6b7280",
-                              }}
-                            >
-                              Customer
-                            </div>
                           </div>
-                        </div>
-                      </td>
 
-                      <td
-                        style={td(
-                          darkMode
-                        )}
-                      >
-                        {customer.phone ||
-                          "N/A"}
-                      </td>
+                        </td>
 
-                      <td
-                        style={td(
-                          darkMode
-                        )}
-                      >
-                        {customer.address ||
-                          "N/A"}
-                      </td>
+                        {/* PHONE */}
 
-                      <td
-                        style={td(
-                          darkMode
-                        )}
-                      >
+                        <td style={td(darkMode)}>
+                          {
+                            customer.phone ||
+                            "N/A"
+                          }
+                        </td>
 
-                        {hasDebt ? (
+                        {/* ADDRESS */}
 
-                          <span
-                            style={{
-                              background:
-                                darkMode
-                                  ? "#7f1d1d"
-                                  : "#fee2e2",
+                        <td style={td(darkMode)}>
+                          {
+                            customer.address ||
+                            "N/A"
+                          }
+                        </td>
 
-                              color:
-                                "#dc2626",
+                        {/* DEBT */}
 
-                              padding:
-                                "8px 12px",
+                        <td style={td(darkMode)}>
 
-                              borderRadius:
-                                "999px",
+                          {
+                            hasDebt ? (
 
-                              fontWeight:
-                                "bold",
+                              <span style={styles.debtBadge}>
+                                $
+                                {Number(
+                                  customer.debt
+                                ).toFixed(2)}
+                              </span>
 
-                              fontSize:
-                                "12px",
-                            }}
-                          >
-                            $
-                            {Number(
-                              customer.debt
-                            ).toFixed(
-                              2
-                            )}
-                          </span>
+                            ) : (
 
-                        ) : (
-
-                          <span
-                            style={{
-                              background:
-                                darkMode
-                                  ? "#14532d"
-                                  : "#dcfce7",
-
-                              color:
-                                "#16a34a",
-
-                              padding:
-                                "8px 12px",
-
-                              borderRadius:
-                                "999px",
-
-                              fontWeight:
-                                "bold",
-
-                              fontSize:
-                                "12px",
-                            }}
-                          >
-                            No Debt
-                          </span>
-                        )}
-                      </td>
-
-                      <td
-                        style={td(
-                          darkMode
-                        )}
-                      >
-                        {
-                          customer.joined
-                        }
-                      </td>
-
-                      <td
-                        style={td(
-                          darkMode
-                        )}
-                      >
-
-                        <button
-                          onClick={() =>
-                            deleteCustomer(
-                              customer.id
+                              <span style={styles.noDebtBadge}>
+                                No Debt
+                              </span>
                             )
                           }
 
-                          style={{
-                            background:
-                              "#dc2626",
+                        </td>
 
-                            color:
-                              "#ffffff",
+                        {/* JOINED */}
 
-                            border:
-                              "none",
+                        <td style={td(darkMode)}>
+                          {
+                            customer.joined
+                          }
+                        </td>
 
-                            padding:
-                              "10px 14px",
+                        {/* ACTION */}
 
-                            borderRadius:
-                              "10px",
+                        <td style={td(darkMode)}>
 
-                            cursor:
-                              "pointer",
+                          <button
+                            onClick={() =>
+                              deleteCustomer(
+                                customer.id
+                              )
+                            }
+                            style={styles.deleteButton}
+                          >
+                            Delete
+                          </button>
 
-                            fontWeight:
-                              "bold",
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                }
+                        </td>
+
+                      </tr>
+                    );
+                  }
+                )
               )
-            )}
+            }
+
           </tbody>
+
         </table>
+
       </div>
 
       {/* MODAL */}
 
-      {showModal && (
+      {
+        showModal && (
 
-        <div
-          style={{
-            position:
-              "fixed",
+          <div style={styles.modalOverlay}>
 
-            inset: 0,
-
-            background:
-              "rgba(0,0,0,0.6)",
-
-            display:
-              "flex",
-
-            alignItems:
-              "center",
-
-            justifyContent:
-              "center",
-
-            zIndex: 999,
-
-            padding:
-              "20px",
-          }}
-        >
-
-          <div
-            style={{
-              width: "100%",
-
-              maxWidth:
-                "450px",
+            <div style={{
+              ...styles.modal,
 
               background:
                 darkMode
                   ? "#111827"
                   : "#ffffff",
 
-              borderRadius:
-                "24px",
-
-              padding:
-                "24px",
-
               border:
                 darkMode
                   ? "1px solid #1f2937"
                   : "1px solid #e5e7eb",
-            }}
-          >
+            }}>
 
-            <h2
-              style={{
-                marginTop: 0,
-
-                marginBottom:
-                  "20px",
+              <h2 style={{
+                ...styles.modalTitle,
 
                 color:
                   darkMode
                     ? "#ffffff"
                     : "#111827",
-              }}
-            >
-              Add Customer
-            </h2>
+              }}>
+                Add Customer
+              </h2>
 
-            <input
-              type="text"
+              <input
+                type="text"
+                name="name"
+                placeholder="Customer Name"
+                value={form.name}
+                onChange={handleChange}
+                style={input(darkMode)}
+              />
 
-              name="name"
+              <input
+                type="text"
+                name="phone"
+                placeholder="Phone Number"
+                value={form.phone}
+                onChange={handleChange}
+                style={input(darkMode)}
+              />
 
-              placeholder="Customer Name"
+              <input
+                type="text"
+                name="address"
+                placeholder="Address"
+                value={form.address}
+                onChange={handleChange}
+                style={input(darkMode)}
+              />
 
-              value={
-                form.name
-              }
+              <div style={styles.modalButtons}>
 
-              onChange={
-                handleChange
-              }
+                <button
+                  onClick={addCustomer}
+                  disabled={loading}
+                  style={{
+                    ...styles.saveButton,
 
-              style={input(
-                darkMode
-              )}
-            />
-
-            <input
-              type="text"
-
-              name="phone"
-
-              placeholder="Phone Number"
-
-              value={
-                form.phone
-              }
-
-              onChange={
-                handleChange
-              }
-
-              style={input(
-                darkMode
-              )}
-            />
-
-            <input
-              type="text"
-
-              name="address"
-
-              placeholder="Address"
-
-              value={
-                form.address
-              }
-
-              onChange={
-                handleChange
-              }
-
-              style={input(
-                darkMode
-              )}
-            />
-
-            <div
-              style={{
-                display: "flex",
-
-                gap: "12px",
-
-                marginTop:
-                  "20px",
-              }}
-            >
-
-              <button
-                onClick={
-                  addCustomer
-                }
-
-                disabled={
-                  loading
-                }
-
-                style={{
-                  flex: 1,
-
-                  background:
-                    "#16a34a",
-
-                  color:
-                    "#ffffff",
-
-                  border:
-                    "none",
-
-                  padding:
-                    "14px",
-
-                  borderRadius:
-                    "14px",
-
-                  fontWeight:
-                    "bold",
-
-                  cursor:
-                    "pointer",
-
-                  opacity:
+                    opacity:
+                      loading
+                        ? 0.7
+                        : 1,
+                  }}
+                >
+                  {
                     loading
-                      ? 0.7
-                      : 1,
-                }}
-              >
-                {loading
-                  ? "Saving..."
-                  : "Save"}
-              </button>
+                      ? "Saving..."
+                      : "Save"
+                  }
+                </button>
 
-              <button
-                onClick={() =>
-                  setShowModal(
-                    false
-                  )
-                }
+                <button
+                  onClick={() =>
+                    setShowModal(false)
+                  }
+                  style={{
+                    ...styles.cancelButton,
 
-                style={{
-                  flex: 1,
+                    background:
+                      darkMode
+                        ? "#1f2937"
+                        : "#e5e7eb",
 
-                  background:
-                    darkMode
-                      ? "#1f2937"
-                      : "#e5e7eb",
+                    color:
+                      darkMode
+                        ? "#ffffff"
+                        : "#111827",
+                  }}
+                >
+                  Cancel
+                </button>
 
-                  color:
-                    darkMode
-                      ? "#ffffff"
-                      : "#111827",
+              </div>
 
-                  border:
-                    "none",
-
-                  padding:
-                    "14px",
-
-                  borderRadius:
-                    "14px",
-
-                  fontWeight:
-                    "bold",
-
-                  cursor:
-                    "pointer",
-                }}
-              >
-                Cancel
-              </button>
             </div>
+
           </div>
-        </div>
-      )}
+        )
+      }
+
     </div>
   );
 }
 
 /* =========================
-   STYLES
+      STYLES
 ========================= */
 
-const th = (
-  darkMode
-) => ({
+const styles = {
+
+  container: {
+    minHeight: "100vh",
+
+    width: "100%",
+
+    padding: "24px",
+
+    boxSizing: "border-box",
+
+    transition: "0.3s ease",
+  },
+
+  header: {
+    display: "flex",
+
+    justifyContent: "space-between",
+
+    alignItems: "center",
+
+    flexWrap: "wrap",
+
+    gap: "16px",
+
+    marginBottom: "24px",
+  },
+
+  title: {
+    margin: 0,
+
+    fontSize:
+      "clamp(26px,5vw,34px)",
+  },
+
+  subtitle: {
+    marginTop: "8px",
+
+    fontSize: "14px",
+  },
+
+  headerActions: {
+    display: "flex",
+
+    gap: "14px",
+
+    flexWrap: "wrap",
+  },
+
+  debtBox: {
+    background: "#dc2626",
+
+    color: "#ffffff",
+
+    padding: "14px 20px",
+
+    borderRadius: "16px",
+
+    fontWeight: "bold",
+
+    minWidth: "160px",
+
+    textAlign: "center",
+  },
+
+  addButton: {
+    background: "#16a34a",
+
+    color: "#ffffff",
+
+    border: "none",
+
+    padding: "14px 18px",
+
+    borderRadius: "14px",
+
+    fontWeight: "bold",
+
+    cursor: "pointer",
+  },
+
+  searchInput: {
+    width: "100%",
+
+    maxWidth: "420px",
+
+    padding: "14px",
+
+    borderRadius: "14px",
+
+    outline: "none",
+
+    marginBottom: "22px",
+
+    boxSizing: "border-box",
+  },
+
+  tableWrapper: {
+    overflowX: "auto",
+
+    borderRadius: "22px",
+
+    boxShadow:
+      "0 4px 18px rgba(0,0,0,0.05)",
+  },
+
+  table: {
+    width: "100%",
+
+    minWidth: "850px",
+
+    borderCollapse: "collapse",
+  },
+
+  empty: {
+    padding: "60px",
+
+    textAlign: "center",
+
+    color: "#6b7280",
+  },
+
+  customerRow: {
+    display: "flex",
+
+    alignItems: "center",
+
+    gap: "12px",
+  },
+
+  avatar: {
+    width: "44px",
+
+    height: "44px",
+
+    borderRadius: "50%",
+
+    background: "#16a34a",
+
+    color: "#ffffff",
+
+    display: "flex",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    fontWeight: "bold",
+
+    flexShrink: 0,
+  },
+
+  customerText: {
+    fontSize: "12px",
+
+    color: "#6b7280",
+  },
+
+  debtBadge: {
+    background: "#fee2e2",
+
+    color: "#dc2626",
+
+    padding: "8px 12px",
+
+    borderRadius: "999px",
+
+    fontWeight: "bold",
+
+    fontSize: "12px",
+  },
+
+  noDebtBadge: {
+    background: "#dcfce7",
+
+    color: "#16a34a",
+
+    padding: "8px 12px",
+
+    borderRadius: "999px",
+
+    fontWeight: "bold",
+
+    fontSize: "12px",
+  },
+
+  deleteButton: {
+    background: "#dc2626",
+
+    color: "#ffffff",
+
+    border: "none",
+
+    padding: "10px 14px",
+
+    borderRadius: "10px",
+
+    cursor: "pointer",
+
+    fontWeight: "bold",
+  },
+
+  modalOverlay: {
+    position: "fixed",
+
+    inset: 0,
+
+    background:
+      "rgba(0,0,0,0.6)",
+
+    display: "flex",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    zIndex: 999,
+
+    padding: "20px",
+  },
+
+  modal: {
+    width: "100%",
+
+    maxWidth: "450px",
+
+    borderRadius: "24px",
+
+    padding: "24px",
+
+    boxSizing: "border-box",
+  },
+
+  modalTitle: {
+    marginTop: 0,
+
+    marginBottom: "20px",
+  },
+
+  modalButtons: {
+    display: "flex",
+
+    gap: "12px",
+
+    marginTop: "20px",
+
+    flexWrap: "wrap",
+  },
+
+  saveButton: {
+    flex: 1,
+
+    background: "#16a34a",
+
+    color: "#ffffff",
+
+    border: "none",
+
+    padding: "14px",
+
+    borderRadius: "14px",
+
+    fontWeight: "bold",
+
+    cursor: "pointer",
+  },
+
+  cancelButton: {
+    flex: 1,
+
+    border: "none",
+
+    padding: "14px",
+
+    borderRadius: "14px",
+
+    fontWeight: "bold",
+
+    cursor: "pointer",
+  },
+};
+
+const th = (darkMode) => ({
   textAlign: "left",
+
   padding: "16px",
+
   color:
     darkMode
       ? "#ffffff"
       : "#374151",
+
+  fontSize: "14px",
+
+  whiteSpace: "nowrap",
 });
 
-const td = (
-  darkMode
-) => ({
+const td = (darkMode) => ({
   padding: "16px",
+
   fontSize: "14px",
+
   color:
     darkMode
       ? "#ffffff"
       : "#111827",
+
+  whiteSpace: "nowrap",
 });
 
-const input = (
-  darkMode
-) => ({
+const input = (darkMode) => ({
   width: "100%",
+
   padding: "14px",
-  borderRadius:
-    "14px",
+
+  borderRadius: "14px",
 
   border:
     darkMode
-
       ? "1px solid #374151"
-
       : "1px solid #d1d5db",
 
-  marginBottom:
-    "14px",
+  marginBottom: "14px",
 
   background:
     darkMode
@@ -1160,8 +1026,7 @@ const input = (
 
   outline: "none",
 
-  boxSizing:
-    "border-box",
+  boxSizing: "border-box",
 });
 
 export default Customers;

@@ -26,14 +26,18 @@ function POS({
 }) {
 
   /* =========================
-     STATES
+        STATES
   ========================= */
 
-  const [search, setSearch] =
-    useState("");
+  const [
+    search,
+    setSearch,
+  ] = useState("");
 
-  const [cart, setCart] =
-    useState([]);
+  const [
+    cart,
+    setCart,
+  ] = useState([]);
 
   const [
     customerName,
@@ -66,7 +70,7 @@ function POS({
   ] = useState(false);
 
   /* =========================
-     SEARCH
+        SEARCH
   ========================= */
 
   const filteredMedicines =
@@ -79,6 +83,7 @@ function POS({
             .trim();
 
         return (
+
           medicine.name
             ?.toLowerCase()
             .includes(text) ||
@@ -91,7 +96,7 @@ function POS({
     );
 
   /* =========================
-     ADD TO CART
+        ADD TO CART
   ========================= */
 
   const addToCart = (
@@ -166,77 +171,82 @@ function POS({
   };
 
   /* =========================
-     QUANTITY
+        QUANTITY
   ========================= */
 
-  const increaseQty = (
-    id
-  ) => {
+  const increaseQty =
+    (id) => {
 
-    setCart(
-      cart.map((item) => {
-
-        if (
-          item.id === id
-        ) {
+      setCart(
+        cart.map((item) => {
 
           if (
-            item.qty >=
-            item.stock
+            item.id === id
           ) {
 
-            toast(
-              "No more stock",
-              "error"
-            );
+            if (
+              item.qty >=
+              item.stock
+            ) {
 
-            return item;
+              toast(
+                "No more stock",
+                "error"
+              );
+
+              return item;
+            }
+
+            return {
+
+              ...item,
+
+              qty:
+                item.qty + 1,
+            };
           }
 
-          return {
-            ...item,
-            qty:
-              item.qty + 1,
-          };
-        }
+          return item;
+        })
+      );
+    };
 
-        return item;
-      })
-    );
-  };
+  const decreaseQty =
+    (id) => {
 
-  const decreaseQty = (
-    id
-  ) => {
+      setCart(
 
-    setCart(
-      cart
-        .map((item) =>
+        cart
+          .map((item) =>
 
-          item.id === id
+            item.id === id
 
-            ? {
-                ...item,
-                qty:
-                  item.qty - 1,
-              }
+              ? {
+                  ...item,
+                  qty:
+                    item.qty - 1,
+                }
 
-            : item
-        )
-        .filter(
-          (item) =>
-            item.qty > 0
-        )
-    );
-  };
+              : item
+          )
+
+          .filter(
+            (item) =>
+              item.qty > 0
+          )
+      );
+    };
 
   /* =========================
-     TOTAL
+        TOTAL
   ========================= */
 
   const total =
     cart.reduce(
-      (acc, item) =>
+      (
+        acc,
+        item
+      ) =>
 
         acc +
         item.sellPrice *
@@ -246,7 +256,7 @@ function POS({
     );
 
   /* =========================
-     COMPLETE SALE
+        COMPLETE SALE
   ========================= */
 
   const completeSale =
@@ -279,54 +289,56 @@ function POS({
       const totalAmount =
         Number(total);
 
-    const paid =
-  Math.max(
-    0,
+      const paid =
+        Math.max(
+          0,
 
-    Number(
-      paidAmount || 0
-    )
-  );
+          Number(
+            paidAmount || 0
+          )
+        );
 
-const debtAmount =
-  totalAmount - paid;
+      const debtAmount =
+        totalAmount - paid;
 
-/* =========================
-   STATUS
-========================= */
+      /* =========================
+            STATUS
+      ========================= */
 
-let status =
-  "paid";
+      let status =
+        "paid";
 
-if (paid <= 0) {
+      if (paid <= 0) {
 
-  status =
-    "unpaid";
+        status =
+          "unpaid";
 
-} else if (
-  paid < totalAmount
-) {
+      } else if (
+        paid < totalAmount
+      ) {
 
-  status =
-    "partial";
+        status =
+          "partial";
 
-} else {
+      } else {
 
-  status =
-    "paid";
-}
+        status =
+          "paid";
+      }
 
       try {
 
         setLoading(true);
 
         /* =========================
-           SALE OBJECT
+              SALE OBJECT
         ========================= */
 
         const newSale = {
-    invoice:
-    `INV-${sales.length + 1}`,
+
+          invoice:
+            `INV-${sales.length + 1}`,
+
           customer:
             customerName
               .trim(),
@@ -368,14 +380,14 @@ if (paid <= 0) {
           createdAt:
             Date.now(),
         };
-        
 
         /* =========================
-           SAVE FIREBASE
+              SAVE FIREBASE
         ========================= */
 
         const saleRef =
           await addDoc(
+
             collection(
               db,
               "sales"
@@ -385,7 +397,7 @@ if (paid <= 0) {
           );
 
         /* =========================
-           UPDATE STOCK
+              UPDATE STOCK
         ========================= */
 
         for (
@@ -397,6 +409,7 @@ if (paid <= 0) {
             item.qty;
 
           await updateDoc(
+
             doc(
               db,
               "medicines",
@@ -411,37 +424,38 @@ if (paid <= 0) {
         }
 
         /* =========================
-           SAVE CUSTOMER
+              SAVE CUSTOMER
         ========================= */
 
-        const customerData =
-          {
-            name:
-              customerName
-                .trim(),
+        const customerData = {
 
-            phone:
-              customerPhone
-                .trim(),
+          name:
+            customerName
+              .trim(),
 
-            address:
-              customerAddress
-                .trim(),
+          phone:
+            customerPhone
+              .trim(),
 
-            debt:
-              debtAmount,
+          address:
+            customerAddress
+              .trim(),
 
-            updatedAt:
-              Date.now(),
-          };
+          debt:
+            debtAmount,
+
+          updatedAt:
+            Date.now(),
+        };
 
         await setDoc(
+
           doc(
             db,
             "customers",
 
             customerPhone ||
-              customerName
+            customerName
           ),
 
           customerData,
@@ -452,7 +466,7 @@ if (paid <= 0) {
         );
 
         /* =========================
-           LOCAL UPDATE
+              LOCAL UPDATE
         ========================= */
 
         setSales([
@@ -482,6 +496,7 @@ if (paid <= 0) {
               ) {
 
                 return {
+
                   ...medicine,
 
                   stock:
@@ -499,7 +514,7 @@ if (paid <= 0) {
         );
 
         /* =========================
-           SUCCESS
+              SUCCESS
         ========================= */
 
         toast(
@@ -508,7 +523,7 @@ if (paid <= 0) {
         );
 
         /* =========================
-           RESET
+              RESET
         ========================= */
 
         setCart([]);
@@ -543,70 +558,46 @@ if (paid <= 0) {
     };
 
   return (
-    <div
-      style={{
-        display: "grid",
 
-        gridTemplateColumns:
-          "1.7fr 1fr",
+    <div style={{
+      ...styles.container,
 
-        gap: "20px",
-
-        alignItems:
-          "start",
-
-        background:
-          dark
-            ? "#020617"
-            : "#f3f4f6",
-
-        minHeight:
-          "100vh",
-      }}
-    >
+      background:
+        dark
+          ? "#020617"
+          : "#f3f4f6",
+    }}>
 
       {/* LEFT */}
 
-      <div>
+      <div style={styles.leftSection}>
 
         {/* HEADER */}
 
-        <div
-          style={{
-            marginBottom:
-              "20px",
-          }}
-        >
+        <div style={styles.header}>
 
-          <h1
-            style={{
-              margin: 0,
+          <h1 style={{
+            ...styles.title,
 
-              fontSize:
-                "32px",
-
-              color:
-                dark
-                  ? "#ffffff"
-                  : "#111827",
-            }}
-          >
+            color:
+              dark
+                ? "#ffffff"
+                : "#111827",
+          }}>
             POS / Sales 🛒
           </h1>
 
-          <p
-            style={{
-              marginTop:
-                "8px",
+          <p style={{
+            ...styles.subtitle,
 
-              color:
-                dark
-                  ? "#d1d5db"
-                  : "#6b7280",
-            }}
-          >
+            color:
+              dark
+                ? "#d1d5db"
+                : "#6b7280",
+          }}>
             Pharmacy sales system
           </p>
+
         </div>
 
         {/* SEARCH */}
@@ -625,210 +616,126 @@ if (paid <= 0) {
           }
 
           style={{
-            width: "100%",
-
-            padding:
-              "15px 16px",
-
-            borderRadius:
-              "14px",
+            ...styles.searchInput,
 
             border:
               dark
-
                 ? "1px solid #374151"
-
                 : "1px solid #d1d5db",
 
             background:
               dark
-
                 ? "#111827"
-
                 : "#ffffff",
 
             color:
               dark
-
                 ? "#ffffff"
-
                 : "#111827",
-
-            fontSize:
-              "15px",
-
-            outline:
-              "none",
-
-            marginBottom:
-              "20px",
-
-            boxSizing:
-              "border-box",
           }}
         />
 
         {/* TABLE */}
 
-        <div
-          style={{
-            overflowX:
-              "auto",
+        <div style={{
+          ...styles.tableWrapper,
 
-            borderRadius:
-              "20px",
+          background:
+            dark
+              ? "#111827"
+              : "#ffffff",
 
-            background:
-              dark
-                ? "#111827"
-                : "#ffffff",
+          border:
+            dark
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
+        }}>
 
-            border:
-              dark
-                ? "1px solid #1f2937"
-                : "1px solid #e5e7eb",
-          }}
-        >
+          <table style={styles.table}>
 
-          <table
-            style={{
-              width: "100%",
-
-              minWidth:
-                "700px",
-
-              borderCollapse:
-                "collapse",
-            }}
-          >
-
-            <thead
-              style={{
-                background:
-                  dark
-                    ? "#0f172a"
-                    : "#f9fafb",
-              }}
-            >
+            <thead style={{
+              background:
+                dark
+                  ? "#0f172a"
+                  : "#f9fafb",
+            }}>
 
               <tr>
 
-                <th style={th(
-                  dark
-                )}>
+                <th style={th(dark)}>
                   Medicine
                 </th>
 
-                <th style={th(
-                  dark
-                )}>
+                <th style={th(dark)}>
                   Category
                 </th>
 
-                <th style={th(
-                  dark
-                )}>
+                <th style={th(dark)}>
                   Stock
                 </th>
 
-                <th style={th(
-                  dark
-                )}>
+                <th style={th(dark)}>
                   Price
                 </th>
 
-                <th style={th(
-                  dark
-                )}>
+                <th style={th(dark)}>
                   Add
                 </th>
+
               </tr>
+
             </thead>
 
             <tbody>
 
               {filteredMedicines.map(
-                (
-                  medicine
-                ) => (
+                (medicine) => (
 
                   <tr
-                    key={
-                      medicine.id
-                    }
+                    key={medicine.id}
 
                     style={{
                       borderBottom:
                         dark
-
                           ? "1px solid #1f2937"
-
                           : "1px solid #f3f4f6",
                     }}
                   >
 
-                    <td
-                      style={td(
-                        dark
-                      )}
-                    >
-                      {
-                        medicine.name
-                      }
+                    <td style={td(dark)}>
+                      {medicine.name}
                     </td>
 
-                    <td
-                      style={td(
-                        dark
-                      )}
-                    >
-                      {
-                        medicine.category
-                      }
+                    <td style={td(dark)}>
+                      {medicine.category}
                     </td>
 
-                    <td
-                      style={{
-                        ...td(
-                          dark
-                        ),
+                    <td style={{
+                      ...td(dark),
 
-                        color:
-                          "#22c55e",
+                      color:
+                        "#22c55e",
 
-                        fontWeight:
-                          "bold",
-                      }}
-                    >
-                      {
-                        medicine.stock
-                      }
+                      fontWeight:
+                        "bold",
+                    }}>
+                      {medicine.stock}
                     </td>
 
-                    <td
-                      style={{
-                        ...td(
-                          dark
-                        ),
+                    <td style={{
+                      ...td(dark),
 
-                        color:
-                          "#22c55e",
+                      color:
+                        "#22c55e",
 
-                        fontWeight:
-                          "bold",
-                      }}
-                    >
+                      fontWeight:
+                        "bold",
+                    }}>
                       $
-                      {
-                        medicine.sellPrice
-                      }
+                      {medicine.sellPrice}
                     </td>
 
-                    <td
-                      style={td(
-                        dark
-                      )}
-                    >
+                    <td style={td(dark)}>
 
                       <button
                         onClick={() =>
@@ -837,82 +744,53 @@ if (paid <= 0) {
                           )
                         }
 
-                        style={{
-                          background:
-                            "#16a34a",
-
-                          color:
-                            "#ffffff",
-
-                          border:
-                            "none",
-
-                          padding:
-                            "10px 14px",
-
-                          borderRadius:
-                            "10px",
-
-                          cursor:
-                            "pointer",
-
-                          fontWeight:
-                            "bold",
-                        }}
+                        style={styles.addButton}
                       >
                         Add
                       </button>
+
                     </td>
+
                   </tr>
                 )
               )}
+
             </tbody>
+
           </table>
+
         </div>
+
       </div>
 
       {/* RIGHT */}
 
-      <div
-        style={{
-          background:
+      <div style={{
+        ...styles.cartContainer,
+
+        background:
+          dark
+            ? "#111827"
+            : "#ffffff",
+
+        border:
+          dark
+            ? "1px solid #1f2937"
+            : "1px solid #e5e7eb",
+      }}>
+
+        <h2 style={{
+          ...styles.cartTitle,
+
+          color:
             dark
-              ? "#111827"
-              : "#ffffff",
-
-          borderRadius:
-            "20px",
-
-          padding:
-            "20px",
-
-          border:
-            dark
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-
-          position:
-            "sticky",
-
-          top: "20px",
-        }}
-      >
-
-        <h2
-          style={{
-            marginTop: 0,
-
-            marginBottom:
-              "20px",
-
-            color:
-              dark
-                ? "#ffffff"
-                : "#111827",
-          }}
-        >
+              ? "#ffffff"
+              : "#111827",
+        }}>
           Cart 🛒
         </h2>
+
+        {/* FORM */}
 
         <input
           type="text"
@@ -929,9 +807,7 @@ if (paid <= 0) {
             )
           }
 
-          style={input(
-            dark
-          )}
+          style={input(dark)}
         />
 
         <input
@@ -949,9 +825,7 @@ if (paid <= 0) {
             )
           }
 
-          style={input(
-            dark
-          )}
+          style={input(dark)}
         />
 
         <input
@@ -969,9 +843,7 @@ if (paid <= 0) {
             )
           }
 
-          style={input(
-            dark
-          )}
+          style={input(dark)}
         />
 
         <select
@@ -985,9 +857,7 @@ if (paid <= 0) {
             )
           }
 
-          style={input(
-            dark
-          )}
+          style={input(dark)}
         >
 
           <option>
@@ -1005,6 +875,7 @@ if (paid <= 0) {
           <option>
             Debt
           </option>
+
         </select>
 
         <input
@@ -1022,43 +893,27 @@ if (paid <= 0) {
             )
           }
 
-          style={input(
-            dark
-          )}
+          style={input(dark)}
         />
 
-        {/* CART */}
+        {/* CART ITEMS */}
 
-        <div
-          style={{
-            marginTop:
-              "20px",
+        <div style={styles.cartItems}>
 
-            maxHeight:
-              "320px",
+          {cart.length === 0 ? (
 
-            overflowY:
-              "auto",
-          }}
-        >
+            <div style={{
+              textAlign:
+                "center",
 
-          {cart.length ===
-          0 ? (
+              color:
+                dark
+                  ? "#d1d5db"
+                  : "#6b7280",
 
-            <div
-              style={{
-                textAlign:
-                  "center",
-
-                color:
-                  dark
-                    ? "#d1d5db"
-                    : "#6b7280",
-
-                padding:
-                  "30px 0",
-              }}
-            >
+              padding:
+                "30px 0",
+            }}>
               Cart is empty
             </div>
 
@@ -1071,74 +926,49 @@ if (paid <= 0) {
                   key={item.id}
 
                   style={{
-                    display:
-                      "flex",
-
-                    justifyContent:
-                      "space-between",
-
-                    alignItems:
-                      "center",
-
-                    padding:
-                      "14px 0",
+                    ...styles.cartItem,
 
                     borderBottom:
                       dark
-
                         ? "1px solid #374151"
-
                         : "1px solid #f3f4f6",
                   }}
                 >
 
+                  {/* INFO */}
+
                   <div>
 
-                    <h4
-                      style={{
-                        margin:
-                          "0 0 6px",
+                    <h4 style={{
+                      margin:
+                        "0 0 6px",
 
-                        color:
-                          dark
-                            ? "#ffffff"
-                            : "#111827",
-                      }}
-                    >
-                      {
-                        item.name
-                      }
+                      color:
+                        dark
+                          ? "#ffffff"
+                          : "#111827",
+                    }}>
+                      {item.name}
                     </h4>
 
-                    <p
-                      style={{
-                        margin: 0,
+                    <p style={{
+                      margin: 0,
 
-                        color:
-                          "#16a34a",
+                      color:
+                        "#16a34a",
 
-                        fontWeight:
-                          "bold",
-                      }}
-                    >
+                      fontWeight:
+                        "bold",
+                    }}>
                       $
-                      {
-                        item.sellPrice
-                      }
+                      {item.sellPrice}
                     </p>
+
                   </div>
 
-                  <div
-                    style={{
-                      display:
-                        "flex",
+                  {/* QTY */}
 
-                      alignItems:
-                        "center",
-
-                      gap: "8px",
-                    }}
-                  >
+                  <div style={styles.qtyWrapper}>
 
                     <button
                       onClick={() =>
@@ -1147,24 +977,18 @@ if (paid <= 0) {
                         )
                       }
 
-                      style={
-                        qtyBtn
-                      }
+                      style={qtyBtn}
                     >
                       -
                     </button>
 
-                    <strong
-                      style={{
-                        color:
-                          dark
-                            ? "#ffffff"
-                            : "#111827",
-                      }}
-                    >
-                      {
-                        item.qty
-                      }
+                    <strong style={{
+                      color:
+                        dark
+                          ? "#ffffff"
+                          : "#111827",
+                    }}>
+                      {item.qty}
                     </strong>
 
                     <button
@@ -1174,50 +998,39 @@ if (paid <= 0) {
                         )
                       }
 
-                      style={
-                        qtyBtn
-                      }
+                      style={qtyBtn}
                     >
                       +
                     </button>
+
                   </div>
+
                 </div>
               )
             )
           )}
+
         </div>
 
         {/* TOTAL */}
 
-        <div
-          style={{
-            marginTop:
-              "20px",
+        <div style={{
+          ...styles.totalSection,
 
-            borderTop:
+          borderTop:
+            dark
+              ? "1px solid #374151"
+              : "1px solid #e5e7eb",
+        }}>
+
+          <h2 style={{
+            color:
               dark
-
-                ? "1px solid #374151"
-
-                : "1px solid #e5e7eb",
-
-            paddingTop:
-              "18px",
-          }}
-        >
-
-          <h2
-            style={{
-              color:
-                dark
-                  ? "#ffffff"
-                  : "#111827",
-            }}
-          >
+                ? "#ffffff"
+                : "#111827",
+          }}>
             Total: $
-            {total.toFixed(
-              2
-            )}
+            {total.toFixed(2)}
           </h2>
 
           <button
@@ -1230,34 +1043,7 @@ if (paid <= 0) {
             }
 
             style={{
-              width: "100%",
-
-              background:
-                "#16a34a",
-
-              color:
-                "#ffffff",
-
-              border:
-                "none",
-
-              padding:
-                "16px",
-
-              borderRadius:
-                "14px",
-
-              fontSize:
-                "16px",
-
-              fontWeight:
-                "bold",
-
-              cursor:
-                "pointer",
-
-              marginTop:
-                "14px",
+              ...styles.completeButton,
 
               opacity:
                 loading
@@ -1265,23 +1051,198 @@ if (paid <= 0) {
                   : 1,
             }}
           >
-            {loading
-              ? "Processing..."
-              : "Complete Sale"}
+
+            {
+              loading
+
+                ? "Processing..."
+
+                : "Complete Sale"
+            }
+
           </button>
+
         </div>
+
       </div>
+
     </div>
   );
 }
 
 /* =========================
-   STYLES
+      STYLES
 ========================= */
 
-const th = (
-  dark
-) => ({
+const styles = {
+
+  container: {
+    display: "grid",
+
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(320px,1fr))",
+
+    gap: "20px",
+
+    alignItems: "start",
+
+    minHeight: "100vh",
+
+    padding: "20px",
+
+    boxSizing: "border-box",
+  },
+
+  leftSection: {
+    width: "100%",
+  },
+
+  header: {
+    marginBottom: "20px",
+  },
+
+  title: {
+    margin: 0,
+
+    fontSize:
+      "clamp(28px,5vw,34px)",
+  },
+
+  subtitle: {
+    marginTop: "8px",
+
+    fontSize: "15px",
+  },
+
+  searchInput: {
+    width: "100%",
+
+    padding: "15px 16px",
+
+    borderRadius: "14px",
+
+    fontSize: "15px",
+
+    outline: "none",
+
+    marginBottom: "20px",
+
+    boxSizing: "border-box",
+  },
+
+  tableWrapper: {
+    overflowX: "auto",
+
+    borderRadius: "20px",
+  },
+
+  table: {
+    width: "100%",
+
+    minWidth: "700px",
+
+    borderCollapse: "collapse",
+  },
+
+  addButton: {
+    background: "#16a34a",
+
+    color: "#ffffff",
+
+    border: "none",
+
+    padding: "10px 14px",
+
+    borderRadius: "10px",
+
+    cursor: "pointer",
+
+    fontWeight: "bold",
+
+    whiteSpace: "nowrap",
+  },
+
+  cartContainer: {
+    borderRadius: "20px",
+
+    padding: "20px",
+
+    position: "sticky",
+
+    top: "20px",
+
+    boxSizing: "border-box",
+
+    width: "100%",
+  },
+
+  cartTitle: {
+    marginTop: 0,
+
+    marginBottom: "20px",
+  },
+
+  cartItems: {
+    marginTop: "20px",
+
+    maxHeight: "320px",
+
+    overflowY: "auto",
+  },
+
+  cartItem: {
+    display: "flex",
+
+    justifyContent:
+      "space-between",
+
+    alignItems: "center",
+
+    padding: "14px 0",
+
+    gap: "12px",
+
+    flexWrap: "wrap",
+  },
+
+  qtyWrapper: {
+    display: "flex",
+
+    alignItems: "center",
+
+    gap: "8px",
+  },
+
+  totalSection: {
+    marginTop: "20px",
+
+    paddingTop: "18px",
+  },
+
+  completeButton: {
+    width: "100%",
+
+    background: "#16a34a",
+
+    color: "#ffffff",
+
+    border: "none",
+
+    padding: "16px",
+
+    borderRadius: "14px",
+
+    fontSize: "16px",
+
+    fontWeight: "bold",
+
+    cursor: "pointer",
+
+    marginTop: "14px",
+  },
+};
+
+const th = (dark) => ({
   textAlign: "left",
 
   padding: "16px",
@@ -1295,39 +1256,34 @@ const th = (
     dark
       ? "#111827"
       : "#f9fafb",
+
+  whiteSpace: "nowrap",
 });
 
-const td = (
-  dark
-) => ({
+const td = (dark) => ({
   padding: "16px",
 
   color:
     dark
       ? "#ffffff"
       : "#111827",
+
+  whiteSpace: "nowrap",
 });
 
-const input = (
-  dark
-) => ({
+const input = (dark) => ({
   width: "100%",
 
-  padding:
-    "14px",
+  padding: "14px",
 
-  borderRadius:
-    "14px",
+  borderRadius: "14px",
 
   border:
     dark
-
       ? "1px solid #374151"
-
       : "1px solid #d1d5db",
 
-  marginBottom:
-    "14px",
+  marginBottom: "14px",
 
   background:
     dark
@@ -1341,31 +1297,27 @@ const input = (
 
   outline: "none",
 
-  boxSizing:
-    "border-box",
+  boxSizing: "border-box",
 });
 
 const qtyBtn = {
-  width: "30px",
+  width: "32px",
 
-  height: "30px",
+  height: "32px",
 
   border: "none",
 
-  borderRadius:
-    "8px",
+  borderRadius: "8px",
 
-  background:
-    "#16a34a",
+  background: "#16a34a",
 
-  color:
-    "#ffffff",
+  color: "#ffffff",
 
-  fontWeight:
-    "bold",
+  fontWeight: "bold",
 
-  cursor:
-    "pointer",
+  cursor: "pointer",
+
+  flexShrink: 0,
 };
 
 export default POS;

@@ -27,7 +27,7 @@ function Users({
 }) {
 
   /* =========================
-     STATES
+        STATES
   ========================= */
 
   const [
@@ -56,7 +56,7 @@ function Users({
   });
 
   /* =========================
-     ADMIN CHECK
+        ADMIN CHECK
   ========================= */
 
   const isAdmin =
@@ -65,13 +65,14 @@ function Users({
     "admin";
 
   /* =========================
-     GET USERS
+        GET USERS
   ========================= */
 
   useEffect(() => {
 
     const unsubscribe =
       onSnapshot(
+
         collection(
           db,
           "users"
@@ -97,7 +98,7 @@ function Users({
   }, []);
 
   /* =========================
-     ADD USER
+        ADD USER
   ========================= */
 
   const addUser =
@@ -130,7 +131,7 @@ function Users({
           form.name.trim();
 
         /* =========================
-           CREATE AUTH USER
+              CREATE AUTH USER
         ========================= */
 
         const userCredential =
@@ -144,7 +145,7 @@ function Users({
           userCredential.user;
 
         /* =========================
-           SAVE FIRESTORE
+              SAVE FIRESTORE
         ========================= */
 
         const newUser = {
@@ -167,6 +168,7 @@ function Users({
         };
 
         await setDoc(
+
           doc(
             db,
             "users",
@@ -182,7 +184,7 @@ function Users({
         );
 
         /* =========================
-           RESET
+              RESET
         ========================= */
 
         setForm({
@@ -227,7 +229,7 @@ function Users({
     };
 
   /* =========================
-     DELETE USER
+        DELETE USER
   ========================= */
 
   const deleteUser =
@@ -256,6 +258,7 @@ function Users({
       try {
 
         await deleteDoc(
+
           doc(
             db,
             "users",
@@ -282,172 +285,124 @@ function Users({
     };
 
   /* =========================
-     ACCESS DENIED
+        ACCESS DENIED
   ========================= */
 
   if (!isAdmin) {
 
     return (
-      <div
-        style={{
-          padding:
-            "40px",
 
-          borderRadius:
-            "24px",
+      <div style={{
+        ...styles.deniedCard,
 
-          background:
-            darkMode
-              ? "#111827"
-              : "#ffffff",
+        background:
+          darkMode
+            ? "#111827"
+            : "#ffffff",
 
-          color:
-            "#ef4444",
+        color:
+          "#ef4444",
 
-          fontWeight:
-            "bold",
+        border:
+          darkMode
+            ? "1px solid #1f2937"
+            : "1px solid #e5e7eb",
+      }}>
 
-          fontSize:
-            "30px",
-        }}
-      >
         Access Denied 🚫
+
       </div>
     );
   }
 
   return (
-    <div>
+
+    <div style={{
+      ...styles.container,
+
+      background:
+        darkMode
+          ? "#020617"
+          : "#f3f4f6",
+
+      color:
+        darkMode
+          ? "#ffffff"
+          : "#111827",
+    }}>
 
       {/* HEADER */}
 
-      <div
-        style={{
-          display: "flex",
+      <div style={styles.header}>
 
-          justifyContent:
-            "space-between",
-
-          alignItems:
-            "center",
-
-          marginBottom:
-            "24px",
-
-          flexWrap:
-            "wrap",
-
-          gap: "16px",
-        }}
-      >
+        {/* LEFT */}
 
         <div>
 
-          <h1
-            style={{
-              margin: 0,
+          <h1 style={{
+            ...styles.title,
 
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-
-              fontSize:
-                "34px",
-            }}
-          >
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
+          }}>
             Users 👤
           </h1>
 
-          <p
-            style={{
-              marginTop:
-                "8px",
+          <p style={{
+            ...styles.subtitle,
 
-              color:
-                darkMode
-                  ? "#9ca3af"
-                  : "#6b7280",
-            }}
-          >
+            color:
+              darkMode
+                ? "#9ca3af"
+                : "#6b7280",
+          }}>
             Manage admins and users
           </p>
+
         </div>
+
+        {/* BUTTON */}
 
         <button
           onClick={() =>
             setShowModal(true)
           }
 
-          style={{
-            background:
-              "#16a34a",
-
-            color:
-              "#ffffff",
-
-            border:
-              "none",
-
-            padding:
-              "14px 22px",
-
-            borderRadius:
-              "14px",
-
-            cursor:
-              "pointer",
-
-            fontWeight:
-              "bold",
-          }}
+          style={
+            styles.addButton
+          }
         >
           + Add User
         </button>
+
       </div>
 
       {/* TABLE */}
 
-      <div
-        style={{
-          background:
-            darkMode
-              ? "#111827"
-              : "#ffffff",
+      <div style={{
+        ...styles.tableWrapper,
 
-          borderRadius:
-            "24px",
+        background:
+          darkMode
+            ? "#111827"
+            : "#ffffff",
 
-          overflowX:
-            "auto",
+        border:
+          darkMode
+            ? "1px solid #1f2937"
+            : "1px solid #e5e7eb",
+      }}>
 
-          border:
-            darkMode
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}
-      >
+        <table style={styles.table}>
 
-        <table
-          style={{
-            width: "100%",
-
-            borderCollapse:
-              "collapse",
-
-            minWidth:
-              "850px",
-          }}
-        >
-
-          <thead
-            style={{
-              background:
-                darkMode
-                  ? "#0f172a"
-                  : "#f9fafb",
-            }}
-          >
+          <thead style={{
+            background:
+              darkMode
+                ? "#0f172a"
+                : "#f9fafb",
+          }}>
 
             <tr>
 
@@ -470,7 +425,9 @@ function Users({
               <th style={th(darkMode)}>
                 Action
               </th>
+
             </tr>
+
           </thead>
 
           <tbody>
@@ -489,21 +446,84 @@ function Users({
                   }}
                 >
 
+                  {/* NAME */}
+
                   <td style={td(darkMode)}>
                     {user.name}
                   </td>
 
-                  <td style={td(darkMode)}>
+                  {/* EMAIL */}
+
+                  <td style={{
+                    ...td(darkMode),
+
+                    wordBreak:
+                      "break-word",
+                  }}>
                     {user.email}
                   </td>
 
-                  <td style={td(darkMode)}>
-                    {user.role}
-                  </td>
+                  {/* ROLE */}
 
                   <td style={td(darkMode)}>
-                    {user.status}
+
+                    <span style={{
+                      ...styles.roleBadge,
+
+                      background:
+                        user.role ===
+                        "admin"
+
+                          ? "#dcfce7"
+
+                          : "#dbeafe",
+
+                      color:
+                        user.role ===
+                        "admin"
+
+                          ? "#166534"
+
+                          : "#1d4ed8",
+                    }}>
+
+                      {user.role}
+
+                    </span>
+
                   </td>
+
+                  {/* STATUS */}
+
+                  <td style={td(darkMode)}>
+
+                    <span style={{
+                      ...styles.statusBadge,
+
+                      background:
+                        user.status ===
+                        "active"
+
+                          ? "#dcfce7"
+
+                          : "#fee2e2",
+
+                      color:
+                        user.status ===
+                        "active"
+
+                          ? "#166534"
+
+                          : "#dc2626",
+                    }}>
+
+                      {user.status}
+
+                    </span>
+
+                  </td>
+
+                  {/* ACTION */}
 
                   <td style={td(darkMode)}>
 
@@ -514,109 +534,54 @@ function Users({
                         )
                       }
 
-                      style={{
-                        background:
-                          "#dc2626",
-
-                        color:
-                          "#ffffff",
-
-                        border:
-                          "none",
-
-                        padding:
-                          "10px 14px",
-
-                        borderRadius:
-                          "12px",
-
-                        cursor:
-                          "pointer",
-
-                        fontWeight:
-                          "bold",
-                      }}
+                      style={
+                        styles.deleteButton
+                      }
                     >
                       Delete
                     </button>
+
                   </td>
+
                 </tr>
               )
             )}
+
           </tbody>
+
         </table>
+
       </div>
 
       {/* MODAL */}
 
       {showModal && (
 
-        <div
-          style={{
-            position:
-              "fixed",
+        <div style={styles.modalOverlay}>
 
-            inset: 0,
+          <div style={{
+            ...styles.modal,
 
             background:
-              "rgba(0,0,0,0.6)",
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+          }}>
 
-            display:
-              "flex",
+            <h2 style={{
+              ...styles.modalTitle,
 
-            justifyContent:
-              "center",
-
-            alignItems:
-              "center",
-
-            zIndex: 999,
-          }}
-        >
-
-          <div
-            style={{
-              width: "100%",
-
-              maxWidth:
-                "500px",
-
-              background:
+              color:
                 darkMode
-                  ? "#111827"
-                  : "#ffffff",
-
-              borderRadius:
-                "24px",
-
-              padding:
-                "30px",
-            }}
-          >
-
-            <h2
-              style={{
-                marginTop: 0,
-
-                marginBottom:
-                  "24px",
-
-                color:
-                  darkMode
-                    ? "#ffffff"
-                    : "#111827",
-              }}
-            >
+                  ? "#ffffff"
+                  : "#111827",
+            }}>
               Add User
             </h2>
 
-            <div
-              style={{
-                display: "grid",
+            {/* FORM */}
 
-                gap: "16px",
-              }}
-            >
+            <div style={styles.formGrid}>
 
               <input
                 type="text"
@@ -628,6 +593,7 @@ function Users({
                 onChange={(e) =>
                   setForm({
                     ...form,
+
                     name:
                       e.target.value,
                   })
@@ -646,6 +612,7 @@ function Users({
                 onChange={(e) =>
                   setForm({
                     ...form,
+
                     email:
                       e.target.value,
                   })
@@ -664,6 +631,7 @@ function Users({
                 onChange={(e) =>
                   setForm({
                     ...form,
+
                     password:
                       e.target.value,
                   })
@@ -678,6 +646,7 @@ function Users({
                 onChange={(e) =>
                   setForm({
                     ...form,
+
                     role:
                       e.target.value,
                   })
@@ -695,18 +664,12 @@ function Users({
                 </option>
 
               </select>
+
             </div>
 
-            <div
-              style={{
-                display: "flex",
+            {/* BUTTONS */}
 
-                gap: "14px",
-
-                marginTop:
-                  "24px",
-              }}
-            >
+            <div style={styles.modalButtons}>
 
               <button
                 onClick={addUser}
@@ -714,35 +677,21 @@ function Users({
                 disabled={loading}
 
                 style={{
-                  flex: 1,
+                  ...styles.saveButton,
 
-                  background:
-                    "#16a34a",
-
-                  color:
-                    "#ffffff",
-
-                  border:
-                    "none",
-
-                  padding:
-                    "14px",
-
-                  borderRadius:
-                    "14px",
-
-                  fontWeight:
-                    "bold",
-
-                  cursor:
-                    "pointer",
+                  opacity:
+                    loading
+                      ? 0.7
+                      : 1,
                 }}
               >
+
                 {
                   loading
                     ? "Saving..."
                     : "Save User"
                 }
+
               </button>
 
               <button
@@ -751,7 +700,7 @@ function Users({
                 }
 
                 style={{
-                  flex: 1,
+                  ...styles.cancelButton,
 
                   background:
                     darkMode
@@ -762,77 +711,384 @@ function Users({
                     darkMode
                       ? "#ffffff"
                       : "#111827",
-
-                  border:
-                    "none",
-
-                  padding:
-                    "14px",
-
-                  borderRadius:
-                    "14px",
-
-                  fontWeight:
-                    "bold",
-
-                  cursor:
-                    "pointer",
                 }}
               >
                 Cancel
               </button>
 
             </div>
+
           </div>
+
         </div>
       )}
+
     </div>
   );
 }
 
 /* =========================
-   STYLES
+      STYLES
 ========================= */
+
+const styles = {
+
+  container: {
+    width: "100%",
+
+    minHeight: "100vh",
+
+    padding: "24px",
+
+    boxSizing: "border-box",
+  },
+
+  deniedCard: {
+    padding: "40px",
+
+    borderRadius: "24px",
+
+    fontWeight: "bold",
+
+    fontSize:
+      "clamp(24px,5vw,30px)",
+
+    textAlign: "center",
+
+    width: "100%",
+
+    boxSizing: "border-box",
+  },
+
+  header: {
+    display: "flex",
+
+    justifyContent:
+      "space-between",
+
+    alignItems:
+      "center",
+
+    marginBottom:
+      "24px",
+
+    flexWrap:
+      "wrap",
+
+    gap: "16px",
+  },
+
+  title: {
+    margin: 0,
+
+    fontSize:
+      "clamp(28px,6vw,34px)",
+  },
+
+  subtitle: {
+    marginTop:
+      "8px",
+
+    fontSize:
+      "15px",
+  },
+
+  addButton: {
+    background:
+      "#16a34a",
+
+    color:
+      "#ffffff",
+
+    border:
+      "none",
+
+    padding:
+      "14px 22px",
+
+    borderRadius:
+      "14px",
+
+    cursor:
+      "pointer",
+
+    fontWeight:
+      "bold",
+
+    width: "100%",
+
+    maxWidth:
+      "220px",
+  },
+
+  tableWrapper: {
+    borderRadius:
+      "24px",
+
+    overflowX:
+      "auto",
+  },
+
+  table: {
+    width: "100%",
+
+    minWidth:
+      "850px",
+
+    borderCollapse:
+      "collapse",
+  },
+
+  roleBadge: {
+    padding:
+      "8px 14px",
+
+    borderRadius:
+      "999px",
+
+    fontWeight:
+      "bold",
+
+    fontSize:
+      "12px",
+
+    textTransform:
+      "capitalize",
+
+    whiteSpace:
+      "nowrap",
+  },
+
+  statusBadge: {
+    padding:
+      "8px 14px",
+
+    borderRadius:
+      "999px",
+
+    fontWeight:
+      "bold",
+
+    fontSize:
+      "12px",
+
+    textTransform:
+      "capitalize",
+
+    whiteSpace:
+      "nowrap",
+  },
+
+  deleteButton: {
+    background:
+      "#dc2626",
+
+    color:
+      "#ffffff",
+
+    border:
+      "none",
+
+    padding:
+      "10px 14px",
+
+    borderRadius:
+      "12px",
+
+    cursor:
+      "pointer",
+
+    fontWeight:
+      "bold",
+
+    whiteSpace:
+      "nowrap",
+  },
+
+  modalOverlay: {
+    position:
+      "fixed",
+
+    inset: 0,
+
+    background:
+      "rgba(0,0,0,0.6)",
+
+    display:
+      "flex",
+
+    justifyContent:
+      "center",
+
+    alignItems:
+      "center",
+
+    zIndex: 999,
+
+    padding:
+      "20px",
+  },
+
+  modal: {
+    width: "100%",
+
+    maxWidth:
+      "500px",
+
+    borderRadius:
+      "24px",
+
+    padding:
+      "30px",
+
+    boxSizing:
+      "border-box",
+  },
+
+  modalTitle: {
+    marginTop: 0,
+
+    marginBottom:
+      "24px",
+  },
+
+  formGrid: {
+    display: "grid",
+
+    gap: "16px",
+  },
+
+  modalButtons: {
+    display: "flex",
+
+    gap: "14px",
+
+    marginTop:
+      "24px",
+
+    flexWrap:
+      "wrap",
+  },
+
+  saveButton: {
+    flex: 1,
+
+    background:
+      "#16a34a",
+
+    color:
+      "#ffffff",
+
+    border:
+      "none",
+
+    padding:
+      "14px",
+
+    borderRadius:
+      "14px",
+
+    fontWeight:
+      "bold",
+
+    cursor:
+      "pointer",
+
+    minWidth:
+      "140px",
+  },
+
+  cancelButton: {
+    flex: 1,
+
+    border:
+      "none",
+
+    padding:
+      "14px",
+
+    borderRadius:
+      "14px",
+
+    fontWeight:
+      "bold",
+
+    cursor:
+      "pointer",
+
+    minWidth:
+      "140px",
+  },
+};
 
 const th = (
   darkMode
 ) => ({
   padding: "18px",
+
   textAlign: "left",
-  color: darkMode
-    ? "#ffffff"
-    : "#111827",
+
+  color:
+    darkMode
+      ? "#ffffff"
+      : "#111827",
+
+  whiteSpace:
+    "nowrap",
+
+  fontSize:
+    "14px",
 });
 
 const td = (
   darkMode
 ) => ({
   padding: "18px",
-  color: darkMode
-    ? "#e5e7eb"
-    : "#111827",
+
+  color:
+    darkMode
+      ? "#e5e7eb"
+      : "#111827",
+
+  whiteSpace:
+    "nowrap",
+
+  fontSize:
+    "14px",
 });
 
 const input = (
   darkMode
 ) => ({
   width: "100%",
+
   padding: "14px",
-  borderRadius: "14px",
-  border: darkMode
-    ? "1px solid #374151"
-    : "1px solid #d1d5db",
+
+  borderRadius:
+    "14px",
+
+  border:
+    darkMode
+      ? "1px solid #374151"
+      : "1px solid #d1d5db",
+
   background:
     darkMode
       ? "#0f172a"
       : "#ffffff",
+
   color:
     darkMode
       ? "#ffffff"
       : "#111827",
+
   outline: "none",
+
   boxSizing:
     "border-box",
+
+  fontSize:
+    "14px",
 });
 
 export default Users;

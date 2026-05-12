@@ -1,6 +1,4 @@
-import {
-  useState,
-} from "react";
+import { useState } from "react";
 
 import {
   signOut,
@@ -21,7 +19,7 @@ function Topbar({
 }) {
 
   /* =========================
-     STATE
+        STATE
   ========================= */
 
   const [
@@ -30,136 +28,103 @@ function Topbar({
   ] = useState(false);
 
   /* =========================
-     NOTIFICATIONS
+        NOTIFICATIONS
   ========================= */
 
   const notifications = [];
 
   /* =========================
-     MEDICINE ALERTS
+        MEDICINE ALERTS
   ========================= */
 
-  medicines.forEach(
-    (medicine) => {
+  medicines.forEach((medicine) => {
 
-      /* LOW STOCK */
+    /* LOW STOCK */
 
-      if (
-        Number(
-          medicine.stock
-        ) <=
-        Number(
-          medicine.minStock ||
-            5
-        )
-      ) {
+    if (
+      Number(medicine.stock) <=
+      Number(medicine.minStock || 5)
+    ) {
 
-        notifications.push({
-          type:
-            "danger",
+      notifications.push({
+        type: "danger",
+        message:
+          `${medicine.name} stock is low`,
+      });
+    }
 
-          message:
-            `${medicine.name} stock is low`,
-        });
-      }
+    /* EXPIRY */
 
-      /* EXPIRY */
+    const expiryDate =
+      medicine.expiryDate ||
+      medicine.expiry;
 
-      const expiryDate =
-        medicine.expiryDate ||
-        medicine.expiry;
+    if (expiryDate) {
 
-      if (
-        expiryDate
-      ) {
+      const today = new Date();
 
-        const today =
-          new Date();
+      today.setHours(
+        0,
+        0,
+        0,
+        0
+      );
 
-        today.setHours(
-          0,
-          0,
-          0,
-          0
+      const expiry =
+        new Date(
+          `${expiryDate}T00:00:00`
         );
 
-        const expiry =
-          new Date(
-            `${expiryDate}T00:00:00`
-          );
+      const diff =
+        expiry - today;
 
-        const diff =
-          expiry - today;
+      const days =
+        Math.ceil(
+          diff /
+          (1000 * 60 * 60 * 24)
+        );
 
-        const days =
-          Math.ceil(
-            diff /
-              (1000 *
-                60 *
-                60 *
-                24)
-          );
-
-        if (
-          days < 0
-        ) {
-
-          notifications.push({
-            type:
-              "danger",
-
-            message:
-              `${medicine.name} expired`,
-          });
-
-        }
-
-        else if (
-          days <= 60
-        ) {
-
-          notifications.push({
-            type:
-              "warning",
-
-            message:
-              `${medicine.name} expiring soon`,
-          });
-
-        }
-      }
-    }
-  );
-
-  /* =========================
-     DEBT ALERTS
-  ========================= */
-
-  sales.forEach(
-    (sale) => {
-
-      if (
-        sale.paymentMethod ===
-          "Debt" &&
-
-        sale.paymentStatus
-          ?.toLowerCase() !==
-          "paid"
-      ) {
+      if (days < 0) {
 
         notifications.push({
-          type:
-            "danger",
-
+          type: "danger",
           message:
-            `${sale.customerName} unpaid debt`,
+            `${medicine.name} expired`,
+        });
+
+      } else if (days <= 60) {
+
+        notifications.push({
+          type: "warning",
+          message:
+            `${medicine.name} expiring soon`,
         });
       }
     }
-  );
+  });
 
   /* =========================
-     LOGOUT
+        DEBT ALERTS
+  ========================= */
+
+  sales.forEach((sale) => {
+
+    if (
+      sale.paymentMethod === "Debt" &&
+      sale.paymentStatus
+        ?.toLowerCase() !== "paid"
+    ) {
+
+      notifications.push({
+        type: "danger",
+        message:
+          `${sale.customerName} unpaid debt`,
+      });
+    }
+  });
+
+  /* =========================
+        LOGOUT
   ========================= */
 
   const handleLogout =
@@ -167,102 +132,57 @@ function Topbar({
 
       try {
 
-        await signOut(
-          auth
-        );
+        await signOut(auth);
 
-        setAuthed(
-          false
-        );
+        setAuthed(false);
 
-        setCurrentUser(
-          null
-        );
+        setCurrentUser(null);
 
-      } catch (
-        error
-      ) {
+      } catch (error) {
 
-        console.log(
-          error
-        );
+        console.log(error);
       }
     };
 
   return (
 
-    <div
-      style={{
-        background:
-          dark
-            ? "#020617"
-            : "#ffffff",
+    <div style={{
+      ...styles.container,
 
-        borderBottom:
-          dark
-            ? "1px solid #1e293b"
-            : "1px solid #e5e7eb",
+      background:
+        dark
+          ? "#020617"
+          : "#ffffff",
 
-        padding:
-          "18px 24px",
-
-        display:
-          "flex",
-
-        justifyContent:
-          "space-between",
-
-        alignItems:
-          "center",
-
-        flexWrap:
-          "wrap",
-
-        gap: "18px",
-
-        position:
-          "sticky",
-
-        top: 0,
-
-        zIndex: 100,
-      }}
-    >
+      borderBottom:
+        dark
+          ? "1px solid #1e293b"
+          : "1px solid #e5e7eb",
+    }}>
 
       {/* LEFT */}
 
-      <div>
+      <div style={styles.left}>
 
-        <h1
-          style={{
-            margin: 0,
+        <h1 style={{
+          ...styles.title,
 
-            fontSize:
-              "30px",
-
-            fontWeight:
-              "700",
-
-            color:
-              dark
-                ? "#ffffff"
-                : "#111827",
-          }}
-        >
+          color:
+            dark
+              ? "#ffffff"
+              : "#111827",
+        }}>
           Welcome 👋
         </h1>
 
-        <p
-          style={{
-            marginTop:
-              "6px",
+        <p style={{
+          ...styles.subtitle,
 
-            color:
-              dark
-                ? "#94a3b8"
-                : "#6b7280",
-          }}
-        >
+          color:
+            dark
+              ? "#94a3b8"
+              : "#6b7280",
+        }}>
           Pharmacy management system
         </p>
 
@@ -270,26 +190,11 @@ function Topbar({
 
       {/* RIGHT */}
 
-      <div
-        style={{
-          display:
-            "flex",
-
-          alignItems:
-            "center",
-
-          gap: "14px",
-        }}
-      >
+      <div style={styles.right}>
 
         {/* NOTIFICATION */}
 
-        <div
-          style={{
-            position:
-              "relative",
-          }}
-        >
+        <div style={styles.notificationWrapper}>
 
           <button
             onClick={() =>
@@ -297,15 +202,8 @@ function Topbar({
                 !showNotifications
               )
             }
-
             style={{
-              width: "56px",
-
-              height:
-                "56px",
-
-              borderRadius:
-                "18px",
+              ...styles.iconButton,
 
               border:
                 dark
@@ -321,90 +219,29 @@ function Topbar({
                 dark
                   ? "#ffffff"
                   : "#111827",
-
-              fontSize:
-                "22px",
-
-              cursor:
-                "pointer",
-
-              position:
-                "relative",
             }}
           >
+
             🔔
 
-            {notifications.length >
-              0 && (
+            {
+              notifications.length > 0 && (
 
-              <div
-                style={{
-                  position:
-                    "absolute",
+                <div style={styles.badge}>
+                  {notifications.length}
+                </div>
+              )
+            }
 
-                  top: "-5px",
-
-                  right:
-                    "-5px",
-
-                  width:
-                    "24px",
-
-                  height:
-                    "24px",
-
-                  borderRadius:
-                    "50%",
-
-                  background:
-                    "#ef4444",
-
-                  color:
-                    "#ffffff",
-
-                  display:
-                    "flex",
-
-                  alignItems:
-                    "center",
-
-                  justifyContent:
-                    "center",
-
-                  fontSize:
-                    "11px",
-
-                  fontWeight:
-                    "bold",
-                }}
-              >
-                {
-                  notifications.length
-                }
-              </div>
-            )}
           </button>
 
           {/* DROPDOWN */}
 
-          {showNotifications && (
+          {
+            showNotifications && (
 
-            <div
-              style={{
-                position:
-                  "absolute",
-
-                top: "70px",
-
-                right: 0,
-
-                width: "330px",
-
-                maxHeight:
-                  "420px",
-
-                overflowY:
-                  "auto",
+              <div style={{
+                ...styles.dropdown,
 
                 background:
                   dark
@@ -415,140 +252,97 @@ function Topbar({
                   dark
                     ? "1px solid #1f2937"
                     : "1px solid #e5e7eb",
+              }}>
 
-                borderRadius:
-                  "22px",
-
-                padding:
-                  "18px",
-
-                boxShadow:
-                  "0 10px 35px rgba(0,0,0,0.3)",
-
-                zIndex: 999,
-              }}
-            >
-
-              <h3
-                style={{
-                  marginTop: 0,
-
-                  marginBottom:
-                    "16px",
+                <h3 style={{
+                  ...styles.dropdownTitle,
 
                   color:
                     dark
                       ? "#ffffff"
                       : "#111827",
-                }}
-              >
-                Notifications
-              </h3>
+                }}>
+                  Notifications
+                </h3>
 
-              {notifications.length ===
-              0 ? (
+                {
+                  notifications.length === 0 ? (
 
-                <div
-                  style={{
-                    color:
-                      dark
-                        ? "#94a3b8"
-                        : "#6b7280",
-                  }}
-                >
-                  No alerts
-                </div>
-
-              ) : (
-
-                notifications.map(
-                  (
-                    notification,
-                    index
-                  ) => (
-
-                    <div
-                      key={
-                        index
-                      }
-
-                      style={{
-                        padding:
-                          "14px",
-
-                        borderRadius:
-                          "14px",
-
-                        marginBottom:
-                          "12px",
-
-                        background:
-                          notification.type ===
-                          "danger"
-
-                            ? "#7f1d1d"
-
-                            : notification.type ===
-                              "warning"
-
-                            ? "#92400e"
-
-                            : "#1e3a8a",
-
-                        color:
-                          "#ffffff",
-
-                        fontWeight:
-                          "600",
-
-                        fontSize:
-                          "14px",
-                      }}
-                    >
-
-                      {
-                        notification.type ===
-                        "danger"
-
-                          ? "🔥 "
-
-                          : notification.type ===
-                            "warning"
-
-                          ? "⏰ "
-
-                          : "🔔 "
-                      }
-
-                      {
-                        notification.message
-                      }
-
+                    <div style={{
+                      color:
+                        dark
+                          ? "#94a3b8"
+                          : "#6b7280",
+                    }}>
+                      No alerts
                     </div>
+
+                  ) : (
+
+                    notifications.map(
+                      (
+                        notification,
+                        index
+                      ) => (
+
+                        <div
+                          key={index}
+                          style={{
+                            ...styles.notificationItem,
+
+                            background:
+                              notification.type ===
+                              "danger"
+
+                                ? "#7f1d1d"
+
+                                : notification.type ===
+                                  "warning"
+
+                                ? "#92400e"
+
+                                : "#1e3a8a",
+                          }}
+                        >
+
+                          {
+                            notification.type ===
+                            "danger"
+
+                              ? "🔥 "
+
+                              : notification.type ===
+                                "warning"
+
+                              ? "⏰ "
+
+                              : "🔔 "
+                          }
+
+                          {
+                            notification.message
+                          }
+
+                        </div>
+                      )
+                    )
                   )
-                )
-              )}
-            </div>
-          )}
+                }
+
+              </div>
+            )
+          }
+
         </div>
 
         {/* DARK MODE */}
 
         <button
           onClick={() =>
-            setDark(
-              !dark
-            )
+            setDark(!dark)
           }
-
           style={{
-            width: "56px",
-
-            height:
-              "56px",
-
-            borderRadius:
-              "18px",
+            ...styles.iconButton,
 
             border:
               dark
@@ -559,12 +353,6 @@ function Topbar({
               dark
                 ? "#16a34a"
                 : "#f9fafb",
-
-            fontSize:
-              "22px",
-
-            cursor:
-              "pointer",
           }}
         >
           {
@@ -576,61 +364,42 @@ function Topbar({
 
         {/* USER */}
 
-        <div
-          style={{
-            display:
-              "flex",
+        <div style={{
+          ...styles.userCard,
 
-            alignItems:
-              "center",
+          background:
+            dark
+              ? "#111827"
+              : "#f9fafb",
+        }}>
 
-            gap: "12px",
+          <div style={styles.avatar}>
 
-            background:
-              dark
-                ? "#111827"
-                : "#f9fafb",
+            {
+              currentUser?.name
+                ?.charAt(0)
+                ?.toUpperCase()
+            }
 
-            padding:
-              "10px 14px",
+          </div>
 
-            borderRadius:
-              "20px",
-          }}
-        >
+          <div style={styles.userInfo}>
 
-          <div
-            style={{
-              width: "52px",
-
-              height:
-                "52px",
-
-              borderRadius:
-                "50%",
-
-              background:
-                "#16a34a",
+            <div style={{
+              ...styles.userName,
 
               color:
-                "#ffffff",
+                dark
+                  ? "#ffffff"
+                  : "#111827",
+            }}>
+              {currentUser?.name}
+            </div>
 
-              display:
-                "flex",
+            <div style={styles.userRole}>
+              {currentUser?.role}
+            </div>
 
-              alignItems:
-                "center",
-
-              justifyContent:
-                "center",
-
-              fontWeight:
-                "bold",
-            }}
-          >
-            {currentUser?.name
-              ?.charAt(0)
-              ?.toUpperCase()}
           </div>
 
         </div>
@@ -638,32 +407,8 @@ function Topbar({
         {/* LOGOUT */}
 
         <button
-          onClick={
-            handleLogout
-          }
-
-          style={{
-            background:
-              "#dc2626",
-
-            color:
-              "#ffffff",
-
-            border:
-              "none",
-
-            padding:
-              "14px 24px",
-
-            borderRadius:
-              "16px",
-
-            fontWeight:
-              "700",
-
-            cursor:
-              "pointer",
-          }}
+          onClick={handleLogout}
+          style={styles.logoutButton}
         >
           Logout
         </button>
@@ -671,8 +416,242 @@ function Topbar({
       </div>
 
     </div>
-
   );
 }
+
+/* =========================
+      RESPONSIVE STYLES
+========================= */
+
+const styles = {
+
+  container: {
+    padding: "18px 24px",
+
+    display: "flex",
+
+    justifyContent: "space-between",
+
+    alignItems: "center",
+
+    flexWrap: "wrap",
+
+    gap: "18px",
+
+    position: "sticky",
+
+    top: 0,
+
+    zIndex: 100,
+
+    width: "100%",
+
+    boxSizing: "border-box",
+  },
+
+  left: {
+    minWidth: "220px",
+  },
+
+  title: {
+    margin: 0,
+
+    fontSize:
+      "clamp(24px,4vw,30px)",
+
+    fontWeight: "700",
+  },
+
+  subtitle: {
+    marginTop: "6px",
+
+    fontSize: "14px",
+  },
+
+  right: {
+    display: "flex",
+
+    alignItems: "center",
+
+    gap: "14px",
+
+    flexWrap: "wrap",
+
+    justifyContent: "flex-end",
+  },
+
+  notificationWrapper: {
+    position: "relative",
+  },
+
+  iconButton: {
+    width: "56px",
+
+    height: "56px",
+
+    borderRadius: "18px",
+
+    fontSize: "22px",
+
+    cursor: "pointer",
+
+    position: "relative",
+
+    flexShrink: 0,
+  },
+
+  badge: {
+    position: "absolute",
+
+    top: "-5px",
+
+    right: "-5px",
+
+    width: "24px",
+
+    height: "24px",
+
+    borderRadius: "50%",
+
+    background: "#ef4444",
+
+    color: "#ffffff",
+
+    display: "flex",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    fontSize: "11px",
+
+    fontWeight: "bold",
+  },
+
+  dropdown: {
+    position: "absolute",
+
+    top: "70px",
+
+    right: 0,
+
+    width: "330px",
+
+    maxWidth: "90vw",
+
+    maxHeight: "420px",
+
+    overflowY: "auto",
+
+    borderRadius: "22px",
+
+    padding: "18px",
+
+    boxShadow:
+      "0 10px 35px rgba(0,0,0,0.3)",
+
+    zIndex: 999,
+
+    boxSizing: "border-box",
+  },
+
+  dropdownTitle: {
+    marginTop: 0,
+
+    marginBottom: "16px",
+  },
+
+  notificationItem: {
+    padding: "14px",
+
+    borderRadius: "14px",
+
+    marginBottom: "12px",
+
+    color: "#ffffff",
+
+    fontWeight: "600",
+
+    fontSize: "14px",
+
+    wordBreak: "break-word",
+  },
+
+  userCard: {
+    display: "flex",
+
+    alignItems: "center",
+
+    gap: "12px",
+
+    padding: "10px 14px",
+
+    borderRadius: "20px",
+
+    minWidth: "180px",
+  },
+
+  avatar: {
+    width: "52px",
+
+    height: "52px",
+
+    borderRadius: "50%",
+
+    background: "#16a34a",
+
+    color: "#ffffff",
+
+    display: "flex",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    fontWeight: "bold",
+
+    flexShrink: 0,
+  },
+
+  userInfo: {
+    overflow: "hidden",
+  },
+
+  userName: {
+    fontWeight: "700",
+
+    whiteSpace: "nowrap",
+
+    overflow: "hidden",
+
+    textOverflow: "ellipsis",
+  },
+
+  userRole: {
+    fontSize: "13px",
+
+    color: "#94a3b8",
+
+    marginTop: "3px",
+  },
+
+  logoutButton: {
+    background: "#dc2626",
+
+    color: "#ffffff",
+
+    border: "none",
+
+    padding: "14px 24px",
+
+    borderRadius: "16px",
+
+    fontWeight: "700",
+
+    cursor: "pointer",
+
+    whiteSpace: "nowrap",
+  },
+};
 
 export default Topbar;

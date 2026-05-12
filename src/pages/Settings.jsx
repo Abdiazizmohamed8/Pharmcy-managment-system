@@ -10,7 +10,7 @@ function Settings({
 }) {
 
   /* =========================
-     STATES
+        STATES
   ========================= */
 
   const [
@@ -49,7 +49,7 @@ function Settings({
   );
 
   /* =========================
-     SAVE SETTINGS
+        SAVE SETTINGS
   ========================= */
 
   const saveSettings =
@@ -62,7 +62,7 @@ function Settings({
     };
 
   /* =========================
-     BACKUP
+        BACKUP
   ========================= */
 
   const backupDatabase =
@@ -75,116 +75,62 @@ function Settings({
     };
 
   return (
-    <div
-      style={{
-        width: "100%",
-        minHeight: "100vh",
 
-        background:
-          dark
-            ? "#020617"
-            : "#f3f4f6",
+    <div style={{
+      ...styles.container,
 
-        color:
-          dark
-            ? "#ffffff"
-            : "#111827",
+      background:
+        dark
+          ? "#020617"
+          : "#f3f4f6",
 
-        padding: "24px",
-
-        transition:
-          "0.3s ease",
-
-        boxSizing:
-          "border-box",
-      }}
-    >
+      color:
+        dark
+          ? "#ffffff"
+          : "#111827",
+    }}>
 
       {/* HEADER */}
 
-      <div
-        style={{
-          marginBottom:
-            "30px",
-        }}
-      >
+      <div style={styles.header}>
 
-        <h1
-          style={{
-            margin: 0,
+        <h1 style={{
+          ...styles.title,
 
-            fontSize:
-              "40px",
-
-            fontWeight:
-              "bold",
-
-            color:
-              dark
-                ? "#ffffff"
-                : "#111827",
-          }}
-        >
+          color:
+            dark
+              ? "#ffffff"
+              : "#111827",
+        }}>
           Settings ⚙️
         </h1>
 
-        <p
-          style={{
-            marginTop:
-              "10px",
+        <p style={{
+          ...styles.subtitle,
 
-            color:
-              dark
-                ? "#d1d5db"
-                : "#6b7280",
-
-            fontSize:
-              "15px",
-          }}
-        >
+          color:
+            dark
+              ? "#d1d5db"
+              : "#6b7280",
+        }}>
           Manage pharmacy settings
         </p>
+
       </div>
 
       {/* GRID */}
 
-      <div
-        style={{
-          display: "grid",
-
-          gridTemplateColumns:
-            "repeat(auto-fit,minmax(340px,1fr))",
-
-          gap: "24px",
-        }}
-      >
+      <div style={styles.grid}>
 
         {/* PHARMACY INFO */}
 
-        <div
-          style={card(
-            dark
-          )}
-        >
+        <div style={card(dark)}>
 
-          <h2
-            style={title(
-              dark
-            )}
-          >
+          <h2 style={title(dark)}>
             Pharmacy Info 🏥
           </h2>
 
-          <div
-            style={{
-              display: "flex",
-
-              flexDirection:
-                "column",
-
-              gap: "16px",
-            }}
-          >
+          <div style={styles.formWrapper}>
 
             <input
               type="text"
@@ -195,16 +141,13 @@ function Settings({
 
               onChange={(e) =>
                 setStoreName(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
 
               placeholder="Store Name"
 
-              style={input(
-                dark
-              )}
+              style={input(dark)}
             />
 
             <input
@@ -214,16 +157,13 @@ function Settings({
 
               onChange={(e) =>
                 setPhone(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
 
               placeholder="Phone"
 
-              style={input(
-                dark
-              )}
+              style={input(dark)}
             />
 
             <input
@@ -233,16 +173,13 @@ function Settings({
 
               onChange={(e) =>
                 setEmail(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
 
               placeholder="Email"
 
-              style={input(
-                dark
-              )}
+              style={input(dark)}
             />
 
             <input
@@ -254,16 +191,13 @@ function Settings({
 
               onChange={(e) =>
                 setAddress(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
 
               placeholder="Address"
 
-              style={input(
-                dark
-              )}
+              style={input(dark)}
             />
 
             <select
@@ -273,14 +207,11 @@ function Settings({
 
               onChange={(e) =>
                 setCurrency(
-                  e.target
-                    .value
+                  e.target.value
                 )
               }
 
-              style={input(
-                dark
-              )}
+              style={input(dark)}
             >
 
               <option>
@@ -308,84 +239,58 @@ function Settings({
             >
               Save Settings
             </button>
+
           </div>
+
         </div>
 
         {/* SYSTEM SETTINGS */}
 
-        <div
-          style={card(
-            dark
-          )}
-        >
+        <div style={card(dark)}>
 
-          <h2
-            style={title(
-              dark
-            )}
-          >
+          <h2 style={title(dark)}>
             System Settings 🛠️
           </h2>
 
           {/* DARK MODE */}
 
-          <div
-            style={{
-              display: "flex",
+          <div style={{
+            ...styles.darkCard,
 
-              justifyContent:
-                "space-between",
-
-              alignItems:
-                "center",
-
-              padding:
-                "18px",
-
-              borderRadius:
-                "18px",
-
-              background:
-                dark
-                  ? "#0f172a"
-                  : "#f9fafb",
-
-              marginBottom:
-                "24px",
-            }}
-          >
+            background:
+              dark
+                ? "#0f172a"
+                : "#f9fafb",
+          }}>
 
             <div>
 
-              <h4
-                style={{
-                  margin:
-                    "0 0 6px",
+              <h4 style={{
+                margin:
+                  "0 0 6px",
 
-                  color:
-                    dark
-                      ? "#ffffff"
-                      : "#111827",
-                }}
-              >
+                color:
+                  dark
+                    ? "#ffffff"
+                    : "#111827",
+              }}>
                 Dark Mode
               </h4>
 
-              <p
-                style={{
-                  margin: 0,
+              <p style={{
+                margin: 0,
 
-                  fontSize:
-                    "14px",
+                fontSize:
+                  "14px",
 
-                  color:
-                    dark
-                      ? "#d1d5db"
-                      : "#6b7280",
-                }}
-              >
+                color:
+                  dark
+                    ? "#d1d5db"
+                    : "#6b7280",
+              }}>
                 Enable dark theme
               </p>
+
             </div>
 
             <button
@@ -396,167 +301,124 @@ function Settings({
               }
 
               style={{
-                width: "80px",
-
-                height: "40px",
-
-                borderRadius:
-                  "999px",
-
-                border:
-                  "none",
-
-                cursor:
-                  "pointer",
+                ...styles.toggleButton,
 
                 background:
                   dark
                     ? "#16a34a"
                     : "#d1d5db",
-
-                color:
-                  "#ffffff",
-
-                fontWeight:
-                  "bold",
-
-                transition:
-                  "0.3s",
               }}
             >
+
               {dark
                 ? "ON"
                 : "OFF"}
+
             </button>
+
           </div>
 
           {/* USER */}
 
-          <div
-            style={{
-              borderTop:
+          <div style={{
+            borderTop:
+              dark
+
+                ? "1px solid #1f2937"
+
+                : "1px solid #e5e7eb",
+
+            paddingTop:
+              "24px",
+          }}>
+
+            <h3 style={{
+              marginTop: 0,
+
+              marginBottom:
+                "18px",
+
+              color:
                 dark
-
-                  ? "1px solid #1f2937"
-
-                  : "1px solid #e5e7eb",
-
-              paddingTop:
-                "24px",
-            }}
-          >
-
-            <h3
-              style={{
-                marginTop: 0,
-
-                marginBottom:
-                  "18px",
-
-                color:
-                  dark
-                    ? "#ffffff"
-                    : "#111827",
-              }}
-            >
+                  ? "#ffffff"
+                  : "#111827",
+            }}>
               Current User 👤
             </h3>
 
-            <div
-              style={{
-                display: "flex",
-
-                alignItems:
-                  "center",
-
-                gap: "16px",
-              }}
-            >
+            <div style={styles.userWrapper}>
 
               {/* AVATAR */}
 
-              <div
-                style={{
-                  width: "64px",
+              <div style={styles.avatar}>
 
-                  height:
-                    "64px",
+                {
+                  currentUser?.name
+                    ?.charAt(0)
+                    ?.toUpperCase() ||
 
-                  borderRadius:
-                    "50%",
+                  "A"
+                }
 
-                  background:
-                    "#16a34a",
-
-                  display:
-                    "flex",
-
-                  justifyContent:
-                    "center",
-
-                  alignItems:
-                    "center",
-
-                  color:
-                    "#ffffff",
-
-                  fontWeight:
-                    "bold",
-
-                  fontSize:
-                    "24px",
-                }}
-              >
-                {currentUser?.name
-                  ?.charAt(0)
-                  ?.toUpperCase() ||
-                  "A"}
               </div>
 
               {/* USER INFO */}
 
               <div>
 
-                <h3
-                  style={{
-                    margin:
-                      "0 0 6px",
+                <h3 style={{
+                  margin:
+                    "0 0 6px",
 
-                    color:
-                      dark
-                        ? "#ffffff"
-                        : "#111827",
-                  }}
-                >
-                  {currentUser?.name ||
-                    "Admin"}
+                  color:
+                    dark
+                      ? "#ffffff"
+                      : "#111827",
+
+                  wordBreak:
+                    "break-word",
+                }}>
+
+                  {
+                    currentUser?.name ||
+
+                    "Admin"
+                  }
+
                 </h3>
 
-                <p
-                  style={{
-                    margin: 0,
+                <p style={{
+                  margin: 0,
 
-                    color:
-                      dark
-                        ? "#d1d5db"
-                        : "#6b7280",
-                  }}
-                >
-                  {currentUser?.role ||
-                    "Administrator"}
+                  color:
+                    dark
+                      ? "#d1d5db"
+                      : "#6b7280",
+
+                  wordBreak:
+                    "break-word",
+                }}>
+
+                  {
+                    currentUser?.role ||
+
+                    "Administrator"
+                  }
+
                 </p>
+
               </div>
+
             </div>
+
           </div>
 
           {/* BACKUP */}
 
-          <div
-            style={{
-              marginTop:
-                "28px",
-            }}
-          >
+          <div style={{
+            marginTop:
+              "28px",
+          }}>
 
             <button
               onClick={
@@ -569,15 +431,181 @@ function Settings({
             >
               Backup Database
             </button>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
   );
 }
 
 /* =========================
-   CARD
+      STYLES
+========================= */
+
+const styles = {
+
+  container: {
+    width: "100%",
+
+    minHeight: "100vh",
+
+    padding: "24px",
+
+    transition:
+      "0.3s ease",
+
+    boxSizing:
+      "border-box",
+  },
+
+  header: {
+    marginBottom:
+      "30px",
+  },
+
+  title: {
+    margin: 0,
+
+    fontSize:
+      "clamp(30px,6vw,40px)",
+
+    fontWeight:
+      "bold",
+
+    wordBreak:
+      "break-word",
+  },
+
+  subtitle: {
+    marginTop:
+      "10px",
+
+    fontSize:
+      "15px",
+  },
+
+  grid: {
+    display: "grid",
+
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(320px,1fr))",
+
+    gap: "24px",
+
+    alignItems:
+      "start",
+  },
+
+  formWrapper: {
+    display: "flex",
+
+    flexDirection:
+      "column",
+
+    gap: "16px",
+  },
+
+  darkCard: {
+    display: "flex",
+
+    justifyContent:
+      "space-between",
+
+    alignItems:
+      "center",
+
+    flexWrap:
+      "wrap",
+
+    gap: "16px",
+
+    padding:
+      "18px",
+
+    borderRadius:
+      "18px",
+
+    marginBottom:
+      "24px",
+  },
+
+  toggleButton: {
+    width: "80px",
+
+    height: "40px",
+
+    borderRadius:
+      "999px",
+
+    border:
+      "none",
+
+    cursor:
+      "pointer",
+
+    color:
+      "#ffffff",
+
+    fontWeight:
+      "bold",
+
+    transition:
+      "0.3s",
+
+    flexShrink: 0,
+  },
+
+  userWrapper: {
+    display: "flex",
+
+    alignItems:
+      "center",
+
+    gap: "16px",
+
+    flexWrap:
+      "wrap",
+  },
+
+  avatar: {
+    width: "64px",
+
+    height: "64px",
+
+    borderRadius:
+      "50%",
+
+    background:
+      "#16a34a",
+
+    display:
+      "flex",
+
+    justifyContent:
+      "center",
+
+    alignItems:
+      "center",
+
+    color:
+      "#ffffff",
+
+    fontWeight:
+      "bold",
+
+    fontSize:
+      "24px",
+
+    flexShrink: 0,
+  },
+};
+
+/* =========================
+      CARD
 ========================= */
 
 const card = (
@@ -602,10 +630,15 @@ const card = (
     dark
       ? "0 4px 20px rgba(0,0,0,0.35)"
       : "0 8px 24px rgba(0,0,0,0.05)",
+
+  width: "100%",
+
+  boxSizing:
+    "border-box",
 });
 
 /* =========================
-   TITLE
+      TITLE
 ========================= */
 
 const title = (
@@ -620,10 +653,13 @@ const title = (
     dark
       ? "#ffffff"
       : "#111827",
+
+  fontSize:
+    "clamp(22px,5vw,28px)",
 });
 
 /* =========================
-   INPUT
+      INPUT
 ========================= */
 
 const input = (
@@ -665,10 +701,13 @@ const input = (
 });
 
 /* =========================
-   BUTTONS
+      BUTTONS
 ========================= */
 
 const saveBtn = {
+
+  width: "100%",
+
   background:
     "#16a34a",
 
@@ -695,6 +734,7 @@ const saveBtn = {
 };
 
 const backupBtn = {
+
   width: "100%",
 
   background:

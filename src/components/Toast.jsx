@@ -6,7 +6,12 @@ function Toast({
   onClose,
 }) {
 
+  /* =========================
+        COLORS
+  ========================= */
+
   const bgColor =
+
     type === "error"
 
       ? "#dc2626"
@@ -17,7 +22,12 @@ function Toast({
 
       : "#16a34a";
 
+  /* =========================
+        ICONS
+  ========================= */
+
   const icon =
+
     type === "error"
 
       ? "❌"
@@ -28,7 +38,12 @@ function Toast({
 
       : "✅";
 
+  /* =========================
+        TITLES
+  ========================= */
+
   const title =
+
     type === "error"
 
       ? "Low Stock"
@@ -41,114 +56,26 @@ function Toast({
 
   return (
 
-    <div
-      style={{
-        position:  "relative",
-
-        zIndex: 9999,
-
-        minWidth:
-          "320px",
-
-        maxWidth:
-          "420px",
-
-        background:
-          bgColor,
-
-        color: "#ffffff",
-
-        padding:
-          "16px 18px",
-
-        borderRadius:
-          "18px",
-
-        display: "flex",
-
-        alignItems:
-          "center",
-
-        gap: "14px",
-
-        boxShadow:
-          "0 15px 40px rgba(0,0,0,0.25)",
-
-        border:
-          "1px solid rgba(255,255,255,0.15)",
-
-        animation:
-          "slideIn 0.35s ease",
-      }}
-    >
+    <div style={{
+      ...styles.toast,
+      background: bgColor,
+    }}>
 
       {/* ICON */}
 
-      <div
-        style={{
-          width: "44px",
-
-          height:
-            "44px",
-
-          borderRadius:
-            "14px",
-
-          background:
-            "rgba(255,255,255,0.15)",
-
-          display:
-            "flex",
-
-          alignItems:
-            "center",
-
-          justifyContent:
-            "center",
-
-          fontSize:
-            "22px",
-
-          flexShrink: 0,
-        }}
-      >
+      <div style={styles.iconBox}>
         {icon}
       </div>
 
-      {/* TEXT */}
+      {/* CONTENT */}
 
-      <div
-        style={{
-          flex: 1,
-        }}
-      >
+      <div style={styles.content}>
 
-        <div
-          style={{
-            fontWeight:
-              "700",
-
-            fontSize:
-              "18px",
-
-            marginBottom:
-              "4px",
-          }}
-        >
+        <div style={styles.title}>
           {title}
         </div>
 
-        <div
-          style={{
-            fontSize:
-              "15px",
-
-            lineHeight:
-              "22px",
-
-            opacity: 0.95,
-          }}
-        >
+        <div style={styles.message}>
           {message}
         </div>
 
@@ -157,36 +84,17 @@ function Toast({
       {/* CLOSE BUTTON */}
 
       <button
-        onClick={
-          onClose
-        }
-
-        style={{
-          background:
-            "transparent",
-
-          border:
-            "none",
-
-          color:
-            "#ffffff",
-
-          fontSize:
-            "22px",
-
-          cursor:
-            "pointer",
-
-          opacity: 0.85,
-        }}
+        onClick={onClose}
+        style={styles.closeBtn}
       >
         ✕
       </button>
 
-      {/* ANIMATION */}
+      {/* RESPONSIVE + ANIMATION */}
 
       <style>
         {`
+
           @keyframes slideIn {
 
             from {
@@ -198,29 +106,199 @@ function Toast({
               opacity: 1;
               transform: translateX(0);
             }
-
           }
 
-          @media(max-width:600px){
+          @media (max-width: 768px) {
 
-            div[style*="position: fixed"]{
+            .toast-responsive {
 
-              left: 10px !important;
-
-              right: 10px !important;
+              width: calc(100vw - 20px) !important;
 
               min-width: auto !important;
 
               max-width: none !important;
 
+              padding: 14px !important;
+
+              border-radius: 16px !important;
             }
 
+            .toast-title {
+
+              font-size: 16px !important;
+            }
+
+            .toast-message {
+
+              font-size: 14px !important;
+
+              line-height: 20px !important;
+            }
+
+            .toast-icon {
+
+              width: 40px !important;
+
+              height: 40px !important;
+
+              font-size: 20px !important;
+            }
+
+            .toast-close {
+
+              font-size: 20px !important;
+            }
           }
+
+          @media (max-width: 480px) {
+
+            .toast-responsive {
+
+              width: calc(100vw - 16px) !important;
+
+              gap: 10px !important;
+
+              padding: 12px !important;
+            }
+
+            .toast-title {
+
+              font-size: 15px !important;
+            }
+
+            .toast-message {
+
+              font-size: 13px !important;
+
+              line-height: 18px !important;
+            }
+
+            .toast-icon {
+
+              width: 36px !important;
+
+              height: 36px !important;
+
+              font-size: 18px !important;
+
+              border-radius: 12px !important;
+            }
+          }
+
         `}
       </style>
 
     </div>
   );
 }
+
+/* =========================
+      STYLES
+========================= */
+
+const styles = {
+
+  toast: {
+    position: "relative",
+
+    zIndex: 9999,
+
+    minWidth: "320px",
+
+    maxWidth: "420px",
+
+    color: "#ffffff",
+
+    padding: "16px 18px",
+
+    borderRadius: "18px",
+
+    display: "flex",
+
+    alignItems: "center",
+
+    gap: "14px",
+
+    boxShadow:
+      "0 15px 40px rgba(0,0,0,0.25)",
+
+    border:
+      "1px solid rgba(255,255,255,0.15)",
+
+    animation:
+      "slideIn 0.35s ease",
+
+    boxSizing: "border-box",
+
+    width: "100%",
+
+    overflow: "hidden",
+  },
+
+  iconBox: {
+    width: "44px",
+
+    height: "44px",
+
+    borderRadius: "14px",
+
+    background:
+      "rgba(255,255,255,0.15)",
+
+    display: "flex",
+
+    alignItems: "center",
+
+    justifyContent: "center",
+
+    fontSize: "22px",
+
+    flexShrink: 0,
+  },
+
+  content: {
+    flex: 1,
+
+    minWidth: 0,
+  },
+
+  title: {
+    fontWeight: "700",
+
+    fontSize: "18px",
+
+    marginBottom: "4px",
+
+    wordBreak: "break-word",
+  },
+
+  message: {
+    fontSize: "15px",
+
+    lineHeight: "22px",
+
+    opacity: 0.95,
+
+    wordBreak: "break-word",
+  },
+
+  closeBtn: {
+    background: "transparent",
+
+    border: "none",
+
+    color: "#ffffff",
+
+    fontSize: "22px",
+
+    cursor: "pointer",
+
+    opacity: 0.85,
+
+    flexShrink: 0,
+
+    padding: 0,
+  },
+};
 
 export default Toast;

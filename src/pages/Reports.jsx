@@ -24,23 +24,25 @@ function Reports({
 }) {
 
   /* =========================
-     FILTER
+        FILTER
   ========================= */
 
   const [filter] =
     useState("all");
 
   /* =========================
-     TOTALS
+        TOTALS
   ========================= */
 
   const totalSales =
     sales.reduce(
       (sum, sale) =>
+
         sum +
         Number(
           sale.total || 0
         ),
+
       0
     );
 
@@ -50,10 +52,12 @@ function Reports({
         sum,
         expense
       ) =>
+
         sum +
         Number(
           expense.amount || 0
         ),
+
       0
     );
 
@@ -62,30 +66,32 @@ function Reports({
       (sum, sale) => {
 
         const profit =
+
           Number(
             sale.total || 0
           ) -
+
           Number(
-            sale.buyTotal ||
-              0
+            sale.buyTotal || 0
           );
 
         return (
           sum + profit
         );
+
       },
+
       0
     );
 
   /* =========================
-     CHART DATA
+        CHART DATA
   ========================= */
 
   const salesChart =
     useMemo(() => {
 
-      const grouped =
-        {};
+      const grouped = {};
 
       sales.forEach(
         (sale) => {
@@ -116,17 +122,21 @@ function Reports({
       return Object.keys(
         grouped
       ).map((key) => ({
+
         customer: key,
+
         total:
           grouped[key],
       }));
+
     }, [sales]);
 
   /* =========================
-     PIE DATA
+        PIE DATA
   ========================= */
 
   const pieData = [
+
     {
       name: "Sales",
       value:
@@ -146,289 +156,183 @@ function Reports({
   ];
 
   return (
-    <div
-      style={{
-        width: "100%",
 
-        minHeight:
-          "100vh",
+    <div style={{
+      ...styles.container,
 
-        color:
-          dark
-            ? "#ffffff"
-            : "#111827",
-      }}
-    >
+      background:
+        dark
+          ? "#020617"
+          : "#f3f4f6",
+
+      color:
+        dark
+          ? "#ffffff"
+          : "#111827",
+    }}>
 
       {/* HEADER */}
 
-      <div
-        style={{
-          marginBottom:
-            "24px",
-        }}
-      >
+      <div style={styles.header}>
 
-        <h1
-          style={{
-            fontSize:
-              "36px",
+        <h1 style={{
+          ...styles.title,
 
-            fontWeight:
-              "bold",
-
-            marginBottom:
-              "10px",
-          }}
-        >
+          color:
+            dark
+              ? "#ffffff"
+              : "#111827",
+        }}>
           Reports 📈
         </h1>
 
-        <p
-          style={{
-            color:
-              dark
-                ? "#94a3b8"
-                : "#6b7280",
-          }}
-        >
+        <p style={{
+          ...styles.subtitle,
+
+          color:
+            dark
+              ? "#94a3b8"
+              : "#6b7280",
+        }}>
           Pharmacy analytics
           and reports
         </p>
+
       </div>
 
       {/* CARDS */}
 
-      <div
-        style={{
-          display: "grid",
-
-          gridTemplateColumns:
-            "repeat(auto-fit,minmax(220px,1fr))",
-
-          gap: "20px",
-
-          marginBottom:
-            "30px",
-        }}
-      >
+      <div style={styles.cardsGrid}>
 
         {/* SALES */}
 
-        <div
-          style={{
-            background:
-              dark
-                ? "#111827"
-                : "#ffffff",
+        <div style={{
+          ...styles.card,
 
-            borderRadius:
-              "24px",
+          background:
+            dark
+              ? "#111827"
+              : "#ffffff",
 
-            padding:
-              "24px",
+          border:
+            dark
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
+        }}>
 
-            border:
-              dark
-                ? "1px solid #1f2937"
-                : "1px solid #e5e7eb",
-          }}
-        >
+          <p style={{
+            ...styles.cardLabel,
 
-          <p
-            style={{
-              color:
-                "#16a34a",
-
-              marginBottom:
-                "10px",
-            }}
-          >
+            color:
+              "#16a34a",
+          }}>
             Total Sales
           </p>
 
-          <h2
-            style={{
-              fontSize:
-                "32px",
-
-              fontWeight:
-                "bold",
-            }}
-          >
+          <h2 style={styles.cardAmount}>
             $
-            {totalSales.toFixed(
-              2
-            )}
+            {totalSales.toFixed(2)}
           </h2>
+
         </div>
 
         {/* EXPENSES */}
 
-        <div
-          style={{
-            background:
-              dark
-                ? "#111827"
-                : "#ffffff",
+        <div style={{
+          ...styles.card,
 
-            borderRadius:
-              "24px",
+          background:
+            dark
+              ? "#111827"
+              : "#ffffff",
 
-            padding:
-              "24px",
+          border:
+            dark
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
+        }}>
 
-            border:
-              dark
-                ? "1px solid #1f2937"
-                : "#e5e7eb",
-          }}
-        >
+          <p style={{
+            ...styles.cardLabel,
 
-          <p
-            style={{
-              color:
-                "#dc2626",
-
-              marginBottom:
-                "10px",
-            }}
-          >
+            color:
+              "#dc2626",
+          }}>
             Expenses
           </p>
 
-          <h2
-            style={{
-              fontSize:
-                "32px",
-
-              fontWeight:
-                "bold",
-            }}
-          >
+          <h2 style={styles.cardAmount}>
             $
-            {totalExpenses.toFixed(
-              2
-            )}
+            {totalExpenses.toFixed(2)}
           </h2>
+
         </div>
 
         {/* PROFIT */}
 
-        <div
-          style={{
-            background:
-              dark
-                ? "#111827"
-                : "#ffffff",
+        <div style={{
+          ...styles.card,
 
-            borderRadius:
-              "24px",
+          background:
+            dark
+              ? "#111827"
+              : "#ffffff",
 
-            padding:
-              "24px",
+          border:
+            dark
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
+        }}>
 
-            border:
-              dark
-                ? "1px solid #1f2937"
-                : "#e5e7eb",
-          }}
-        >
+          <p style={{
+            ...styles.cardLabel,
 
-          <p
-            style={{
-              color:
-                "#06b6d4",
-
-              marginBottom:
-                "10px",
-            }}
-          >
+            color:
+              "#06b6d4",
+          }}>
             Profit
           </p>
 
-          <h2
-            style={{
-              fontSize:
-                "32px",
-
-              fontWeight:
-                "bold",
-            }}
-          >
+          <h2 style={styles.cardAmount}>
             $
-            {totalProfit.toFixed(
-              2
-            )}
+            {totalProfit.toFixed(2)}
           </h2>
+
         </div>
+
       </div>
 
       {/* CHARTS */}
 
-      <div
-        style={{
-          display: "grid",
-
-          gridTemplateColumns:
-            "2fr 1fr",
-
-          gap: "24px",
-
-          marginBottom:
-            "30px",
-        }}
-      >
+      <div style={styles.chartGrid}>
 
         {/* BAR CHART */}
 
-        <div
-          style={{
-            background:
-              dark
-                ? "#111827"
-                : "#ffffff",
+        <div style={{
+          ...styles.chartCard,
 
-            borderRadius:
-              "24px",
+          background:
+            dark
+              ? "#111827"
+              : "#ffffff",
 
-            padding:
-              "20px",
+          border:
+            dark
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
+        }}>
 
-            border:
-              dark
-                ? "1px solid #1f2937"
-                : "#e5e7eb",
-
-            overflowX:
-              "auto",
-          }}
-        >
-
-          <h3
-            style={{
-              marginBottom:
-                "20px",
-
-              fontSize:
-                "20px",
-
-              fontWeight:
-                "bold",
-            }}
-          >
+          <h3 style={styles.chartTitle}>
             Sales Analytics
           </h3>
 
           <ResponsiveContainer
             width="100%"
-            height={300}
+            height={320}
           >
 
             <BarChart
-              data={
-                salesChart
-              }
+              data={salesChart}
             >
 
               <CartesianGrid
@@ -475,51 +379,36 @@ function Reports({
                   0,
                 ]}
               />
+
             </BarChart>
 
           </ResponsiveContainer>
+
         </div>
 
         {/* PIE CHART */}
 
-        <div
-          style={{
-            background:
-              dark
-                ? "#111827"
-                : "#ffffff",
+        <div style={{
+          ...styles.chartCard,
 
-            borderRadius:
-              "24px",
+          background:
+            dark
+              ? "#111827"
+              : "#ffffff",
 
-            padding:
-              "20px",
+          border:
+            dark
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
+        }}>
 
-            border:
-              dark
-                ? "1px solid #1f2937"
-                : "#e5e7eb",
-          }}
-        >
-
-          <h3
-            style={{
-              marginBottom:
-                "20px",
-
-              fontSize:
-                "20px",
-
-              fontWeight:
-                "bold",
-            }}
-          >
+          <h3 style={styles.chartTitle}>
             Overview
           </h3>
 
           <ResponsiveContainer
             width="100%"
-            height={300}
+            height={320}
           >
 
             <PieChart>
@@ -531,9 +420,7 @@ function Reports({
 
                 cy="50%"
 
-                outerRadius={
-                  100
-                }
+                outerRadius={100}
 
                 dataKey="value"
 
@@ -552,107 +439,75 @@ function Reports({
                       fill={
                         COLORS[
                           index %
-                            COLORS.length
+                          COLORS.length
                         ]
                       }
                     />
                   )
                 )}
+
               </Pie>
 
             </PieChart>
 
           </ResponsiveContainer>
+
         </div>
+
       </div>
 
       {/* TABLE */}
 
-      <div
-        style={{
-          background:
-            dark
-              ? "#111827"
-              : "#ffffff",
+      <div style={{
+        ...styles.tableCard,
 
-          borderRadius:
-            "24px",
+        background:
+          dark
+            ? "#111827"
+            : "#ffffff",
 
-          padding:
-            "24px",
+        border:
+          dark
+            ? "1px solid #1f2937"
+            : "1px solid #e5e7eb",
+      }}>
 
-          border:
-            dark
-              ? "1px solid #1f2937"
-              : "#e5e7eb",
-
-          overflowX:
-            "auto",
-        }}
-      >
-
-        <h3
-          style={{
-            marginBottom:
-              "24px",
-
-            fontSize:
-              "22px",
-
-            fontWeight:
-              "bold",
-          }}
-        >
+        <h3 style={styles.tableTitle}>
           Sales Analytics
         </h3>
 
-        <table
-          style={{
-            width: "100%",
+        <div style={styles.tableWrapper}>
 
-            borderCollapse:
-              "collapse",
+          <table style={styles.table}>
 
-            minWidth:
-              "1100px",
-          }}
-        >
+            <thead>
 
-          <thead>
-
-            <tr
-              style={{
+              <tr style={{
                 borderBottom:
                   dark
                     ? "1px solid #1f2937"
                     : "1px solid #e5e7eb",
-              }}
-            >
+              }}>
 
-              {[
-                "Invoice",
-                "Date",
-                "Customer",
-                "Medicines",
-                "Qty",
-                "Buy",
-                "Sell",
-                "Total",
-                "Profit",
-                "Payment",
-                "Status",
-              ].map(
-                (item) => (
+                {[
+                  "Invoice",
+                  "Date",
+                  "Customer",
+                  "Medicines",
+                  "Qty",
+                  "Buy",
+                  "Sell",
+                  "Total",
+                  "Profit",
+                  "Payment",
+                  "Status",
+                ].map((item) => (
 
                   <th
                     key={item}
 
                     style={{
-                      textAlign:
-                        "left",
-
-                      padding:
-                        "18px",
+                      ...styles.th,
 
                       color:
                         dark
@@ -662,209 +517,357 @@ function Reports({
                   >
                     {item}
                   </th>
-                )
-              )}
-            </tr>
-          </thead>
+                ))}
 
-          <tbody>
+              </tr>
 
-            {sales.map(
-              (sale) => {
+            </thead>
 
-                const profit =
-                  Number(
-                    sale.total || 0
-                  ) -
-                  Number(
-                    sale.buyTotal ||
-                      0
-                  );
+            <tbody>
 
-                return (
+              {sales.map(
+                (sale) => {
 
-                  <tr
-                    key={
-                      sale.id
-                    }
+                  const profit =
 
-                    style={{
-                      borderBottom:
-                        dark
-                          ? "1px solid #1f2937"
-                          : "#e5e7eb",
-                    }}
-                  >
+                    Number(
+                      sale.total || 0
+                    ) -
 
-                    <td
+                    Number(
+                      sale.buyTotal || 0
+                    );
+
+                  return (
+
+                    <tr
+                      key={sale.id}
+
                       style={{
-                        padding:
-                          "18px",
+                        borderBottom:
+                          dark
+                            ? "1px solid #1f2937"
+                            : "1px solid #e5e7eb",
+                      }}
+                    >
+
+                      {/* INVOICE */}
+
+                      <td style={{
+                        ...styles.td,
 
                         color:
                           "#2563eb",
 
                         fontWeight:
                           "bold",
-                      }}
-                    >
-                     {
-  sale.invoice
-    ? sale.invoice
-    : sale.id?.slice(
-        0,
-        8
-      )
-}
-                    </td>
+                      }}>
 
-                  <td
-  style={{
-    padding:
-      "18px",
+                        {
+                          sale.invoice
 
-    minWidth:
-      "180px",
+                            ? sale.invoice
 
-    whiteSpace:
-      "nowrap",
-  }}
->
-  {new Date(
-    sale.date
-  ).toLocaleDateString()}
-</td>
+                            : sale.id?.slice(
+                                0,
+                                8
+                              )
+                        }
 
-                    <td
-                      style={{
-                        padding:
-                          "18px",
-                      }}
-                    >
-                      {
-                        sale.customer
-                      }
-                    </td>
+                      </td>
 
-                    <td
-                      style={{
-                        padding:
-                          "18px",
-                      }}
-                    >
-                      {sale.items?.[0]
-                        ?.name || "-"}
-                    </td>
+                      {/* DATE */}
 
-                    <td
-                      style={{
-                        padding:
-                          "18px",
-                      }}
-                    >
-                      {sale.items?.[0]
-                        ?.qty || 0}
-                    </td>
+                      <td style={{
+                        ...styles.td,
 
-                    <td
-                      style={{
-                        padding:
-                          "18px",
-                      }}
-                    >
-                      $
-                      {sale.items?.[0]
-                        ?.buyPrice || 0}
-                    </td>
+                        minWidth:
+                          "180px",
 
-                    <td
-                      style={{
-                        padding:
-                          "18px",
-                      }}
-                    >
-                      $
-                      {sale.items?.[0]
-                        ?.price || 0}
-                    </td>
+                        whiteSpace:
+                          "nowrap",
+                      }}>
 
-                    <td
-                      style={{
-                        padding:
-                          "18px",
+                        {new Date(
+                          sale.date
+                        ).toLocaleDateString()}
+
+                      </td>
+
+                      {/* CUSTOMER */}
+
+                      <td style={styles.td}>
+                        {sale.customer}
+                      </td>
+
+                      {/* MEDICINE */}
+
+                      <td style={styles.td}>
+                        {
+                          sale.items?.[0]
+                            ?.name || "-"
+                        }
+                      </td>
+
+                      {/* QTY */}
+
+                      <td style={styles.td}>
+                        {
+                          sale.items?.[0]
+                            ?.qty || 0
+                        }
+                      </td>
+
+                      {/* BUY */}
+
+                      <td style={styles.td}>
+                        $
+                        {
+                          sale.items?.[0]
+                            ?.buyPrice || 0
+                        }
+                      </td>
+
+                      {/* SELL */}
+
+                      <td style={styles.td}>
+                        $
+                        {
+                          sale.items?.[0]
+                            ?.price || 0
+                        }
+                      </td>
+
+                      {/* TOTAL */}
+
+                      <td style={{
+                        ...styles.td,
 
                         color:
                           "#16a34a",
 
                         fontWeight:
                           "bold",
-                      }}
-                    >
-                      $
-                      {Number(
-                        sale.total || 0
-                      ).toFixed(
-                        2
-                      )}
-                    </td>
+                      }}>
 
-                    <td
-                      style={{
-                        padding:
-                          "18px",
+                        $
+                        {Number(
+                          sale.total || 0
+                        ).toFixed(2)}
+
+                      </td>
+
+                      {/* PROFIT */}
+
+                      <td style={{
+                        ...styles.td,
 
                         color:
                           "#06b6d4",
 
                         fontWeight:
                           "bold",
-                      }}
-                    >
-                      $
-                      {profit.toFixed(
-                        2
-                      )}
-                    </td>
+                      }}>
 
-                    <td
-                      style={{
-                        padding:
-                          "18px",
-                      }}
-                    >
-                      {
-                        sale.paymentMethod
-                      }
-                    </td>
+                        $
+                        {profit.toFixed(2)}
 
-                    <td
-                      style={{
-                        padding:
-                          "18px",
+                      </td>
+
+                      {/* PAYMENT */}
+
+                      <td style={styles.td}>
+                        {
+                          sale.paymentMethod
+                        }
+                      </td>
+
+                      {/* STATUS */}
+
+                      <td style={{
+                        ...styles.td,
 
                         color:
                           sale.status ===
                           "paid"
+
                             ? "#16a34a"
+
                             : "#ef4444",
 
                         fontWeight:
                           "bold",
-                      }}
-                    >
-                      {
-                        sale.status
-                      }
-                    </td>
-                  </tr>
-                );
-              }
-            )}
-          </tbody>
-        </table>
+
+                        textTransform:
+                          "capitalize",
+                      }}>
+
+                        {sale.status}
+
+                      </td>
+
+                    </tr>
+                  );
+                }
+              )}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
       </div>
+
     </div>
   );
 }
+
+/* =========================
+      STYLES
+========================= */
+
+const styles = {
+
+  container: {
+    width: "100%",
+
+    minHeight: "100vh",
+
+    padding: "20px",
+
+    boxSizing: "border-box",
+  },
+
+  header: {
+    marginBottom: "24px",
+  },
+
+  title: {
+    fontSize:
+      "clamp(30px,6vw,36px)",
+
+    fontWeight: "bold",
+
+    marginBottom: "10px",
+
+    marginTop: 0,
+  },
+
+  subtitle: {
+    fontSize: "15px",
+  },
+
+  cardsGrid: {
+    display: "grid",
+
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(220px,1fr))",
+
+    gap: "20px",
+
+    marginBottom: "30px",
+  },
+
+  card: {
+    borderRadius: "24px",
+
+    padding: "24px",
+
+    boxSizing: "border-box",
+  },
+
+  cardLabel: {
+    marginBottom: "10px",
+
+    fontWeight: "600",
+  },
+
+  cardAmount: {
+    fontSize:
+      "clamp(26px,5vw,32px)",
+
+    fontWeight: "bold",
+
+    margin: 0,
+  },
+
+  chartGrid: {
+    display: "grid",
+
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(320px,1fr))",
+
+    gap: "24px",
+
+    marginBottom: "30px",
+  },
+
+  chartCard: {
+    borderRadius: "24px",
+
+    padding: "20px",
+
+    overflowX: "auto",
+
+    boxSizing: "border-box",
+  },
+
+  chartTitle: {
+    marginBottom: "20px",
+
+    fontSize: "20px",
+
+    fontWeight: "bold",
+  },
+
+  tableCard: {
+    borderRadius: "24px",
+
+    padding: "24px",
+
+    overflow: "hidden",
+
+    boxSizing: "border-box",
+  },
+
+  tableTitle: {
+    marginBottom: "24px",
+
+    fontSize: "22px",
+
+    fontWeight: "bold",
+  },
+
+  tableWrapper: {
+    overflowX: "auto",
+  },
+
+  table: {
+    width: "100%",
+
+    minWidth: "1100px",
+
+    borderCollapse: "collapse",
+  },
+
+  th: {
+    textAlign: "left",
+
+    padding: "18px",
+
+    whiteSpace: "nowrap",
+
+    fontSize: "14px",
+  },
+
+  td: {
+    padding: "18px",
+
+    whiteSpace: "nowrap",
+
+    fontSize: "14px",
+  },
+};
 
 export default Reports;

@@ -1,4 +1,6 @@
-import { initializeApp } from "firebase/app";
+import {
+  initializeApp,
+} from "firebase/app";
 
 import {
   getFirestore,
@@ -9,10 +11,11 @@ import {
 } from "firebase/auth";
 
 /* =========================
-   FIREBASE CONFIG
+      FIREBASE CONFIG
 ========================= */
 
 const firebaseConfig = {
+
   apiKey:
     "AIzaSyCUQ3zZNu69RwefvrQvF-KZ6qJCHBnv1hY",
 
@@ -33,7 +36,7 @@ const firebaseConfig = {
 };
 
 /* =========================
-   INITIALIZE FIREBASE
+      INITIALIZE FIREBASE
 ========================= */
 
 const app =
@@ -42,21 +45,25 @@ const app =
   );
 
 /* =========================
-   FIRESTORE DATABASE
+      FIRESTORE DATABASE
 ========================= */
 
 const db =
-  getFirestore(app);
+  getFirestore(
+    app
+  );
 
 /* =========================
-   FIREBASE AUTH
+      FIREBASE AUTH
 ========================= */
 
 const auth =
-  getAuth(app);
+  getAuth(
+    app
+  );
 
 /* =========================
-   EXPORTS
+      EXPORTS
 ========================= */
 
 export {
