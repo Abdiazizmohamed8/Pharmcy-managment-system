@@ -21,6 +21,7 @@ import {
 function Medicines({
   medicines,
   dark,
+  toast,
 }) {
 
   /* =========================

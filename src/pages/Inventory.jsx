@@ -3,15 +3,14 @@ import {
   useEffect,
 } from "react";
 
-import Toast from "../components/Toast";
-
 function Inventory({
   medicines = [],
   darkMode = false,
+  toast,
 }) {
 
   /* =========================
-        STATES
+        SEARCH
   ========================= */
 
   const [
@@ -19,13 +18,8 @@ function Inventory({
     setSearch,
   ] = useState("");
 
-  const [
-    toast,
-    setToast,
-  ] = useState(null);
-
   /* =========================
-        FILTER
+        FILTERED
   ========================= */
 
   const filteredMedicines =
@@ -40,10 +34,10 @@ function Inventory({
     );
 
   /* =========================
-        LOW STOCK
+        LOW STOCK COUNT
   ========================= */
 
-  const lowStockMedicines =
+  const lowStockCount =
     medicines.filter(
       (medicine) =>
 
@@ -54,16 +48,13 @@ function Inventory({
         Number(
           medicine.minStock || 5
         )
-    );
-
-  const lowStockCount =
-    lowStockMedicines.length;
+    ).length;
 
   /* =========================
-        EXPIRING
+        EXPIRING COUNT
   ========================= */
 
-  const expiringMedicines =
+  const expiringSoon =
     medicines.filter(
       (medicine) => {
 
@@ -106,96 +97,41 @@ function Inventory({
           days <= 60
         );
       }
-    );
-
-  const expiringSoon =
-    expiringMedicines.length;
+    ).length;
 
   /* =========================
-        TOAST FLOW
+        ALERT TOASTS
   ========================= */
 
   useEffect(() => {
-
-    let timer1;
-    let timer2;
 
     if (
       lowStockCount > 0
     ) {
 
-      setToast({
-
-        id: 1,
-
-        message:
-          `${lowStockCount} medicines low stock`,
-
-        type:
-          "error",
-      });
-
-      timer1 =
-        setTimeout(() => {
-
-          if (
-            expiringSoon > 0
-          ) {
-
-            setToast({
-
-              id: 2,
-
-              message:
-                `${expiringSoon} medicines expiring soon`,
-
-              type:
-                "warning",
-            });
-
-            timer2 =
-              setTimeout(() => {
-
-                setToast(null);
-
-              }, 5000);
-
-          } else {
-
-            setToast(null);
-          }
-
-        }, 5000);
-
-    } else if (
-      expiringSoon > 0
-    ) {
-
-      setToast({
-
-        id: 2,
-
-        message:
-          `${expiringSoon} medicines expiring soon`,
-
-        type:
-          "warning",
-      });
-
-      timer1 =
-        setTimeout(() => {
-
-          setToast(null);
-
-        }, 5000);
+      toast(
+        `${lowStockCount} medicines low stock`,
+        "error"
+      );
     }
 
-    return () => {
+    const timer =
+      setTimeout(() => {
 
-      clearTimeout(timer1);
+        if (
+          expiringSoon > 0
+        ) {
 
-      clearTimeout(timer2);
-    };
+          toast(
+            `${expiringSoon} medicines expiring soon`,
+            "warning"
+          );
+        }
+
+      }, 3500);
+
+    return () =>
+      clearTimeout(timer);
 
   }, [
     lowStockCount,
@@ -204,36 +140,8 @@ function Inventory({
 
   return (
 
-    <>
-
-      {/* TOAST */}
-
-      {
-        toast && (
-
-          <div
-            style={
-              styles.toastWrapper
-            }
-          >
-
-            <Toast
-              message={
-                toast.message
-              }
-
-              type={
-                toast.type
-              }
-            />
-
-          </div>
-        )
-      }
-
-      {/* MAIN */}
-
-      <div style={{
+    <div
+      style={{
         ...styles.container,
 
         background:
@@ -245,136 +153,134 @@ function Inventory({
           darkMode
             ? "#ffffff"
             : "#111827",
-      }}>
+      }}
+    >
 
-        {/* HEADER */}
+      {/* HEADER */}
 
-        <div style={
-          styles.header
-        }>
+      <div style={styles.header}>
 
-          <div>
+        <div>
 
-            <h1 style={{
+          <h1
+            style={{
               ...styles.title,
 
               color:
                 darkMode
                   ? "#ffffff"
                   : "#111827",
-            }}>
-              Inventory 📦
-            </h1>
+            }}
+          >
+            Inventory 📦
+          </h1>
 
-            <p style={{
+          <p
+            style={{
               ...styles.subtitle,
 
               color:
                 darkMode
                   ? "#94a3b8"
                   : "#6b7280",
-            }}>
-              Manage pharmacy stock
-            </p>
+            }}
+          >
+            Manage pharmacy stock
+          </p>
 
-          </div>
+        </div>
 
-          {/* ALERT CARDS */}
+        {/* ALERT CARDS */}
 
-          <div style={
-            styles.cardsWrapper
-          }>
+        <div style={styles.cardsWrapper}>
 
-            <div style={{
+          <div
+            style={{
               ...styles.alertCard,
 
               background:
                 darkMode
                   ? "#7f1d1d"
                   : "#dc2626",
-            }}>
+            }}
+          >
 
-              <div style={
-                styles.alertLabel
-              }>
-                🔴 Low Stock
-              </div>
-
-              <div style={
-                styles.alertNumber
-              }>
-                {lowStockCount}
-              </div>
-
+            <div style={styles.alertLabel}>
+              🔴 Low Stock
             </div>
 
-            <div style={{
+            <div style={styles.alertNumber}>
+              {lowStockCount}
+            </div>
+
+          </div>
+
+          <div
+            style={{
               ...styles.alertCard,
 
               background:
                 darkMode
                   ? "#92400e"
                   : "#f59e0b",
-            }}>
+            }}
+          >
 
-              <div style={
-                styles.alertLabel
-              }>
-                ⏰ Expiring Soon
-              </div>
+            <div style={styles.alertLabel}>
+              ⏰ Expiring Soon
+            </div>
 
-              <div style={
-                styles.alertNumber
-              }>
-                {expiringSoon}
-              </div>
-
+            <div style={styles.alertNumber}>
+              {expiringSoon}
             </div>
 
           </div>
 
         </div>
 
-        {/* SEARCH */}
+      </div>
 
-        <input
-          type="text"
+      {/* SEARCH */}
 
-          placeholder="Search medicine..."
+      <input
+        type="text"
 
-          value={search}
+        placeholder="Search medicine..."
 
-          onChange={(e) =>
-            setSearch(
-              e.target.value
-            )
-          }
+        value={search}
 
+        onChange={(e) =>
+          setSearch(
+            e.target.value
+          )
+        }
+
+        style={{
+          ...styles.searchInput,
+
+          border:
+            darkMode
+              ? "1px solid #334155"
+              : "1px solid #d1d5db",
+
+          background:
+            darkMode
+              ? "#111827"
+              : "#ffffff",
+
+          color:
+            darkMode
+              ? "#ffffff"
+              : "#111827",
+        }}
+      />
+
+      {/* EMPTY */}
+
+      {filteredMedicines.length === 0 ? (
+
+        <div
           style={{
-            ...styles.searchInput,
-
-            border:
-              darkMode
-                ? "1px solid #334155"
-                : "1px solid #d1d5db",
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-          }}
-        />
-
-        {/* EMPTY */}
-
-        {filteredMedicines.length === 0 ? (
-
-          <div style={{
             ...styles.emptyBox,
 
             background:
@@ -386,274 +292,260 @@ function Inventory({
               darkMode
                 ? "#94a3b8"
                 : "#9ca3af",
-          }}>
-            No inventory available
-          </div>
+          }}
+        >
+          No inventory available
+        </div>
 
-        ) : (
+      ) : (
 
-          <div style={{
+        <div
+          style={{
             ...styles.tableWrapper,
 
             background:
               darkMode
                 ? "#111827"
                 : "#ffffff",
-          }}>
+          }}
+        >
 
-            {/* TABLE HEADER */}
+          {/* TABLE HEADER */}
 
-            <div style={{
+          <div
+            style={{
               ...styles.tableHeader,
 
               background:
                 darkMode
                   ? "#0f172a"
                   : "#f9fafb",
-            }}>
+            }}
+          >
 
-              <div>Medicine</div>
+            <div>Medicine</div>
 
-              <div>Category</div>
+            <div>Category</div>
 
-              <div>Stock</div>
+            <div>Stock</div>
 
-              <div>Min Stock</div>
+            <div>Min Stock</div>
 
-              <div>Expiry</div>
+            <div>Expiry</div>
 
-              <div>Status</div>
-
-            </div>
-
-            {/* ROWS */}
-
-            {
-              filteredMedicines.map(
-                (
-                  medicine
-                ) => {
-
-                  const low =
-                    Number(
-                      medicine.stock
-                    ) <=
-
-                    Number(
-                      medicine.minStock || 5
-                    );
-
-                  const expiryDate =
-                    medicine.expiryDate ||
-                    medicine.expiry;
-
-                  const expiring =
-                    expiryDate
-
-                      ? (() => {
-
-                          const today =
-                            new Date();
-
-                          today.setHours(
-                            0,
-                            0,
-                            0,
-                            0
-                          );
-
-                          const expiry =
-                            new Date(
-                              `${expiryDate}T00:00:00`
-                            );
-
-                          const diff =
-                            expiry - today;
-
-                          const days =
-                            Math.ceil(
-                              diff /
-                              (1000 *
-                                60 *
-                                60 *
-                                24)
-                            );
-
-                          return (
-                            days >= 0 &&
-                            days <= 60
-                          );
-
-                        })()
-
-                      : false;
-
-                  return (
-
-                    <div
-                      key={
-                        medicine.id
-                      }
-
-                      style={{
-                        ...styles.row,
-
-                        borderTop:
-                          darkMode
-                            ? "1px solid #1f2937"
-                            : "1px solid #e5e7eb",
-                      }}
-                    >
-
-                      {/* NAME */}
-
-                      <div>
-
-                        <h3 style={
-                          styles.medicineName
-                        }>
-                          {medicine.name}
-                        </h3>
-
-                        <p style={{
-                          ...styles.price,
-
-                          color:
-                            darkMode
-                              ? "#94a3b8"
-                              : "#9ca3af",
-                        }}>
-                          Sell: $
-                          {
-                            medicine.sellPrice
-                          }
-                        </p>
-
-                      </div>
-
-                      {/* CATEGORY */}
-
-                      <div>
-
-                        <span style={{
-                          ...styles.categoryBadge,
-
-                          background:
-                            darkMode
-                              ? "#14532d"
-                              : "#dcfce7",
-                        }}>
-                          {
-                            medicine.category
-                          }
-                        </span>
-
-                      </div>
-
-                      {/* STOCK */}
-
-                      <div style={{
-                        ...styles.stockText,
-
-                        color:
-                          low
-                            ? "#dc2626"
-                            : "#16a34a",
-                      }}>
-                        {
-                          medicine.stock
-                        }
-                      </div>
-
-                      {/* MIN STOCK */}
-
-                      <div>
-                        {
-                          medicine.minStock
-                        }
-                      </div>
-
-                      {/* EXPIRY */}
-
-                      <div style={{
-                        color:
-                          expiring
-                            ? "#f59e0b"
-                            : darkMode
-                            ? "#ffffff"
-                            : "#111827",
-
-                        fontWeight:
-                          "600",
-                      }}>
-                        {
-                          expiryDate ||
-                          "N/A"
-                        }
-                      </div>
-
-                      {/* STATUS */}
-
-                      <div>
-
-                        {low ? (
-
-                          <Badge
-                            bg={
-                              darkMode
-                                ? "#7f1d1d"
-                                : "#fee2e2"
-                            }
-
-                            color="#dc2626"
-
-                            text="Low Stock"
-                          />
-
-                        ) : expiring ? (
-
-                          <Badge
-                            bg={
-                              darkMode
-                                ? "#78350f"
-                                : "#fef3c7"
-                            }
-
-                            color="#f59e0b"
-
-                            text="Expiring Soon"
-                          />
-
-                        ) : (
-
-                          <Badge
-                            bg={
-                              darkMode
-                                ? "#14532d"
-                                : "#dcfce7"
-                            }
-
-                            color="#16a34a"
-
-                            text="In Stock"
-                          />
-
-                        )}
-
-                      </div>
-
-                    </div>
-                  );
-                }
-              )
-            }
+            <div>Status</div>
 
           </div>
-        )}
 
-      </div>
+          {/* ROWS */}
 
-    </>
+          {filteredMedicines.map(
+            (medicine) => {
+
+              const low =
+                Number(
+                  medicine.stock
+                ) <=
+
+                Number(
+                  medicine.minStock || 5
+                );
+
+              const expiryDate =
+                medicine.expiryDate ||
+                medicine.expiry;
+
+              const expiring =
+                expiryDate
+
+                  ? (() => {
+
+                      const today =
+                        new Date();
+
+                      today.setHours(
+                        0,
+                        0,
+                        0,
+                        0
+                      );
+
+                      const expiry =
+                        new Date(
+                          `${expiryDate}T00:00:00`
+                        );
+
+                      const diff =
+                        expiry - today;
+
+                      const days =
+                        Math.ceil(
+                          diff /
+                          (1000 *
+                            60 *
+                            60 *
+                            24)
+                        );
+
+                      return (
+                        days >= 0 &&
+                        days <= 60
+                      );
+
+                    })()
+
+                  : false;
+
+              return (
+
+                <div
+                  key={medicine.id}
+
+                  style={{
+                    ...styles.row,
+
+                    borderTop:
+                      darkMode
+                        ? "1px solid #1f2937"
+                        : "1px solid #e5e7eb",
+                  }}
+                >
+
+                  {/* NAME */}
+
+                  <div>
+
+                    <h3 style={styles.medicineName}>
+                      {medicine.name}
+                    </h3>
+
+                    <p
+                      style={{
+                        ...styles.price,
+
+                        color:
+                          darkMode
+                            ? "#94a3b8"
+                            : "#9ca3af",
+                      }}
+                    >
+                      Sell: $
+                      {medicine.sellPrice}
+                    </p>
+
+                  </div>
+
+                  {/* CATEGORY */}
+
+                  <div>
+
+                    <span
+                      style={{
+                        ...styles.categoryBadge,
+
+                        background:
+                          darkMode
+                            ? "#14532d"
+                            : "#dcfce7",
+                      }}
+                    >
+                      {medicine.category}
+                    </span>
+
+                  </div>
+
+                  {/* STOCK */}
+
+                  <div
+                    style={{
+                      ...styles.stockText,
+
+                      color:
+                        low
+                          ? "#dc2626"
+                          : "#16a34a",
+                    }}
+                  >
+                    {medicine.stock}
+                  </div>
+
+                  {/* MIN STOCK */}
+
+                  <div>
+                    {medicine.minStock}
+                  </div>
+
+                  {/* EXPIRY */}
+
+                  <div
+                    style={{
+                      color:
+                        expiring
+                          ? "#f59e0b"
+                          : darkMode
+                          ? "#ffffff"
+                          : "#111827",
+
+                      fontWeight:
+                        "600",
+                    }}
+                  >
+                    {expiryDate || "N/A"}
+                  </div>
+
+                  {/* STATUS */}
+
+                  <div>
+
+                    <Badge
+                      bg={
+                        low
+                          ? darkMode
+                            ? "#7f1d1d"
+                            : "#fee2e2"
+
+                          : expiring
+                          ? darkMode
+                            ? "#78350f"
+                            : "#fef3c7"
+
+                          : darkMode
+                          ? "#14532d"
+                          : "#dcfce7"
+                      }
+
+                      color={
+                        low
+                          ? "#dc2626"
+
+                          : expiring
+                          ? "#f59e0b"
+
+                          : "#16a34a"
+                      }
+
+                      text={
+                        low
+                          ? "Low Stock"
+
+                          : expiring
+                          ? "Expiring Soon"
+
+                          : "In Stock"
+                      }
+                    />
+
+                  </div>
+
+                </div>
+              );
+            }
+          )}
+
+        </div>
+      )}
+
+    </div>
   );
 }
 
@@ -669,25 +561,27 @@ function Badge({
 
   return (
 
-    <span style={{
-      background: bg,
+    <span
+      style={{
+        background: bg,
 
-      color: color,
+        color: color,
 
-      padding: "10px 16px",
+        padding: "10px 16px",
 
-      borderRadius: "999px",
+        borderRadius: "999px",
 
-      fontSize: "13px",
+        fontSize: "13px",
 
-      fontWeight: "bold",
+        fontWeight: "bold",
 
-      whiteSpace: "normal",
+        whiteSpace: "normal",
 
-      wordBreak: "break-word",
+        wordBreak: "break-word",
 
-      display: "inline-block",
-    }}>
+        display: "inline-block",
+      }}
+    >
       {text}
     </span>
   );
@@ -699,36 +593,12 @@ function Badge({
 
 const styles = {
 
-  toastWrapper: {
-    position: "fixed",
-
-    top: "20px",
-
-    left: "50%",
-
-    transform:
-      "translateX(-50%)",
-
-    zIndex: 9999,
-
-    width: "100%",
-
-    maxWidth: "420px",
-
-    padding: "0 10px",
-
-    boxSizing: "border-box",
-  },
-
   container: {
     width: "100%",
 
     minHeight: "100vh",
 
     padding: "24px",
-
-    transition:
-      "0.3s ease",
 
     boxSizing:
       "border-box",
@@ -836,7 +706,7 @@ const styles = {
   tableWrapper: {
     borderRadius: "30px",
 
-    overflowX: "hidden",
+    overflowX: "auto",
 
     width: "100%",
   },
@@ -845,7 +715,7 @@ const styles = {
     display: "grid",
 
     gridTemplateColumns:
-      "repeat(6,minmax(0,1fr))",
+      "repeat(6,minmax(140px,1fr))",
 
     padding: "20px",
 
@@ -853,16 +723,14 @@ const styles = {
 
     gap: "14px",
 
-    width: "100%",
-
-    boxSizing: "border-box",
+    minWidth: "850px",
   },
 
   row: {
     display: "grid",
 
     gridTemplateColumns:
-      "repeat(6,minmax(0,1fr))",
+      "repeat(6,minmax(140px,1fr))",
 
     alignItems: "center",
 
@@ -870,17 +738,13 @@ const styles = {
 
     gap: "14px",
 
-    width: "100%",
-
-    boxSizing: "border-box",
+    minWidth: "850px",
   },
 
   medicineName: {
     margin: "0 0 8px",
 
     fontSize: "20px",
-
-    wordBreak: "break-word",
   },
 
   price: {
@@ -897,10 +761,6 @@ const styles = {
     fontSize: "13px",
 
     fontWeight: "bold",
-
-    whiteSpace: "normal",
-
-    wordBreak: "break-word",
 
     display: "inline-block",
   },

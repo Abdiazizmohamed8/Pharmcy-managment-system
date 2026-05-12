@@ -419,19 +419,22 @@ function App() {
 
           toast={toast}
         />
+{toastData.show && (
 
-        {toastData.show && (
+  <div style={styles.toastWrapper}>
 
-          <Toast
-            message={
-              toastData.message
-            }
+    <Toast
+      message={
+        toastData.message
+      }
 
-            type={
-              toastData.type
-            }
-          />
-        )}
+      type={
+        toastData.type
+      }
+    />
+
+  </div>
+)}
 
       </>
     );
@@ -863,6 +866,30 @@ const styles = {
     boxSizing:
       "border-box",
   },
+  toastWrapper: {
+
+  position: "fixed",
+
+  top: "20px",
+
+  right: "20px",
+
+  zIndex: 9999,
+
+  width: "auto",
+
+  height: "auto",
+
+  display: "flex",
+
+  justifyContent: "flex-end",
+
+  alignItems: "flex-end",
+
+  background: "transparent",
+
+  pointerEvents: "none",
+},
 
   loadingContainer: {
     minHeight: "100vh",
