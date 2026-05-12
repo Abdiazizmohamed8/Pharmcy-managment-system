@@ -20,37 +20,12 @@ function Inventory({
   ] = useState("");
 
   const [
-    toasts,
-    setToasts,
-  ] = useState([]);
+    toast,
+    setToast,
+  ] = useState(null);
 
   /* =========================
-        AUTO REMOVE TOASTS
-  ========================= */
-
-  useEffect(() => {
-
-    if (
-      toasts.length > 0
-    ) {
-
-      const timer =
-        setTimeout(() => {
-
-          setToasts([]);
-
-        }, 5000);
-
-      return () =>
-        clearTimeout(
-          timer
-        );
-    }
-
-  }, [toasts]);
-
-  /* =========================
-        FILTER MEDICINES
+        FILTER
   ========================= */
 
   const filteredMedicines =
@@ -137,20 +112,21 @@ function Inventory({
     expiringMedicines.length;
 
   /* =========================
-        TOASTS
+        TOAST FLOW
   ========================= */
 
   useEffect(() => {
 
-    const items = [];
+    let timer1;
+    let timer2;
 
     if (
       lowStockCount > 0
     ) {
 
-      items.push({
+      setToast({
 
-        id: Date.now(),
+        id: 1,
 
         message:
           `${lowStockCount} medicines low stock`,
@@ -158,16 +134,46 @@ function Inventory({
         type:
           "error",
       });
-    }
 
-    if (
+      timer1 =
+        setTimeout(() => {
+
+          if (
+            expiringSoon > 0
+          ) {
+
+            setToast({
+
+              id: 2,
+
+              message:
+                `${expiringSoon} medicines expiring soon`,
+
+              type:
+                "warning",
+            });
+
+            timer2 =
+              setTimeout(() => {
+
+                setToast(null);
+
+              }, 5000);
+
+          } else {
+
+            setToast(null);
+          }
+
+        }, 5000);
+
+    } else if (
       expiringSoon > 0
     ) {
 
-      items.push({
+      setToast({
 
-        id:
-          Date.now() + 1,
+        id: 2,
 
         message:
           `${expiringSoon} medicines expiring soon`,
@@ -175,9 +181,21 @@ function Inventory({
         type:
           "warning",
       });
+
+      timer1 =
+        setTimeout(() => {
+
+          setToast(null);
+
+        }, 5000);
     }
 
-    setToasts(items);
+    return () => {
+
+      clearTimeout(timer1);
+
+      clearTimeout(timer2);
+    };
 
   }, [
     lowStockCount,
@@ -188,38 +206,28 @@ function Inventory({
 
     <>
 
-      {/* TOASTS */}
+      {/* TOAST */}
 
       {
-        toasts.map(
-          (
-            toast,
-            index
-          ) => (
+        toast && (
 
-            <div
-              key={toast.id}
+          <div
+            style={
+              styles.toastWrapper
+            }
+          >
 
-              style={{
-                ...styles.toastWrapper,
+            <Toast
+              message={
+                toast.message
+              }
 
-                top:
-                  `${20 + index * 120}px`,
-              }}
-            >
+              type={
+                toast.type
+              }
+            />
 
-              <Toast
-                message={
-                  toast.message
-                }
-
-                type={
-                  toast.type
-                }
-              />
-
-            </div>
-          )
+          </div>
         )
       }
 
@@ -241,9 +249,9 @@ function Inventory({
 
         {/* HEADER */}
 
-        <div style={styles.header}>
-
-          {/* LEFT */}
+        <div style={
+          styles.header
+        }>
 
           <div>
 
@@ -271,11 +279,11 @@ function Inventory({
 
           </div>
 
-          {/* CARDS */}
+          {/* ALERT CARDS */}
 
-          <div style={styles.cardsWrapper}>
-
-            {/* LOW STOCK */}
+          <div style={
+            styles.cardsWrapper
+          }>
 
             <div style={{
               ...styles.alertCard,
@@ -286,17 +294,19 @@ function Inventory({
                   : "#dc2626",
             }}>
 
-              <div style={styles.alertLabel}>
+              <div style={
+                styles.alertLabel
+              }>
                 🔴 Low Stock
               </div>
 
-              <div style={styles.alertNumber}>
+              <div style={
+                styles.alertNumber
+              }>
                 {lowStockCount}
               </div>
 
             </div>
-
-            {/* EXPIRING */}
 
             <div style={{
               ...styles.alertCard,
@@ -307,11 +317,15 @@ function Inventory({
                   : "#f59e0b",
             }}>
 
-              <div style={styles.alertLabel}>
+              <div style={
+                styles.alertLabel
+              }>
                 ⏰ Expiring Soon
               </div>
 
-              <div style={styles.alertNumber}>
+              <div style={
+                styles.alertNumber
+              }>
                 {expiringSoon}
               </div>
 
@@ -495,7 +509,9 @@ function Inventory({
 
                       <div>
 
-                        <h3 style={styles.medicineName}>
+                        <h3 style={
+                          styles.medicineName
+                        }>
                           {medicine.name}
                         </h3>
 
@@ -508,7 +524,9 @@ function Inventory({
                               : "#9ca3af",
                         }}>
                           Sell: $
-                          {medicine.sellPrice}
+                          {
+                            medicine.sellPrice
+                          }
                         </p>
 
                       </div>
@@ -542,7 +560,9 @@ function Inventory({
                             ? "#dc2626"
                             : "#16a34a",
                       }}>
-                        {medicine.stock}
+                        {
+                          medicine.stock
+                        }
                       </div>
 
                       {/* MIN STOCK */}
@@ -563,7 +583,8 @@ function Inventory({
                             ? "#ffffff"
                             : "#111827",
 
-                        fontWeight: "600",
+                        fontWeight:
+                          "600",
                       }}>
                         {
                           expiryDate ||
@@ -600,7 +621,7 @@ function Inventory({
 
                             color="#f59e0b"
 
-                            text="Expiring soon"
+                            text="Expiring Soon"
                           />
 
                         ) : (
@@ -661,7 +682,11 @@ function Badge({
 
       fontWeight: "bold",
 
-      whiteSpace: "nowrap",
+      whiteSpace: "normal",
+
+      wordBreak: "break-word",
+
+      display: "inline-block",
     }}>
       {text}
     </span>
@@ -677,7 +702,12 @@ const styles = {
   toastWrapper: {
     position: "fixed",
 
-    right: "20px",
+    top: "20px",
+
+    left: "50%",
+
+    transform:
+      "translateX(-50%)",
 
     zIndex: 9999,
 
@@ -685,11 +715,9 @@ const styles = {
 
     maxWidth: "420px",
 
-    padding:
-      "0 10px",
+    padding: "0 10px",
 
-    boxSizing:
-      "border-box",
+    boxSizing: "border-box",
   },
 
   container: {
@@ -704,6 +732,9 @@ const styles = {
 
     boxSizing:
       "border-box",
+
+    overflowX:
+      "hidden",
   },
 
   header: {
@@ -742,7 +773,9 @@ const styles = {
 
     flexWrap: "wrap",
 
-    width: "40%",
+    width: "100%",
+
+    maxWidth: "500px",
   },
 
   alertCard: {
@@ -752,7 +785,7 @@ const styles = {
 
     borderRadius: "22px",
 
-    minWidth: "180px",
+    minWidth: "220px",
 
     flex: 1,
 
@@ -803,37 +836,43 @@ const styles = {
   tableWrapper: {
     borderRadius: "30px",
 
-    overflowX: "auto",
+    overflowX: "hidden",
+
+    width: "100%",
   },
 
   tableHeader: {
-    minWidth: "1100px",
-
     display: "grid",
 
     gridTemplateColumns:
-      "2fr 1fr 1fr 1fr 1fr 1fr",
+      "repeat(6,minmax(0,1fr))",
 
-    padding: "24px 28px",
+    padding: "20px",
 
     fontWeight: "bold",
 
-    gap: "20px",
+    gap: "14px",
+
+    width: "100%",
+
+    boxSizing: "border-box",
   },
 
   row: {
-    minWidth: "1100px",
-
     display: "grid",
 
     gridTemplateColumns:
-      "2fr 1fr 1fr 1fr 1fr 1fr",
+      "repeat(6,minmax(0,1fr))",
 
     alignItems: "center",
 
-    padding: "24px 28px",
+    padding: "20px",
 
-    gap: "20px",
+    gap: "14px",
+
+    width: "100%",
+
+    boxSizing: "border-box",
   },
 
   medicineName: {
@@ -859,7 +898,11 @@ const styles = {
 
     fontWeight: "bold",
 
-    whiteSpace: "nowrap",
+    whiteSpace: "normal",
+
+    wordBreak: "break-word",
+
+    display: "inline-block",
   },
 
   stockText: {

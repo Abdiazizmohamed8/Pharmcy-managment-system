@@ -56,14 +56,23 @@ function Toast({
 
   return (
 
-    <div style={{
-      ...styles.toast,
-      background: bgColor,
-    }}>
+    <div
+      className="toast-responsive"
+
+      style={{
+        ...styles.toast,
+
+        background: bgColor,
+      }}
+    >
 
       {/* ICON */}
 
-      <div style={styles.iconBox}>
+      <div
+        className="toast-icon"
+
+        style={styles.iconBox}
+      >
         {icon}
       </div>
 
@@ -71,11 +80,19 @@ function Toast({
 
       <div style={styles.content}>
 
-        <div style={styles.title}>
+        <div
+          className="toast-title"
+
+          style={styles.title}
+        >
           {title}
         </div>
 
-        <div style={styles.message}>
+        <div
+          className="toast-message"
+
+          style={styles.message}
+        >
           {message}
         </div>
 
@@ -85,6 +102,9 @@ function Toast({
 
       <button
         onClick={onClose}
+
+        className="toast-close"
+
         style={styles.closeBtn}
       >
         ✕
@@ -99,12 +119,12 @@ function Toast({
 
             from {
               opacity: 0;
-              transform: translateX(100%);
+              transform: translateY(-20px);
             }
 
             to {
               opacity: 1;
-              transform: translateX(0);
+              transform: translateY(0);
             }
           }
 
@@ -112,7 +132,7 @@ function Toast({
 
             .toast-responsive {
 
-              width: calc(100vw - 20px) !important;
+              width: 100% !important;
 
               min-width: auto !important;
 
@@ -153,8 +173,6 @@ function Toast({
           @media (max-width: 480px) {
 
             .toast-responsive {
-
-              width: calc(100vw - 16px) !important;
 
               gap: 10px !important;
 
@@ -199,13 +217,14 @@ function Toast({
 const styles = {
 
   toast: {
-    position: "relative",
 
     zIndex: 9999,
 
     minWidth: "320px",
 
     maxWidth: "420px",
+
+    width: "100%",
 
     color: "#ffffff",
 
@@ -229,8 +248,6 @@ const styles = {
       "slideIn 0.35s ease",
 
     boxSizing: "border-box",
-
-    width: "100%",
 
     overflow: "hidden",
   },
