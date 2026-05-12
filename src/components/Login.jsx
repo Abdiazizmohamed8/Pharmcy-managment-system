@@ -4,6 +4,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 function Login({ setAuthed, setCurrentUser, toast }) {
+
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -12,39 +13,62 @@ function Login({ setAuthed, setCurrentUser, toast }) {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+
     if (!form.email || !form.password) {
       toast("Please fill all fields", "error");
       return;
     }
 
     try {
+
       setLoading(true);
 
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        form.email.trim(),
-        form.password
-      );
+      const userCredential =
+        await signInWithEmailAndPassword(
+          auth,
+          form.email.trim(),
+          form.password
+        );
 
-      const firebaseUser = userCredential.user;
+      const firebaseUser =
+        userCredential.user;
 
       const q = query(
         collection(db, "users"),
-        where("email", "==", firebaseUser.email)
+        where(
+          "email",
+          "==",
+          firebaseUser.email
+        )
       );
 
-      const querySnapshot = await getDocs(q);
+      const querySnapshot =
+        await getDocs(q);
 
       if (querySnapshot.empty) {
-        toast("Your username or password is invalid", "error");
+
+        toast(
+          "Your username or password is invalid",
+          "error"
+        );
+
         setLoading(false);
         return;
       }
 
-      const userData = querySnapshot.docs[0].data();
+      const userData =
+        querySnapshot.docs[0].data();
 
-      if (userData.status === "disabled") {
-        toast("Account disabled", "error");
+      if (
+        userData.status ===
+        "disabled"
+      ) {
+
+        toast(
+          "Account disabled",
+          "error"
+        );
+
         setLoading(false);
         return;
       }
@@ -56,40 +80,64 @@ function Login({ setAuthed, setCurrentUser, toast }) {
 
       setAuthed(true);
 
-      toast("Login successful", "success");
+      toast(
+        "Login successful",
+        "success"
+      );
 
     } catch (error) {
+
       console.log(error);
 
-      toast("Your username or password is invalid", "error");
+      toast(
+        "Your username or password is invalid",
+        "error"
+      );
 
     } finally {
+
       setLoading(false);
     }
   };
 
   const handleKeyDown = (e) => {
+
     if (e.key === "Enter") {
       handleLogin();
     }
   };
 
   return (
+
     <div style={styles.container}>
+
       <div style={styles.card}>
 
-        <div style={styles.logoSection}>
-          <div style={styles.logo}>💊</div>
+        {/* LOGO */}
 
-          <h1 style={styles.title}>ANFAC</h1>
+        <div style={styles.logoSection}>
+
+          <div style={styles.logo}>
+            💊
+          </div>
+
+          <h1 style={styles.title}>
+            ANFAC
+          </h1>
 
           <p style={styles.subtitle}>
             Pharmacy Management System
           </p>
+
         </div>
 
+        {/* EMAIL */}
+
         <div style={styles.inputGroup}>
-          <label style={styles.label}>Email</label>
+
+          <label style={styles.label}>
+            Email
+          </label>
 
           <input
             type="email"
@@ -104,10 +152,16 @@ function Login({ setAuthed, setCurrentUser, toast }) {
             }
             style={styles.input}
           />
+
         </div>
 
+        {/* PASSWORD */}
+
         <div style={styles.inputGroup}>
-          <label style={styles.label}>Password</label>
+
+          <label style={styles.label}>
+            Password
+          </label>
 
           <input
             type="password"
@@ -122,43 +176,56 @@ function Login({ setAuthed, setCurrentUser, toast }) {
             }
             style={styles.input}
           />
+
         </div>
+
+        {/* BUTTON */}
 
         <button
           onClick={handleLogin}
           disabled={loading}
           style={{
             ...styles.button,
-            background: loading ? "#86efac" : "#16a34a",
-            cursor: loading ? "not-allowed" : "pointer",
+            background: loading
+              ? "#86efac"
+              : "#16a34a",
+            cursor: loading
+              ? "not-allowed"
+              : "pointer",
           }}
         >
-          {loading ? "Loading..." : "Login"}
+          {loading
+            ? "Loading..."
+            : "Login"}
         </button>
 
       </div>
+
     </div>
   );
 }
 
 const styles = {
+
   container: {
-    minHeight: "100vh",
+    minHeight: "100dvh",
     width: "100%",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    padding: "20px",
-    background: "linear-gradient(135deg, #020617, #052e16, #16a34a)",
+    padding: "16px",
+    background:
+      "linear-gradient(135deg,#020617,#052e16,#16a34a)",
     boxSizing: "border-box",
+    overflowX: "hidden",
   },
 
   card: {
     width: "100%",
-    maxWidth: "400px",
+    maxWidth: "420px",
     background: "#ffffff",
     borderRadius: "24px",
-    padding: "40px 25px",
+    padding: "clamp(22px,5vw,40px)",
     boxShadow:
       "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)",
     display: "flex",
@@ -187,7 +254,7 @@ const styles = {
 
   title: {
     margin: 0,
-    fontSize: "32px",
+    fontSize: "clamp(28px,6vw,34px)",
     color: "#111827",
     fontWeight: "800",
     letterSpacing: "-0.5px",
@@ -222,7 +289,6 @@ const styles = {
     boxSizing: "border-box",
     outline: "none",
     fontSize: "16px",
-    transition: "border-color 0.2s",
   },
 
   button: {
@@ -235,7 +301,8 @@ const styles = {
     fontWeight: "600",
     transition: "0.2s",
     marginTop: "10px",
-    boxShadow: "0 4px 6px -1px rgba(22,163,74,0.2)",
+    boxShadow:
+      "0 4px 6px -1px rgba(22,163,74,0.2)",
   },
 };
 
