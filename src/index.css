@@ -13,7 +13,7 @@
 }
 
 /* =========================
-      HTML & BODY
+      ROOT
 ========================= */
 
 html,
@@ -61,8 +61,8 @@ body {
 
 img,
 video,
-canvas,
-svg {
+svg,
+canvas {
   max-width: 100%;
 
   height: auto;
@@ -77,7 +77,7 @@ svg {
 button {
 
   transition:
-    0.2s ease;
+    0.25s ease;
 
   cursor:
     pointer;
@@ -90,11 +90,11 @@ button {
 }
 
 button:hover {
-  opacity: 0.9;
+  opacity: 0.92;
 }
 
 /* =========================
-      INPUTS
+      FORM ELEMENTS
 ========================= */
 
 input,
@@ -106,10 +106,6 @@ button {
     inherit;
 }
 
-/* =========================
-      INPUT FIX
-========================= */
-
 input,
 select,
 textarea {
@@ -117,6 +113,8 @@ textarea {
   width: 100%;
 
   max-width: 100%;
+
+  outline: none;
 }
 
 /* =========================
@@ -130,7 +128,7 @@ a {
 }
 
 /* =========================
-      TABLE RESPONSIVE
+      TABLES
 ========================= */
 
 table {
@@ -140,17 +138,106 @@ table {
 }
 
 /* =========================
-      RESPONSIVE
+      RESPONSIVE TABLE
 ========================= */
 
-@media (
-  max-width: 1024px
-) {
+.table-responsive {
+  width: 100%;
 
-  body {
-    font-size: 15px;
-  }
+  overflow-x: auto;
+
+  -webkit-overflow-scrolling: touch;
+
+  border-radius: 16px;
 }
+
+/* =========================
+      SCROLLBAR
+========================= */
+
+::-webkit-scrollbar {
+  width: 8px;
+
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+
+  border-radius: 999px;
+}
+
+/* =========================
+      FLEX UTILITIES
+========================= */
+
+.flex-wrap-responsive {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 16px;
+}
+
+/* =========================
+      GRID UTILITIES
+========================= */
+
+.grid-responsive {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(280px, 1fr)
+    );
+
+  gap: 20px;
+}
+
+/* =========================
+      CARD
+========================= */
+
+.card-responsive {
+  width: 100%;
+
+  border-radius: 24px;
+
+  overflow: hidden;
+}
+
+/* =========================
+      RESPONSIVE TEXT
+========================= */
+
+.title-responsive {
+  font-size:
+    clamp(
+      26px,
+      5vw,
+      40px
+    );
+
+  line-height: 1.2;
+
+  word-break: break-word;
+}
+
+.text-responsive {
+  font-size:
+    clamp(
+      14px,
+      2vw,
+      16px
+    );
+
+  line-height: 1.6;
+}
+
+/* =========================
+      MOBILE
+========================= */
 
 @media (
   max-width: 768px
@@ -159,7 +246,40 @@ table {
   body {
     font-size: 14px;
   }
+
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+
+  .mobile-full {
+    width: 100% !important;
+  }
+
+  .mobile-center {
+    text-align: center;
+  }
+
+  .mobile-hide {
+    display: none !important;
+  }
+
+  .mobile-grid-1 {
+    grid-template-columns:
+      1fr !important;
+  }
+
+  .mobile-padding {
+    padding: 14px !important;
+  }
+
+  .mobile-table {
+    min-width: 700px;
+  }
 }
+
+/* =========================
+      SMALL MOBILE
+========================= */
 
 @media (
   max-width: 480px
@@ -167,5 +287,45 @@ table {
 
   body {
     font-size: 13px;
+  }
+
+  .title-responsive {
+    font-size:
+      clamp(
+        22px,
+        7vw,
+        30px
+      );
+  }
+
+  .text-responsive {
+    font-size: 13px;
+  }
+
+  .mobile-padding {
+    padding: 12px !important;
+  }
+
+  .mobile-radius {
+    border-radius: 16px !important;
+  }
+
+  .mobile-btn {
+    width: 100% !important;
+  }
+}
+
+/* =========================
+      LARGE SCREENS
+========================= */
+
+@media (
+  min-width: 1400px
+) {
+
+  .container-xl {
+    max-width: 1400px;
+
+    margin: auto;
   }
 }
