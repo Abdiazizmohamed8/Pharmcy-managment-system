@@ -4,18 +4,13 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "../firebase";
 
 function Login({ setAuthed, setCurrentUser, toast }) {
-  // Input states
   const [form, setForm] = useState({
     email: "",
     password: "",
   });
 
-  // Loading state
   const [loading, setLoading] = useState(false);
 
-  /* =========================
-        HANDLE LOGIN
-  ========================= */
   const handleLogin = async () => {
     if (!form.email || !form.password) {
       toast("Please fill all fields", "error");
@@ -24,8 +19,6 @@ function Login({ setAuthed, setCurrentUser, toast }) {
 
     try {
       setLoading(true);
-
-      // Auth logic
       const userCredential = await signInWithEmailAndPassword(
         auth,
         form.email.trim(),
@@ -34,7 +27,6 @@ function Login({ setAuthed, setCurrentUser, toast }) {
 
       const firebaseUser = userCredential.user;
 
-      // Firestore query
       const q = query(
         collection(db, "users"),
         where("email", "==", firebaseUser.email)
@@ -43,19 +35,19 @@ function Login({ setAuthed, setCurrentUser, toast }) {
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        toast("User data not found", "error");
+        toast("User data not found in database", "error");
+        setLoading(false);
         return;
       }
 
       const userData = querySnapshot.docs[0].data();
 
-      // Check status
       if (userData.status === "disabled") {
         toast("Account disabled", "error");
+        setLoading(false);
         return;
       }
 
-      // Final success
       setCurrentUser({
         uid: firebaseUser.uid,
         ...userData,
@@ -63,10 +55,15 @@ function Login({ setAuthed, setCurrentUser, toast }) {
 
       setAuthed(true);
       toast("Login successful", "success");
-
     } catch (error) {
       console.log(error);
-      toast("Login failed", "error");
+      if (error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
+        toast("Invalid email or password", "error");
+      } else if (error.code === "auth/invalid-email") {
+        toast("Invalid email format", "error");
+      } else {
+        toast("Login failed", "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -79,73 +76,149 @@ function Login({ setAuthed, setCurrentUser, toast }) {
   };
 
   return (
-    /* MAIN WRAPPER: Green gradient background */
-    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-[#022c22] via-[#064e3b] to-[#14532d]">
-      
-      {/* THE WHITE CARD */}
-      <div className="w-full max-w-[440px] bg-white rounded-[50px] p-10 md:p-14 shadow-2xl flex flex-col items-center">
-        
-        {/* LOGO SECTION */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-20 h-20 rounded-[28px] bg-[#22c55e] flex items-center justify-center text-4xl shadow-lg shadow-green-100 mb-5">
-            💊
-          </div>
-          <h1 className="text-4xl font-black text-[#0f172a] tracking-tight">
-            ANFAC
-          </h1>
-          <p className="text-gray-400 mt-2 text-sm font-medium">
-            Pharmacy Management System
-          </p>
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <div style={styles.logoSection}>
+          <div style={styles.logo}>💊</div>
+          <h1 style={styles.title}>ANFAC</h1>
+          <p style={styles.subtitle}>Pharmacy Management System</p>
         </div>
 
-        {/* FORM FIELDS */}
-        <div className="w-full space-y-5">
-          
-          {/* EMAIL */}
-          <div className="flex flex-col gap-2">
-            <label className="font-bold text-[#1e293b] text-sm ml-1">
-              Email
-            </label>
-            <input
-              type="email"
-              placeholder="Enter email"
-              value={form.email}
-              onKeyDown={handleKeyDown}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full p-4 bg-[#f8fafc] border border-gray-100 rounded-2xl text-gray-800 outline-none focus:ring-2 focus:ring-green-400 transition-all"
-            />
-          </div>
-
-          {/* PASSWORD */}
-          <div className="flex flex-col gap-2">
-            <label className="font-bold text-[#1e293b] text-sm ml-1">
-              Password
-            </label>
-            <input
-              type="password"
-              placeholder="Enter password"
-              value={form.password}
-              onKeyDown={handleKeyDown}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="w-full p-4 bg-[#f8fafc] border border-gray-100 rounded-2xl text-gray-800 outline-none focus:ring-2 focus:ring-green-400 transition-all"
-            />
-          </div>
-
-          {/* LOGIN BUTTON */}
-          <button
-            onClick={handleLogin}
-            disabled={loading}
-            className={`w-full mt-4 p-4 rounded-2xl text-white text-lg font-bold flex items-center justify-center transition-all active:scale-95 shadow-lg shadow-green-100 ${
-              loading ? "bg-green-300" : "bg-[#22c55e] hover:bg-green-600"
-            }`}
-          >
-            {loading ? "Loading..." : "Login"}
-          </button>
-          
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Email</label>
+          <input
+            type="email"
+            placeholder="Enter email"
+            value={form.email}
+            onKeyDown={handleKeyDown}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            style={styles.input}
+          />
         </div>
+
+        <div style={styles.inputGroup}>
+          <label style={styles.label}>Password</label>
+          <input
+            type="password"
+            placeholder="Enter password"
+            value={form.password}
+            onKeyDown={handleKeyDown}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            style={styles.input}
+          />
+        </div>
+
+        <button
+          onClick={handleLogin}
+          disabled={loading}
+          style={{
+            ...styles.button,
+            background: loading ? "#86efac" : "#16a34a",
+            cursor: loading ? "not-allowed" : "pointer",
+          }}
+        >
+          {loading ? "Loading..." : "Login"}
+        </button>
       </div>
     </div>
   );
 }
+
+const styles = {
+  container: {
+    minHeight: "100vh",
+    width: "100%",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: "20px",
+    background: "linear-gradient(135deg, #020617, #052e16, #16a34a)",
+    boxSizing: "border-box", // Aad u muhiim ah si aanu padding-ku u weyneyn container-ka
+  },
+
+  card: {
+    width: "100%",
+    maxWidth: "400px",
+    background: "#ffffff",
+    borderRadius: "24px",
+    padding: "40px 25px",
+    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+    display: "flex",
+    flexDirection: "column",
+    gap: "20px",
+    boxSizing: "border-box",
+  },
+
+  logoSection: {
+    textAlign: "center",
+    marginBottom: "10px",
+  },
+
+  logo: {
+    width: "80px",
+    height: "80px",
+    margin: "0 auto",
+    borderRadius: "20px",
+    background: "#16a34a",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    fontSize: "40px",
+    marginBottom: "12px",
+  },
+
+  title: {
+    margin: 0,
+    fontSize: "32px",
+    color: "#111827",
+    fontWeight: "800",
+    letterSpacing: "-0.5px",
+  },
+
+  subtitle: {
+    color: "#6b7280",
+    marginTop: "8px",
+    fontSize: "14px",
+  },
+
+  inputGroup: {
+    width: "100%",
+    textAlign: "left",
+  },
+
+  label: {
+    fontWeight: "600",
+    marginBottom: "6px",
+    display: "block",
+    color: "#374151",
+    fontSize: "14px",
+  },
+
+  input: {
+    width: "100%",
+    padding: "14px",
+    border: "1.5px solid #e5e7eb",
+    borderRadius: "12px",
+    background: "#f9fafb",
+    color: "#111827",
+    boxSizing: "border-box", // Waxay ka hortagtaa in input-ku ka baxo card-ka
+    outline: "none",
+    fontSize: "16px",
+    transition: "border-color 0.2s",
+  },
+
+  button: {
+    width: "100%",
+    padding: "16px",
+    border: "none",
+    borderRadius: "12px",
+    color: "#ffffff",
+    fontSize: "16px",
+    fontWeight: "600",
+    transition: "0.2s",
+    marginTop: "10px",
+    boxShadow: "0 4px 6px -1px rgba(22, 163, 74, 0.2)",
+  },
+};
 
 export default Login;
