@@ -1,3 +1,7 @@
+/* =========================
+      THEME
+========================= */
+
 import {
   useTheme,
 } from "../context/ThemeContext";
@@ -6,16 +10,11 @@ function Sidebar({
   page,
   setPage,
   currentUser,
-  sidebarOpen,
-  setSidebarOpen,
 }) {
 
   const {
     darkMode,
   } = useTheme();
-
-  const isMobile =
-    window.innerWidth < 768;
 
   const isAdmin =
     currentUser?.role
@@ -101,89 +100,191 @@ function Sidebar({
     },
   ];
 
-  const handleNavigate =
-    (id) => {
-
-      setPage(id);
-
-      if (isMobile) {
-        setSidebarOpen(false);
-      }
-    };
-
   return (
 
-    <>
+    <div
+      style={{
+        ...styles.sidebar,
 
-      {/* OVERLAY */}
+        background:
+          darkMode
+            ? "linear-gradient(180deg,#052e16,#064e3b)"
+            : "#ffffff",
 
-      {
-        sidebarOpen &&
-        isMobile && (
+        borderRight:
+          darkMode
+            ? "1px solid #1f2937"
+            : "1px solid #e5e7eb",
 
-          <div
-            onClick={() =>
-              setSidebarOpen(false)
-            }
+        color:
+          darkMode
+            ? "#ffffff"
+            : "#111827",
+      }}
+    >
 
-            style={styles.overlay}
-          />
-        )
-      }
+      {/* TOP */}
 
-      {/* SIDEBAR */}
+      <div>
+
+        <div style={styles.logoContainer}>
+
+          <div style={styles.logoIcon}>
+            💊
+          </div>
+
+          <h2
+            style={{
+              ...styles.logoText,
+
+              color:
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
+            }}
+          >
+            ANFAC
+          </h2>
+
+          <p
+            style={{
+              ...styles.logoSub,
+
+              color:
+                darkMode
+                  ? "#bbf7d0"
+                  : "#16a34a",
+            }}
+          >
+            Pharmacy System
+          </p>
+
+        </div>
+
+        {/* NAV */}
+
+        <div style={styles.navContainer}>
+
+          {navItems.map((item) => {
+
+            const active =
+              page === item.id;
+
+            return (
+
+              <div
+                key={item.id}
+
+                onClick={() =>
+                  setPage(item.id)
+                }
+
+                style={{
+                  ...styles.navItem,
+
+                  background:
+                    active
+                      ? "#16a34a"
+                      : darkMode
+                      ? "#0f172a"
+                      : "#f3f4f6",
+
+                  border:
+                    active
+                      ? "1px solid rgba(255,255,255,0.15)"
+                      : darkMode
+                      ? "1px solid transparent"
+                      : "1px solid #e5e7eb",
+
+                  color:
+                    darkMode
+                      ? "#ffffff"
+                      : "#111827",
+
+                  fontWeight:
+                    active
+                      ? "700"
+                      : "500",
+                }}
+              >
+
+                <div
+                  style={{
+                    ...styles.iconBox,
+
+                    background:
+                      active
+                        ? "rgba(255,255,255,0.18)"
+                        : darkMode
+                        ? "#111827"
+                        : "#ffffff",
+                  }}
+                >
+                  {item.icon}
+                </div>
+
+                <span style={styles.navLabel}>
+                  {item.label}
+                </span>
+
+              </div>
+            );
+          })}
+
+        </div>
+
+      </div>
+
+      {/* USER */}
 
       <div
         style={{
-          ...styles.sidebar,
-
-          width:
-            isMobile
-              ? "250px"
-              : "280px",
-
-          transform:
-
-            isMobile
-
-              ? sidebarOpen
-                ? "translateX(0)"
-                : "translateX(-100%)"
-
-              : "translateX(0)",
+          ...styles.userCard,
 
           background:
             darkMode
-              ? "linear-gradient(180deg,#052e16,#064e3b)"
-              : "#ffffff",
+              ? "#111827"
+              : "#f9fafb",
 
-          borderRight:
+          border:
             darkMode
               ? "1px solid #1f2937"
               : "1px solid #e5e7eb",
-
-          color:
-            darkMode
-              ? "#ffffff"
-              : "#111827",
         }}
       >
 
-        {/* TOP */}
+        <div style={styles.userRow}>
 
-        <div>
+          {currentUser?.image ? (
 
-          {/* LOGO */}
+            <img
+              src={currentUser.image}
+              alt="user"
+              style={styles.userImage}
+            />
 
-          <div style={styles.logoContainer}>
+          ) : (
 
-            <div style={styles.logoIcon}>
-              💊
+            <div style={styles.avatar}>
+
+              {
+                currentUser?.name
+                  ?.charAt(0)
+                  ?.toUpperCase()
+              }
+
             </div>
+          )}
 
-            <h2
+          <div
+            style={{
+              overflow: "hidden",
+            }}
+          >
+
+            <div
               style={{
-                ...styles.logoText,
+                ...styles.userName,
 
                 color:
                   darkMode
@@ -191,12 +292,12 @@ function Sidebar({
                     : "#111827",
               }}
             >
-              ANFAC
-            </h2>
+              {currentUser?.name}
+            </div>
 
-            <p
+            <div
               style={{
-                ...styles.logoSub,
+                ...styles.userRole,
 
                 color:
                   darkMode
@@ -204,176 +305,7 @@ function Sidebar({
                     : "#16a34a",
               }}
             >
-              Pharmacy System
-            </p>
-
-          </div>
-
-          {/* NAVIGATION */}
-
-          <div style={styles.navContainer}>
-
-            {
-              navItems.map(
-                (item) => {
-
-                  const active =
-                    page === item.id;
-
-                  return (
-
-                    <div
-                      key={item.id}
-
-                      onClick={() =>
-                        handleNavigate(
-                          item.id
-                        )
-                      }
-
-                      style={{
-                        ...styles.navItem,
-
-                        background:
-                          active
-                            ? "#16a34a"
-                            : darkMode
-                            ? "#0f172a"
-                            : "#f3f4f6",
-
-                        border:
-                          active
-                            ? "1px solid rgba(255,255,255,0.15)"
-                            : darkMode
-                            ? "1px solid transparent"
-                            : "1px solid #e5e7eb",
-
-                        color:
-                          darkMode
-                            ? "#ffffff"
-                            : "#111827",
-
-                        fontWeight:
-                          active
-                            ? "700"
-                            : "500",
-                      }}
-                    >
-
-                      <div
-                        style={{
-                          ...styles.iconBox,
-
-                          background:
-                            active
-                              ? "rgba(255,255,255,0.18)"
-                              : darkMode
-                              ? "#111827"
-                              : "#ffffff",
-                        }}
-                      >
-                        {item.icon}
-                      </div>
-
-                      <span
-                        style={
-                          styles.navLabel
-                        }
-                      >
-                        {item.label}
-                      </span>
-
-                    </div>
-                  );
-                }
-              )
-            }
-
-          </div>
-
-        </div>
-
-        {/* USER */}
-
-        <div
-          style={{
-            ...styles.userCard,
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#f9fafb",
-
-            border:
-              darkMode
-                ? "1px solid #1f2937"
-                : "1px solid #e5e7eb",
-          }}
-        >
-
-          <div style={styles.userRow}>
-
-            {
-              currentUser?.image ? (
-
-                <img
-                  src={
-                    currentUser.image
-                  }
-
-                  alt="user"
-
-                  style={
-                    styles.userImage
-                  }
-                />
-
-              ) : (
-
-                <div style={styles.avatar}>
-
-                  {
-                    currentUser?.name
-                      ?.charAt(0)
-                      ?.toUpperCase()
-                  }
-
-                </div>
-              )
-            }
-
-            <div
-              style={{
-                overflow: "hidden",
-              }}
-            >
-
-              <div
-                style={{
-                  ...styles.userName,
-
-                  color:
-                    darkMode
-                      ? "#ffffff"
-                      : "#111827",
-                }}
-              >
-                {currentUser?.name}
-              </div>
-
-              <div
-                style={{
-                  ...styles.userRole,
-
-                  color:
-                    darkMode
-                      ? "#bbf7d0"
-                      : "#16a34a",
-                }}
-              >
-                {currentUser?.role}
-              </div>
-
+              {currentUser?.role}
             </div>
 
           </div>
@@ -382,33 +314,14 @@ function Sidebar({
 
       </div>
 
-    </>
+    </div>
   );
 }
 
 const styles = {
 
-  overlay: {
-
-    position: "fixed",
-
-    inset: 0,
-
-    background:
-      "rgba(0,0,0,0.45)",
-
-    zIndex: 998,
-  },
-
   sidebar: {
-
-    position: "fixed",
-
-    top: 0,
-
-    left: 0,
-
-    zIndex: 999,
+    width: "280px",
 
     height: "100dvh",
 
@@ -429,18 +342,16 @@ const styles = {
     transition: "0.3s ease",
 
     boxShadow:
-      "4px 0 15px rgba(0,0,0,0.15)",
+      "4px 0 15px rgba(0,0,0,0.08)",
   },
 
   logoContainer: {
-
     textAlign: "center",
 
     marginBottom: "35px",
   },
 
   logoIcon: {
-
     width: "78px",
 
     height: "78px",
@@ -461,7 +372,6 @@ const styles = {
   },
 
   logoText: {
-
     margin: 0,
 
     fontSize:
@@ -471,14 +381,12 @@ const styles = {
   },
 
   logoSub: {
-
     marginTop: "6px",
 
     fontSize: "13px",
   },
 
   navContainer: {
-
     display: "flex",
 
     flexDirection: "column",
@@ -487,14 +395,13 @@ const styles = {
   },
 
   navItem: {
-
     display: "flex",
 
     alignItems: "center",
 
     gap: "14px",
 
-    padding: "13px 14px",
+    padding: "14px 16px",
 
     borderRadius: "18px",
 
@@ -508,7 +415,6 @@ const styles = {
   },
 
   iconBox: {
-
     width: "38px",
 
     height: "38px",
@@ -527,7 +433,6 @@ const styles = {
   },
 
   navLabel: {
-
     fontSize: "15px",
 
     whiteSpace: "nowrap",
@@ -538,7 +443,6 @@ const styles = {
   },
 
   userCard: {
-
     marginTop: "20px",
 
     padding: "16px",
@@ -549,7 +453,6 @@ const styles = {
   },
 
   userRow: {
-
     display: "flex",
 
     alignItems: "center",
@@ -558,7 +461,6 @@ const styles = {
   },
 
   userImage: {
-
     width: "52px",
 
     height: "52px",
@@ -573,7 +475,6 @@ const styles = {
   },
 
   avatar: {
-
     width: "52px",
 
     height: "52px",
@@ -598,7 +499,6 @@ const styles = {
   },
 
   userName: {
-
     fontWeight: "700",
 
     fontSize: "15px",
@@ -611,7 +511,6 @@ const styles = {
   },
 
   userRole: {
-
     fontSize: "13px",
 
     marginTop: "3px",

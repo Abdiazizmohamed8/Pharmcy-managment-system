@@ -4,14 +4,6 @@ import {
 } from "react";
 
 /* =========================
-      THEME
-========================= */
-
-import {
-  useTheme,
-} from "./context/ThemeContext";
-
-/* =========================
       FIREBASE
 ========================= */
 
@@ -63,9 +55,6 @@ import "./App.css";
 
 function App() {
 
-  const { darkMode } =
-    useTheme();
-
   /* =========================
         AUTH
   ========================= */
@@ -82,6 +71,32 @@ function App() {
     authLoading,
     setAuthLoading,
   ] = useState(true);
+
+  /* =========================
+        THEME
+  ========================= */
+
+  const [dark, setDark] =
+    useState(() => {
+
+      const savedTheme =
+        localStorage.getItem(
+          "darkMode"
+        );
+
+      return savedTheme
+        ? JSON.parse(savedTheme)
+        : true;
+    });
+
+  useEffect(() => {
+
+    localStorage.setItem(
+      "darkMode",
+      JSON.stringify(dark)
+    );
+
+  }, [dark]);
 
   /* =========================
         PAGE
@@ -228,7 +243,6 @@ function App() {
           } else {
 
             setAuthed(false);
-
             setCurrentUser(null);
           }
 
@@ -371,7 +385,22 @@ function App() {
 
     return (
 
-      <div style={styles.loadingContainer}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          fontSize: "28px",
+          fontWeight: "bold",
+          background: dark
+            ? "#020617"
+            : "#f3f4f6",
+          color: dark
+            ? "#ffffff"
+            : "#111827",
+        }}
+      >
         Loading...
       </div>
     );
@@ -421,6 +450,7 @@ function App() {
             medicines={medicines}
             customers={customers}
             sales={sales}
+            dark={dark}
           />
         );
 
@@ -435,6 +465,7 @@ function App() {
             sales={sales}
             setSales={setSales}
             toast={toast}
+            dark={dark}
           />
         );
 
@@ -445,6 +476,7 @@ function App() {
             medicines={medicines}
             setMedicines={setMedicines}
             toast={toast}
+            dark={dark}
           />
         );
 
@@ -453,6 +485,7 @@ function App() {
         return (
           <Inventory
             medicines={medicines}
+            darkMode={dark}
             toast={toast}
           />
         );
@@ -464,6 +497,7 @@ function App() {
             customers={customers}
             setCustomers={setCustomers}
             toast={toast}
+            darkMode={dark}
           />
         );
 
@@ -474,6 +508,7 @@ function App() {
             suppliers={suppliers}
             setSuppliers={setSuppliers}
             toast={toast}
+            darkMode={dark}
           />
         );
 
@@ -484,6 +519,7 @@ function App() {
             sales={sales}
             setSales={setSales}
             toast={toast}
+            dark={dark}
           />
         );
 
@@ -496,6 +532,7 @@ function App() {
             sales={sales}
             setSales={setSales}
             toast={toast}
+            dark={dark}
           />
         );
 
@@ -506,6 +543,7 @@ function App() {
             expenses={expenses}
             setExpenses={setExpenses}
             toast={toast}
+            dark={dark}
           />
         );
 
@@ -516,6 +554,7 @@ function App() {
             sales={sales}
             medicines={medicines}
             expenses={expenses}
+            dark={dark}
           />
         );
 
@@ -538,6 +577,7 @@ function App() {
           <Users
             currentUser={currentUser}
             toast={toast}
+            darkMode={dark}
           />
         );
 
@@ -545,6 +585,8 @@ function App() {
 
         return (
           <Settings
+            dark={dark}
+            setDark={setDark}
             currentUser={currentUser}
             toast={toast}
           />
@@ -557,6 +599,7 @@ function App() {
             medicines={medicines}
             customers={customers}
             sales={sales}
+            dark={dark}
           />
         );
     }
@@ -568,15 +611,13 @@ function App() {
       style={{
         ...styles.app,
 
-        background:
-          darkMode
-            ? "#020617"
-            : "#f3f4f6",
+        background: dark
+          ? "#020617"
+          : "#f3f4f6",
 
-        color:
-          darkMode
-            ? "#ffffff"
-            : "#111827",
+        color: dark
+          ? "#ffffff"
+          : "#111827",
       }}
     >
 
@@ -588,6 +629,7 @@ function App() {
           page={page}
           setPage={setPage}
           currentUser={currentUser}
+          dark={dark}
         />
 
       </div>
@@ -597,6 +639,8 @@ function App() {
       <div style={styles.main}>
 
         <Topbar
+          dark={dark}
+          setDark={setDark}
           setAuthed={setAuthed}
           setCurrentUser={setCurrentUser}
           currentUser={currentUser}
@@ -604,7 +648,19 @@ function App() {
           sales={sales}
         />
 
-        <div style={styles.content}>
+        <div
+          style={{
+            ...styles.content,
+
+            background: dark
+              ? "#020617"
+              : "#f3f4f6",
+
+            padding: dark
+              ? "0px"
+              : "clamp(14px,3vw,24px)",
+          }}
+        >
           {renderPage()}
         </div>
 
@@ -640,7 +696,6 @@ const styles = {
     width: "100%",
     overflow: "hidden",
     flexDirection: "row",
-    transition: "0.3s ease",
   },
 
   main: {
@@ -657,7 +712,6 @@ const styles = {
     flex: 1,
     overflowY: "auto",
     overflowX: "hidden",
-    padding: "clamp(14px,3vw,24px)",
     width: "100%",
     boxSizing: "border-box",
   },
@@ -667,17 +721,6 @@ const styles = {
     top: "20px",
     right: "20px",
     zIndex: 9999,
-  },
-
-  loadingContainer: {
-    minHeight: "100dvh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontSize: "clamp(22px,5vw,28px)",
-    fontWeight: "bold",
-    background: "#020617",
-    color: "#ffffff",
   },
 
   accessDenied: {
