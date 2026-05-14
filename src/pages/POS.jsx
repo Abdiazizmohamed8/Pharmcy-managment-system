@@ -6,7 +6,6 @@ import {
 
 import {
   collection,
-  addDoc,
   doc,
   updateDoc,
   setDoc,
@@ -402,13 +401,17 @@ function POS({
 
         return;
       }
-      // Generate invoice number
-const snapshot = await getDocs(
-  collection(db, "sales")
-);
 
-const invoiceId =
-  snapshot.size + 1;
+      const snapshot =
+        await getDocs(
+          collection(
+            db,
+            "sales"
+          )
+        );
+
+      const invoiceId =
+        snapshot.size + 1;
 
       try {
 
@@ -453,16 +456,16 @@ const invoiceId =
               .toISOString(),
         };
 
-       await setDoc(
+        await setDoc(
 
-  doc(
-    db,
-    "sales",
-    String(invoiceId)
-  ),
+          doc(
+            db,
+            "sales",
+            String(invoiceId)
+          ),
 
-  saleData
-);
+          saleData
+        );
 
         for (
           const item of cart
@@ -526,14 +529,14 @@ const invoiceId =
           }
         );
 
-   setSales?.([
-  {
-    id: invoiceId,
-    ...saleData,
-  },
+        setSales?.([
+          {
+            id: invoiceId,
+            ...saleData,
+          },
 
-  ...sales,
-]);
+          ...sales,
+        ]);
 
         toast?.(
           "Sale completed",
@@ -583,6 +586,13 @@ const invoiceId =
           darkMode
             ? "#020617"
             : "#f8fafc",
+
+        gridTemplateColumns:
+          window.innerWidth <= 992
+
+            ? "1fr"
+
+            : "1.4fr 0.8fr",
       }}
     >
 
@@ -1122,9 +1132,6 @@ const styles = {
 
     display: "grid",
 
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(320px,1fr))",
-
     gap: "20px",
 
     overflowX: "hidden",
@@ -1147,12 +1154,14 @@ const styles = {
     border: "none",
     cursor: "pointer",
     fontSize: "20px",
+    flexShrink: 0,
   },
 
   title: {
     margin: 0,
     fontSize:
-      "clamp(28px,5vw,34px)",
+      "clamp(26px,5vw,34px)",
+    lineHeight: 1.2,
   },
 
   subtitle: {
@@ -1164,13 +1173,13 @@ const styles = {
     display: "grid",
 
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
+      "repeat(auto-fit,minmax(160px,1fr))",
 
-    gap: "16px",
+    gap: "14px",
   },
 
   card: {
-    padding: "18px",
+    padding: "16px",
     borderRadius: "20px",
 
     display: "flex",
@@ -1179,7 +1188,14 @@ const styles = {
     justifyContent:
       "space-between",
 
-    gap: "18px",
+    gap: "16px",
+
+    overflow: "hidden",
+
+    wordBreak: "break-word",
+
+    boxShadow:
+      "0 4px 14px rgba(0,0,0,0.05)",
   },
 
   addButton: {
@@ -1187,35 +1203,61 @@ const styles = {
     background: "#16a34a",
     color: "#ffffff",
     border: "none",
-    padding: "10px",
-    borderRadius: "10px",
+    padding: "12px",
+    borderRadius: "12px",
     fontWeight: "bold",
     cursor: "pointer",
+    fontSize: "14px",
   },
 
   cartSection: {
     borderRadius: "20px",
     padding: "18px",
+
+    position: "sticky",
+    top: "10px",
+
+    height: "fit-content",
+
+    overflow: "hidden",
   },
 
   cartItems: {
     marginTop: "18px",
+
+    maxHeight: "350px",
+
+    overflowY: "auto",
+
+    overflowX: "hidden",
+
+    paddingRight: "4px",
   },
 
   cartItem: {
     display: "flex",
+
     justifyContent:
       "space-between",
 
     alignItems: "center",
 
+    gap: "12px",
+
+    flexWrap: "wrap",
+
     padding: "14px 0",
+
+    borderBottom:
+      "1px solid rgba(148,163,184,0.15)",
   },
 
   qtyWrapper: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
+
+    flexShrink: 0,
   },
 
   totalBox: {
@@ -1232,6 +1274,7 @@ const styles = {
     cursor: "pointer",
     fontWeight: "bold",
     marginTop: "10px",
+    fontSize: "15px",
   },
 
   invoiceButton: {
@@ -1244,19 +1287,24 @@ const styles = {
     cursor: "pointer",
     fontWeight: "bold",
     marginTop: "10px",
+    fontSize: "15px",
   },
 
   gray: {
     color: "#94a3b8",
+    fontSize: "14px",
+    wordBreak: "break-word",
   },
 
   stock: {
     color: "#22c55e",
     fontWeight: "bold",
+    fontSize: "14px",
   },
 
   price: {
     color: "#22c55e",
+    fontWeight: "bold",
   },
 
   empty: {
@@ -1297,17 +1345,19 @@ const input =
     fontSize: "14px",
 
     marginBottom: "14px",
+
+    minWidth: 0,
   });
 
 const qtyBtn = {
 
-  width: "32px",
+  width: "34px",
 
-  height: "32px",
+  height: "34px",
 
   border: "none",
 
-  borderRadius: "8px",
+  borderRadius: "10px",
 
   background: "#16a34a",
 
@@ -1316,6 +1366,8 @@ const qtyBtn = {
   cursor: "pointer",
 
   fontWeight: "bold",
+
+  flexShrink: 0,
 };
 
 export default POS;

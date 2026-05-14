@@ -705,13 +705,13 @@ function Medicines({
                               status.color,
 
                             padding:
-                              "7px 12px",
+                              "5px 8px",
 
                             borderRadius:
                               "999px",
 
                             fontSize:
-                              "12px",
+                              "10px",
 
                             fontWeight:
                               "bold",
@@ -999,6 +999,7 @@ const styles = {
     alignItems: "center",
     gap: "14px",
     flexWrap: "wrap",
+    width: "100%",
   },
 
   menuButton: {
@@ -1008,26 +1009,30 @@ const styles = {
     border: "none",
     fontSize: "20px",
     cursor: "pointer",
+    flexShrink: 0,
   },
 
   title: {
     margin: 0,
     fontSize:
-      "clamp(28px,5vw,34px)",
+      "clamp(26px,5vw,34px)",
+    lineHeight: 1.2,
+    wordBreak: "break-word",
   },
 
   subtitle: {
     marginTop: "8px",
     fontSize: "14px",
+    wordBreak: "break-word",
   },
 
   addButton: {
-    width: "fit-content",
-    minWidth: "170px",
+    width: "100%",
+    maxWidth: "220px",
     background: "#16a34a",
     color: "#ffffff",
     border: "none",
-    padding: "12px 18px",
+    padding: "13px 18px",
     borderRadius: "12px",
     fontWeight: "bold",
     cursor: "pointer",
@@ -1049,46 +1054,49 @@ const styles = {
     outline: "none",
     boxSizing: "border-box",
     fontSize: "14px",
+    minWidth: 0,
   },
 
   tableWrapper: {
     width: "100%",
-    overflowX: "auto",
-    borderRadius: "22px",
+    overflowX: "hidden",
+    borderRadius: "20px",
   },
 
   table: {
     width: "100%",
-    minWidth: "1100px",
     borderCollapse: "collapse",
+    tableLayout: "fixed",
   },
 
   actionButtons: {
     display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
+    flexDirection: "column",
+    gap: "6px",
   },
 
   editBtn: {
     background: "#2563eb",
     color: "#ffffff",
     border: "none",
-    padding: "10px 14px",
-    borderRadius: "10px",
+    padding: "8px",
+    borderRadius: "8px",
     cursor: "pointer",
     fontWeight: "bold",
-    whiteSpace: "nowrap",
+    fontSize: "11px",
+    width: "100%",
   },
 
   deleteBtn: {
     background: "#dc2626",
     color: "#ffffff",
     border: "none",
-    padding: "10px 14px",
-    borderRadius: "10px",
+    padding: "8px",
+    borderRadius: "8px",
     cursor: "pointer",
     fontWeight: "bold",
-    whiteSpace: "nowrap",
+    fontSize: "11px",
+    width: "100%",
   },
 
   modalOverlay: {
@@ -1101,15 +1109,18 @@ const styles = {
       "center",
     alignItems: "center",
     zIndex: 999,
-    padding: "20px",
+    padding: "16px",
+    overflowY: "auto",
   },
 
   modal: {
     width: "100%",
     maxWidth: "700px",
     borderRadius: "24px",
-    padding: "24px",
+    padding: "20px",
     boxSizing: "border-box",
+    maxHeight: "95vh",
+    overflowY: "auto",
   },
 
   formGrid: {
@@ -1135,37 +1146,55 @@ const styles = {
     borderRadius: "14px",
     fontWeight: "bold",
     cursor: "pointer",
+    minWidth: "140px",
   },
 };
 
 const th = (darkMode) => ({
-  padding: "16px",
+  padding: "10px 6px",
+
   textAlign: "left",
+
   background:
     darkMode
       ? "#0f172a"
       : "#f9fafb",
+
   color:
     darkMode
       ? "#ffffff"
       : "#111827",
+
   fontWeight: "700",
+
   borderBottom:
     darkMode
       ? "1px solid #1f2937"
       : "1px solid #e5e7eb",
+
+  fontSize: "11px",
+
+  wordBreak: "break-word",
 });
 
 const td = (darkMode) => ({
-  padding: "16px",
+  padding: "10px 6px",
+
   color:
     darkMode
       ? "#e5e7eb"
       : "#111827",
+
   borderBottom:
     darkMode
       ? "1px solid #1f2937"
       : "1px solid #f3f4f6",
+
+  fontSize: "11px",
+
+  wordBreak: "break-word",
+
+  overflowWrap: "break-word",
 });
 
 const input = (darkMode) => ({
@@ -1186,6 +1215,8 @@ const input = (darkMode) => ({
       : "#111827",
   outline: "none",
   boxSizing: "border-box",
+  minWidth: 0,
+  fontSize: "14px",
 });
 
 const select = (darkMode) => ({
@@ -1206,6 +1237,8 @@ const select = (darkMode) => ({
       : "#111827",
   outline: "none",
   boxSizing: "border-box",
+  minWidth: 0,
+  fontSize: "14px",
 });
 
 const cancelBtn = (darkMode) => ({
@@ -1223,6 +1256,7 @@ const cancelBtn = (darkMode) => ({
   borderRadius: "14px",
   fontWeight: "bold",
   cursor: "pointer",
+  minWidth: "140px",
 });
 
 export default Medicines;

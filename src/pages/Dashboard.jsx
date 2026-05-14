@@ -33,10 +33,6 @@ function Dashboard({
     darkMode,
   } = useTheme();
 
-  /* =========================
-        FILTER
-  ========================= */
-
   const [
     period,
     setPeriod,
@@ -63,8 +59,6 @@ function Dashboard({
               sale.date
             );
 
-          /* TODAY */
-
           if (
             period ===
             "Today"
@@ -75,8 +69,6 @@ function Dashboard({
               now.toDateString()
             );
           }
-
-          /* WEEKLY */
 
           if (
             period ===
@@ -95,8 +87,6 @@ function Dashboard({
             );
           }
 
-          /* MONTHLY */
-
           if (
             period ===
             "Monthly"
@@ -111,8 +101,6 @@ function Dashboard({
                 now.getFullYear()
             );
           }
-
-          /* YEARLY */
 
           if (
             period ===
@@ -167,8 +155,6 @@ function Dashboard({
 
       0
     );
-
-  /* FIXED DEBT */
 
   const totalDebt =
     filteredSales
@@ -698,183 +684,183 @@ function Dashboard({
               }}
             >
 
-              {/* HEADER */}
+              <table style={styles.table}>
 
-              <div
-                style={{
-                  ...styles.tableHeader,
+                <thead>
 
-                  color:
-                    darkMode
-                      ? "#ffffff"
-                      : "#111827",
+                  <tr
+                    style={{
+                      background:
+                        darkMode
+                          ? "#111827"
+                          : "#f1f5f9",
+                    }}
+                  >
 
-                  background:
-                    darkMode
-                      ? "#111827"
-                      : "#f1f5f9",
-                }}
-              >
+                    <th style={styles.th}>
+                      Customer
+                    </th>
 
-                <div>Customer</div>
+                    <th style={styles.th}>
+                      Amount
+                    </th>
 
-                <div>Amount</div>
+                    <th style={styles.th}>
+                      Payment
+                    </th>
 
-                <div>Payment</div>
+                    <th style={styles.th}>
+                      Status
+                    </th>
 
-                <div>Status</div>
+                    <th style={styles.th}>
+                      Date
+                    </th>
 
-                <div>Date</div>
+                  </tr>
 
-              </div>
+                </thead>
 
-              {/* ROWS */}
+                <tbody>
 
-              {
-                recentSales.map(
-                  (sale) => (
+                  {
+                    recentSales.map(
+                      (sale) => (
 
-                    <div
-                      key={sale.id}
+                        <tr
+                          key={sale.id}
 
-                      style={{
-                        ...styles.tableRow,
-
-                        borderTop:
-                          darkMode
-                            ? "1px solid #1e293b"
-                            : "1px solid #e2e8f0",
-                      }}
-                    >
-
-                      <div
-                        style={{
-                          fontWeight:
-                            "700",
-                        }}
-                      >
-                        {
-                          sale.customer
-                        }
-                      </div>
-
-                      <div
-                        style={{
-                          color:
-                            "#16a34a",
-
-                          fontWeight:
-                            "700",
-                        }}
-                      >
-
-                        $
-                        {
-                          Number(
-                            sale.total || 0
-                          ).toFixed(2)
-                        }
-
-                      </div>
-
-                      <div>
-
-                        <span
                           style={{
-                            ...styles.badge,
-
-                            background:
-
-                              sale.method ===
-                              "Debt"
-
-                                ? "#fee2e2"
-
-                              : "#dcfce7",
-
-                            color:
-
-                              sale.method ===
-                              "Debt"
-
-                                ? "#dc2626"
-
-                              : "#16a34a",
+                            borderBottom:
+                              darkMode
+                                ? "1px solid #1e293b"
+                                : "1px solid #e2e8f0",
                           }}
                         >
 
-                          {
-                            sale.method
-                          }
+                          <td
+                            style={{
+                              ...styles.td,
+                              fontWeight: "700",
+                            }}
+                          >
+                            {sale.customer}
+                          </td>
 
-                        </span>
+                          <td
+                            style={{
+                              ...styles.td,
+                              color: "#16a34a",
+                              fontWeight: "700",
+                            }}
+                          >
 
-                      </div>
+                            $
+                            {
+                              Number(
+                                sale.total || 0
+                              ).toFixed(2)
+                            }
 
-                      <div>
+                          </td>
 
-                        <span
-                          style={{
-                            ...styles.badge,
+                          <td style={styles.td}>
 
-                            background:
+                            <span
+                              style={{
+                                ...styles.badge,
 
-                              sale.status ===
-                              "Paid"
+                                background:
+                                  sale.method ===
+                                  "Debt"
 
-                                ? "#dcfce7"
+                                    ? "#fee2e2"
 
-                              : sale.status ===
-                                "Partial"
+                                    : "#dcfce7",
 
-                                ? "#fef3c7"
+                                color:
+                                  sale.method ===
+                                  "Debt"
 
-                                : "#fee2e2",
+                                    ? "#dc2626"
 
-                            color:
+                                    : "#16a34a",
+                              }}
+                            >
 
-                              sale.status ===
-                              "Paid"
+                              {sale.method}
 
-                                ? "#16a34a"
+                            </span>
 
-                                : sale.status ===
-                                  "Partial"
+                          </td>
 
-                                  ? "#d97706"
+                          <td style={styles.td}>
 
-                                  : "#dc2626",
-                          }}
-                        >
+                            <span
+                              style={{
+                                ...styles.badge,
 
-                          {
-                            sale.status
-                          }
+                                background:
 
-                        </span>
+                                  sale.status ===
+                                  "Paid"
 
-                      </div>
+                                    ? "#dcfce7"
 
-                      <div
-                        style={{
-                          color:
-                            darkMode
-                              ? "#94a3b8"
-                              : "#64748b",
-                        }}
-                      >
+                                    : sale.status ===
+                                      "Partial"
 
-                        {
-                          sale.date
-                            ?.slice(0, 10)
-                        }
+                                    ? "#fef3c7"
 
-                      </div>
+                                    : "#fee2e2",
 
-                    </div>
-                  )
-                )
-              }
+                                color:
+
+                                  sale.status ===
+                                  "Paid"
+
+                                    ? "#16a34a"
+
+                                    : sale.status ===
+                                      "Partial"
+
+                                    ? "#d97706"
+
+                                    : "#dc2626",
+                              }}
+                            >
+
+                              {sale.status}
+
+                            </span>
+
+                          </td>
+
+                          <td
+                            style={{
+                              ...styles.td,
+
+                              color:
+                                darkMode
+                                  ? "#94a3b8"
+                                  : "#64748b",
+                            }}
+                          >
+
+                            {
+                              sale.date?.slice(0, 10)
+                            }
+
+                          </td>
+
+                        </tr>
+                      )
+                    )
+                  }
+
+                </tbody>
+
+              </table>
 
             </div>
           )
@@ -1056,53 +1042,36 @@ const styles = {
 
   tableWrapper: {
     width: "100%",
+    overflowX: "auto",
     borderRadius: "20px",
-    overflow: "hidden",
   },
 
-  tableHeader: {
-    display: "grid",
+  table: {
+    width: "100%",
+    borderCollapse: "collapse",
+    minWidth: "700px",
+  },
 
-    gridTemplateColumns:
-      "1.4fr .8fr .8fr .8fr .8fr",
-
-    gap: "10px",
-
+  th: {
     padding: "16px",
-
+    textAlign: "left",
+    fontSize: "14px",
     fontWeight: "700",
-
-    fontSize: "13px",
-
-    alignItems: "center",
+    whiteSpace: "nowrap",
   },
 
-  tableRow: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "1.4fr .8fr .8fr .8fr .8fr",
-
-    gap: "10px",
-
+  td: {
     padding: "16px",
-
-    alignItems: "center",
-
-    fontSize: "13px",
+    fontSize: "14px",
+    whiteSpace: "nowrap",
   },
 
   badge: {
     padding: "8px 14px",
-
     borderRadius: "999px",
-
     fontSize: "12px",
-
     fontWeight: "700",
-
     display: "inline-block",
-
     whiteSpace: "nowrap",
   },
 
