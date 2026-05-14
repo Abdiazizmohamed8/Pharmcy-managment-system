@@ -1,6 +1,6 @@
 import {
   useMemo,
-  useState,
+  useRef,
 } from "react";
 
 import {
@@ -14,25 +14,51 @@ import {
   PieChart,
   Pie,
   Cell,
+  LineChart,
+  Line,
 } from "recharts";
 
+import * as XLSX from "xlsx";
+
+import jsPDF from "jspdf";
+
+import autoTable from "jspdf-autotable";
+
+import {
+  useReactToPrint,
+} from "react-to-print";
+
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function Reports({
-  sales,
-  medicines,
-  expenses,
-  dark,
+  sales = [],
+  medicines = [],
+  expenses = [],
+  openSidebar,
 }) {
 
-  /* =========================
-        FILTER
-  ========================= */
+  const { darkMode } =
+    useTheme();
 
-  const [filter] =
-    useState("all");
+  /* =========================================
+        PRINT REF
+  ========================================= */
 
-  /* =========================
+  const reportRef =
+    useRef(null);
+
+  const handlePrint =
+    useReactToPrint({
+
+      contentRef:
+        reportRef,
+    });
+
+  /* =========================================
         TOTALS
-  ========================= */
+  ========================================= */
 
   const totalSales =
     sales.reduce(
@@ -62,33 +88,110 @@ function Reports({
     );
 
   const totalProfit =
-    sales.reduce(
-      (sum, sale) => {
+    totalSales -
+    totalExpenses;
 
-        const profit =
+  /* =========================================
+        DAILY SALES
+  ========================================= */
 
-          Number(
+  const dailySales =
+    useMemo(() => {
+
+      const grouped = {};
+
+      sales.forEach(
+        (sale) => {
+
+          const date =
+            sale.date?.split(
+              "T"
+            )[0] ||
+            "Unknown";
+
+          if (
+            !grouped[date]
+          ) {
+
+            grouped[
+              date
+            ] = 0;
+          }
+
+          grouped[
+            date
+          ] += Number(
             sale.total || 0
-          ) -
-
-          Number(
-            sale.buyTotal || 0
           );
+        }
+      );
 
-        return (
-          sum + profit
-        );
+      return Object.keys(
+        grouped
+      ).map((key) => ({
+        date: key,
+        total:
+          grouped[key],
+      }));
 
-      },
+    }, [sales]);
 
-      0
-    );
+  /* =========================================
+        MONTHLY SALES
+  ========================================= */
 
-  /* =========================
-        CHART DATA
-  ========================= */
+  const monthlySales =
+    useMemo(() => {
 
-  const salesChart =
+      const grouped = {};
+
+      sales.forEach(
+        (sale) => {
+
+          const month =
+            new Date(
+              sale.date
+            ).toLocaleString(
+              "default",
+
+              {
+                month:
+                  "short",
+              }
+            );
+
+          if (
+            !grouped[month]
+          ) {
+
+            grouped[
+              month
+            ] = 0;
+          }
+
+          grouped[
+            month
+          ] += Number(
+            sale.total || 0
+          );
+        }
+      );
+
+      return Object.keys(
+        grouped
+      ).map((key) => ({
+        month: key,
+        total:
+          grouped[key],
+      }));
+
+    }, [sales]);
+
+  /* =========================================
+        BEST CUSTOMERS
+  ========================================= */
+
+  const bestCustomers =
     useMemo(() => {
 
       const grouped = {};
@@ -119,26 +222,98 @@ function Reports({
         }
       );
 
-      return Object.keys(
+      return Object.entries(
         grouped
-      ).map((key) => ({
+      )
 
-        customer: key,
+        .map(
+          ([
+            name,
+            total,
+          ]) => ({
+            name,
+            total,
+          })
+        )
 
-        total:
-          grouped[key],
-      }));
+        .sort(
+          (a, b) =>
+            b.total -
+            a.total
+        )
+
+        .slice(0, 5);
 
     }, [sales]);
 
-  /* =========================
+  /* =========================================
+        BEST MEDICINES
+  ========================================= */
+
+  const bestMedicines =
+    useMemo(() => {
+
+      const grouped = {};
+
+      sales.forEach(
+        (sale) => {
+
+          sale.items?.forEach(
+            (item) => {
+
+              if (
+                !grouped[
+                  item.name
+                ]
+              ) {
+
+                grouped[
+                  item.name
+                ] = 0;
+              }
+
+              grouped[
+                item.name
+              ] += Number(
+                item.qty || 0
+              );
+            }
+          );
+        }
+      );
+
+      return Object.entries(
+        grouped
+      )
+
+        .map(
+          ([
+            name,
+            qty,
+          ]) => ({
+            name,
+            qty,
+          })
+        )
+
+        .sort(
+          (a, b) =>
+            b.qty -
+            a.qty
+        )
+
+        .slice(0, 5);
+
+    }, [sales]);
+
+  /* =========================================
         PIE DATA
-  ========================= */
+  ========================================= */
 
   const pieData = [
 
     {
-      name: "Sales",
+      name: "Revenue",
       value:
         totalSales,
     },
@@ -150,570 +325,679 @@ function Reports({
     },
   ];
 
-  const COLORS = [
-    "#16a34a",
-    "#dc2626",
-  ];
+  /* =========================================
+        EXPORT PDF
+  ========================================= */
+
+  const exportPDF =
+    () => {
+
+      const doc =
+        new jsPDF();
+
+      doc.text(
+        "ANFAC PHARMACY REPORTS",
+        14,
+        15
+      );
+
+      autoTable(doc, {
+
+        startY: 25,
+
+        head: [[
+          "Customer",
+          "Total",
+        ]],
+
+        body:
+          bestCustomers.map(
+            (
+              customer
+            ) => [
+
+              customer.name,
+
+              `$${customer.total.toFixed(
+                2
+              )}`,
+            ]
+          ),
+      });
+
+      doc.save(
+        "reports.pdf"
+      );
+    };
+
+  /* =========================================
+        EXPORT EXCEL
+  ========================================= */
+
+  const exportExcel =
+    () => {
+
+      const worksheet =
+        XLSX.utils.json_to_sheet(
+          sales
+        );
+
+      const workbook =
+        XLSX.utils.book_new();
+
+      XLSX.utils.book_append_sheet(
+
+        workbook,
+
+        worksheet,
+
+        "Reports"
+      );
+
+      XLSX.writeFile(
+
+        workbook,
+
+        "reports.xlsx"
+      );
+    };
 
   return (
 
-    <div style={{
-      ...styles.container,
+    <div
+      style={{
+        ...styles.container,
 
-      background:
-        dark
-          ? "#020617"
-          : "#f3f4f6",
+        background:
+          darkMode
+            ? "#020617"
+            : "#f1f5f9",
 
-      color:
-        dark
-          ? "#ffffff"
-          : "#111827",
-    }}>
+        color:
+          darkMode
+            ? "#ffffff"
+            : "#111827",
+      }}
+    >
 
       {/* HEADER */}
 
-      <div style={styles.header}>
+      <div
+        style={
+          styles.header
+        }
+      >
 
-        <h1 style={{
-          ...styles.title,
+        <div
+          style={
+            styles.headerLeft
+          }
+        >
 
-          color:
-            dark
-              ? "#ffffff"
-              : "#111827",
-        }}>
-          Reports 📈
-        </h1>
+          <button
+            onClick={
+              openSidebar
+            }
 
-        <p style={{
-          ...styles.subtitle,
+            style={{
+              ...styles.menuButton,
 
-          color:
-            dark
-              ? "#94a3b8"
-              : "#6b7280",
-        }}>
-          Pharmacy analytics
-          and reports
-        </p>
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
 
-      </div>
+              color:
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
+            }}
+          >
+            ☰
+          </button>
 
-      {/* CARDS */}
+          <div>
 
-      <div style={styles.cardsGrid}>
+            <h1
+              style={
+                styles.title
+              }
+            >
+              Reports 📊
+            </h1>
 
-        {/* SALES */}
+            <p
+              style={
+                styles.subtitle
+              }
+            >
+              Pharmacy
+              analytics
+              dashboard
+            </p>
 
-        <div style={{
-          ...styles.card,
-
-          background:
-            dark
-              ? "#111827"
-              : "#ffffff",
-
-          border:
-            dark
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}>
-
-          <p style={{
-            ...styles.cardLabel,
-
-            color:
-              "#16a34a",
-          }}>
-            Total Sales
-          </p>
-
-          <h2 style={styles.cardAmount}>
-            $
-            {totalSales.toFixed(2)}
-          </h2>
+          </div>
 
         </div>
 
-        {/* EXPENSES */}
+        {/* ACTIONS */}
 
-        <div style={{
-          ...styles.card,
+        <div
+          style={
+            styles.exportActions
+          }
+        >
 
-          background:
-            dark
-              ? "#111827"
-              : "#ffffff",
+          <button
+            onClick={
+              exportPDF
+            }
 
-          border:
-            dark
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}>
+            style={{
+              ...styles.actionButton,
+              background:
+                "#dc2626",
+            }}
+          >
+            Export PDF
+          </button>
 
-          <p style={{
-            ...styles.cardLabel,
+          <button
+            onClick={
+              exportExcel
+            }
 
-            color:
-              "#dc2626",
-          }}>
-            Expenses
-          </p>
+            style={{
+              ...styles.actionButton,
+              background:
+                "#16a34a",
+            }}
+          >
+            Export Excel
+          </button>
 
-          <h2 style={styles.cardAmount}>
-            $
-            {totalExpenses.toFixed(2)}
-          </h2>
+          <button
+            onClick={
+              handlePrint
+            }
 
-        </div>
-
-        {/* PROFIT */}
-
-        <div style={{
-          ...styles.card,
-
-          background:
-            dark
-              ? "#111827"
-              : "#ffffff",
-
-          border:
-            dark
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}>
-
-          <p style={{
-            ...styles.cardLabel,
-
-            color:
-              "#06b6d4",
-          }}>
-            Profit
-          </p>
-
-          <h2 style={styles.cardAmount}>
-            $
-            {totalProfit.toFixed(2)}
-          </h2>
+            style={{
+              ...styles.actionButton,
+              background:
+                "#2563eb",
+            }}
+          >
+            Print Report
+          </button>
 
         </div>
 
       </div>
 
-      {/* CHARTS */}
+      {/* PRINT AREA */}
 
-      <div style={styles.chartGrid}>
+      <div ref={reportRef}>
 
-        {/* BAR CHART */}
+        {/* CARDS */}
 
-        <div style={{
-          ...styles.chartCard,
+        <div
+          style={
+            styles.cardsGrid
+          }
+        >
 
-          background:
-            dark
-              ? "#111827"
-              : "#ffffff",
+          <div
+            style={{
+              ...styles.card,
 
-          border:
-            dark
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}>
-
-          <h3 style={styles.chartTitle}>
-            Sales Analytics
-          </h3>
-
-          <ResponsiveContainer
-            width="100%"
-            height={320}
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
+            }}
           >
 
-            <BarChart
-              data={salesChart}
+            <span
+              style={
+                styles.cardTitle
+              }
+            >
+              Daily Sales
+            </span>
+
+            <h2
+              style={{
+                ...styles.cardValue,
+                color:
+                  "#22c55e",
+              }}
+            >
+              $
+              {
+                totalSales.toFixed(
+                  2
+                )
+              }
+            </h2>
+
+          </div>
+
+          <div
+            style={{
+              ...styles.card,
+
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
+            }}
+          >
+
+            <span
+              style={
+                styles.cardTitle
+              }
+            >
+              Expenses
+            </span>
+
+            <h2
+              style={{
+                ...styles.cardValue,
+                color:
+                  "#ef4444",
+              }}
+            >
+              $
+              {
+                totalExpenses.toFixed(
+                  2
+                )
+              }
+            </h2>
+
+          </div>
+
+          <div
+            style={{
+              ...styles.card,
+
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
+            }}
+          >
+
+            <span
+              style={
+                styles.cardTitle
+              }
+            >
+              Profit
+            </span>
+
+            <h2
+              style={{
+                ...styles.cardValue,
+                color:
+                  "#06b6d4",
+              }}
+            >
+              $
+              {
+                totalProfit.toFixed(
+                  2
+                )
+              }
+            </h2>
+
+          </div>
+
+          <div
+            style={{
+              ...styles.card,
+
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
+            }}
+          >
+
+            <span
+              style={
+                styles.cardTitle
+              }
+            >
+              Medicines
+            </span>
+
+            <h2
+              style={{
+                ...styles.cardValue,
+                color:
+                  "#f59e0b",
+              }}
+            >
+              {
+                medicines.length
+              }
+            </h2>
+
+          </div>
+
+        </div>
+
+        {/* CHARTS */}
+
+        <div
+          style={
+            styles.chartGrid
+          }
+        >
+
+          {/* DAILY */}
+
+          <div
+            style={{
+              ...styles.chartCard,
+
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
+            }}
+          >
+
+            <h3
+              style={
+                styles.chartTitle
+              }
+            >
+              Daily Sales
+            </h3>
+
+            <ResponsiveContainer
+              width="100%"
+              height={300}
             >
 
-              <CartesianGrid
-                strokeDasharray="3 3"
-
-                stroke={
-                  dark
-                    ? "#334155"
-                    : "#e5e7eb"
+              <LineChart
+                data={
+                  dailySales
                 }
-              />
-
-              <XAxis
-                dataKey="customer"
-
-                tick={{
-                  fill:
-                    dark
-                      ? "#cbd5e1"
-                      : "#374151",
-                }}
-              />
-
-              <YAxis
-                tick={{
-                  fill:
-                    dark
-                      ? "#cbd5e1"
-                      : "#374151",
-                }}
-              />
-
-              <Tooltip />
-
-              <Bar
-                dataKey="total"
-
-                fill="#16a34a"
-
-                radius={[
-                  10,
-                  10,
-                  0,
-                  0,
-                ]}
-              />
-
-            </BarChart>
-
-          </ResponsiveContainer>
-
-        </div>
-
-        {/* PIE CHART */}
-
-        <div style={{
-          ...styles.chartCard,
-
-          background:
-            dark
-              ? "#111827"
-              : "#ffffff",
-
-          border:
-            dark
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}>
-
-          <h3 style={styles.chartTitle}>
-            Overview
-          </h3>
-
-          <ResponsiveContainer
-            width="100%"
-            height={320}
-          >
-
-            <PieChart>
-
-              <Pie
-                data={pieData}
-
-                cx="50%"
-
-                cy="50%"
-
-                outerRadius={100}
-
-                dataKey="value"
-
-                label
               >
 
-                {pieData.map(
-                  (
-                    entry,
-                    index
-                  ) => (
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                />
 
-                    <Cell
-                      key={`cell-${index}`}
+                <XAxis
+                  dataKey="date"
+                />
 
-                      fill={
-                        COLORS[
-                          index %
-                          COLORS.length
-                        ]
-                      }
-                    />
-                  )
-                )}
+                <YAxis />
 
-              </Pie>
+                <Tooltip />
 
-            </PieChart>
+                <Line
+                  type="monotone"
+                  dataKey="total"
+                  stroke="#22c55e"
+                  strokeWidth={3}
+                />
 
-          </ResponsiveContainer>
+              </LineChart>
+
+            </ResponsiveContainer>
+
+          </div>
+
+          {/* MONTHLY */}
+
+          <div
+            style={{
+              ...styles.chartCard,
+
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
+            }}
+          >
+
+            <h3
+              style={
+                styles.chartTitle
+              }
+            >
+              Monthly Report
+            </h3>
+
+            <ResponsiveContainer
+              width="100%"
+              height={300}
+            >
+
+              <BarChart
+                data={
+                  monthlySales
+                }
+              >
+
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                />
+
+                <XAxis
+                  dataKey="month"
+                />
+
+                <YAxis />
+
+                <Tooltip />
+
+                <Bar
+                  dataKey="total"
+                  fill="#2563eb"
+                  radius={[
+                    8,
+                    8,
+                    0,
+                    0,
+                  ]}
+                />
+
+              </BarChart>
+
+            </ResponsiveContainer>
+
+          </div>
+
+          {/* PIE */}
+
+          <div
+            style={{
+              ...styles.chartCard,
+
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
+            }}
+          >
+
+            <h3
+              style={
+                styles.chartTitle
+              }
+            >
+              Expense vs
+              Revenue
+            </h3>
+
+            <ResponsiveContainer
+              width="100%"
+              height={300}
+            >
+
+              <PieChart>
+
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  outerRadius={100}
+                  label
+                >
+
+                  <Cell fill="#22c55e" />
+
+                  <Cell fill="#ef4444" />
+
+                </Pie>
+
+                <Tooltip />
+
+              </PieChart>
+
+            </ResponsiveContainer>
+
+          </div>
 
         </div>
 
-      </div>
+        {/* TABLES */}
 
-      {/* TABLE */}
+        <div
+          style={
+            styles.tableGrid
+          }
+        >
 
-      <div style={{
-        ...styles.tableCard,
+          {/* CUSTOMERS */}
 
-        background:
-          dark
-            ? "#111827"
-            : "#ffffff",
+          <div
+            style={{
+              ...styles.tableCard,
 
-        border:
-          dark
-            ? "1px solid #1f2937"
-            : "1px solid #e5e7eb",
-      }}>
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
+            }}
+          >
 
-        <h3 style={styles.tableTitle}>
-          Sales Analytics
-        </h3>
+            <h3
+              style={
+                styles.chartTitle
+              }
+            >
+              Best Customers
+            </h3>
 
-        <div style={styles.tableWrapper}>
+            {
+              bestCustomers.map(
+                (
+                  customer,
+                  index
+                ) => (
 
-          <table style={styles.table}>
+                  <div
+                    key={index}
 
-            <thead>
-
-              <tr style={{
-                borderBottom:
-                  dark
-                    ? "1px solid #1f2937"
-                    : "1px solid #e5e7eb",
-              }}>
-
-                {[
-                  "Invoice",
-                  "Date",
-                  "Customer",
-                  "Medicines",
-                  "Qty",
-                  "Buy",
-                  "Sell",
-                  "Total",
-                  "Profit",
-                  "Payment",
-                  "Status",
-                ].map((item) => (
-
-                  <th
-                    key={item}
-
-                    style={{
-                      ...styles.th,
-
-                      color:
-                        dark
-                          ? "#ffffff"
-                          : "#111827",
-                    }}
+                    style={
+                      styles.tableRow
+                    }
                   >
-                    {item}
-                  </th>
-                ))}
 
-              </tr>
+                    <span>
+                      {
+                        customer.name
+                      }
+                    </span>
 
-            </thead>
-
-            <tbody>
-
-              {sales.map(
-                (sale) => {
-
-                  const profit =
-
-                    Number(
-                      sale.total || 0
-                    ) -
-
-                    Number(
-                      sale.buyTotal || 0
-                    );
-
-                  return (
-
-                    <tr
-                      key={sale.id}
-
+                    <strong
                       style={{
-                        borderBottom:
-                          dark
-                            ? "1px solid #1f2937"
-                            : "1px solid #e5e7eb",
+                        color:
+                          "#22c55e",
                       }}
                     >
+                      $
+                      {
+                        customer.total.toFixed(
+                          2
+                        )
+                      }
+                    </strong>
 
-                      {/* INVOICE */}
+                  </div>
+                )
+              )
+            }
 
-                      <td style={{
-                        ...styles.td,
+          </div>
 
+          {/* MEDICINES */}
+
+          <div
+            style={{
+              ...styles.tableCard,
+
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
+            }}
+          >
+
+            <h3
+              style={
+                styles.chartTitle
+              }
+            >
+              Best Selling
+              Medicines
+            </h3>
+
+            {
+              bestMedicines.map(
+                (
+                  medicine,
+                  index
+                ) => (
+
+                  <div
+                    key={index}
+
+                    style={
+                      styles.tableRow
+                    }
+                  >
+
+                    <span>
+                      {
+                        medicine.name
+                      }
+                    </span>
+
+                    <strong
+                      style={{
                         color:
                           "#2563eb",
+                      }}
+                    >
+                      {
+                        medicine.qty
+                      }
+                    </strong>
 
-                        fontWeight:
-                          "bold",
-                      }}>
+                  </div>
+                )
+              )
+            }
 
-                        {
-                          sale.invoice
-
-                            ? sale.invoice
-
-                            : sale.id?.slice(
-                                0,
-                                8
-                              )
-                        }
-
-                      </td>
-
-                      {/* DATE */}
-
-                      <td style={{
-                        ...styles.td,
-
-                        minWidth:
-                          "180px",
-
-                        whiteSpace:
-                          "nowrap",
-                      }}>
-
-                        {new Date(
-                          sale.date
-                        ).toLocaleDateString()}
-
-                      </td>
-
-                      {/* CUSTOMER */}
-
-                      <td style={styles.td}>
-                        {sale.customer}
-                      </td>
-
-                      {/* MEDICINE */}
-
-                      <td style={styles.td}>
-                        {
-                          sale.items?.[0]
-                            ?.name || "-"
-                        }
-                      </td>
-
-                      {/* QTY */}
-
-                      <td style={styles.td}>
-                        {
-                          sale.items?.[0]
-                            ?.qty || 0
-                        }
-                      </td>
-
-                      {/* BUY */}
-
-                      <td style={styles.td}>
-                        $
-                        {
-                          sale.items?.[0]
-                            ?.buyPrice || 0
-                        }
-                      </td>
-
-                      {/* SELL */}
-
-                      <td style={styles.td}>
-                        $
-                        {
-                          sale.items?.[0]
-                            ?.price || 0
-                        }
-                      </td>
-
-                      {/* TOTAL */}
-
-                      <td style={{
-                        ...styles.td,
-
-                        color:
-                          "#16a34a",
-
-                        fontWeight:
-                          "bold",
-                      }}>
-
-                        $
-                        {Number(
-                          sale.total || 0
-                        ).toFixed(2)}
-
-                      </td>
-
-                      {/* PROFIT */}
-
-                      <td style={{
-                        ...styles.td,
-
-                        color:
-                          "#06b6d4",
-
-                        fontWeight:
-                          "bold",
-                      }}>
-
-                        $
-                        {profit.toFixed(2)}
-
-                      </td>
-
-                      {/* PAYMENT */}
-
-                      <td style={styles.td}>
-                        {
-                          sale.paymentMethod
-                        }
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td style={{
-                        ...styles.td,
-
-                        color:
-                          sale.status ===
-                          "paid"
-
-                            ? "#16a34a"
-
-                            : "#ef4444",
-
-                        fontWeight:
-                          "bold",
-
-                        textTransform:
-                          "capitalize",
-                      }}>
-
-                        {sale.status}
-
-                      </td>
-
-                    </tr>
-                  );
-                }
-              )}
-
-            </tbody>
-
-          </table>
+          </div>
 
         </div>
 
@@ -723,150 +1007,162 @@ function Reports({
   );
 }
 
-/* =========================
+/* =========================================
       STYLES
-========================= */
+========================================= */
 
 const styles = {
 
   container: {
     width: "100%",
-
     minHeight: "100vh",
-
-    padding: "20px",
-
-    boxSizing: "border-box",
+    padding: "24px",
+    boxSizing:
+      "border-box",
   },
 
   header: {
-    marginBottom: "24px",
+    display: "flex",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "20px",
+    marginBottom:
+      "30px",
+  },
+
+  headerLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+  },
+
+  menuButton: {
+    width: "50px",
+    height: "50px",
+    borderRadius:
+      "14px",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "22px",
+    boxShadow:
+      "0 4px 14px rgba(0,0,0,0.08)",
   },
 
   title: {
+    margin: 0,
     fontSize:
-      "clamp(30px,6vw,36px)",
-
-    fontWeight: "bold",
-
-    marginBottom: "10px",
-
-    marginTop: 0,
+      "clamp(28px,4vw,40px)",
+    fontWeight:
+      "700",
   },
 
   subtitle: {
+    marginTop: "6px",
     fontSize: "15px",
+  },
+
+  exportActions: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "12px",
+  },
+
+  actionButton: {
+    border: "none",
+    padding:
+      "12px 18px",
+    borderRadius:
+      "12px",
+    cursor: "pointer",
+    fontWeight:
+      "bold",
+    color: "#ffffff",
+    fontSize: "14px",
   },
 
   cardsGrid: {
     display: "grid",
-
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
-
+      "repeat(auto-fit,minmax(240px,1fr))",
     gap: "20px",
-
-    marginBottom: "30px",
+    marginBottom:
+      "30px",
   },
 
   card: {
-    borderRadius: "24px",
-
     padding: "24px",
-
-    boxSizing: "border-box",
+    borderRadius:
+      "22px",
+    boxShadow:
+      "0 6px 20px rgba(0,0,0,0.05)",
   },
 
-  cardLabel: {
-    marginBottom: "10px",
-
-    fontWeight: "600",
+  cardTitle: {
+    fontSize: "15px",
+    fontWeight:
+      "600",
+    color: "#64748b",
   },
 
-  cardAmount: {
-    fontSize:
-      "clamp(26px,5vw,32px)",
-
-    fontWeight: "bold",
-
-    margin: 0,
+  cardValue: {
+    fontSize: "34px",
+    fontWeight:
+      "bold",
+    marginTop: "10px",
   },
 
   chartGrid: {
     display: "grid",
-
     gridTemplateColumns:
       "repeat(auto-fit,minmax(320px,1fr))",
-
     gap: "24px",
-
-    marginBottom: "30px",
+    marginBottom:
+      "30px",
   },
 
   chartCard: {
-    borderRadius: "24px",
-
-    padding: "20px",
-
-    overflowX: "auto",
-
-    boxSizing: "border-box",
+    borderRadius:
+      "24px",
+    padding: "24px",
+    minHeight:
+      "380px",
+    boxShadow:
+      "0 6px 20px rgba(0,0,0,0.05)",
   },
 
   chartTitle: {
-    marginBottom: "20px",
+    marginBottom:
+      "20px",
+    fontSize: "18px",
+    fontWeight:
+      "bold",
+  },
 
-    fontSize: "20px",
-
-    fontWeight: "bold",
+  tableGrid: {
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(320px,1fr))",
+    gap: "24px",
   },
 
   tableCard: {
-    borderRadius: "24px",
-
+    borderRadius:
+      "24px",
     padding: "24px",
-
-    overflow: "hidden",
-
-    boxSizing: "border-box",
+    boxShadow:
+      "0 6px 20px rgba(0,0,0,0.05)",
   },
 
-  tableTitle: {
-    marginBottom: "24px",
-
-    fontSize: "22px",
-
-    fontWeight: "bold",
-  },
-
-  tableWrapper: {
-    overflowX: "auto",
-  },
-
-  table: {
-    width: "100%",
-
-    minWidth: "1100px",
-
-    borderCollapse: "collapse",
-  },
-
-  th: {
-    textAlign: "left",
-
-    padding: "18px",
-
-    whiteSpace: "nowrap",
-
-    fontSize: "14px",
-  },
-
-  td: {
-    padding: "18px",
-
-    whiteSpace: "nowrap",
-
-    fontSize: "14px",
+  tableRow: {
+    display: "flex",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    padding: "14px 0",
+    borderBottom:
+      "1px solid #e5e7eb",
   },
 };
 

@@ -8,20 +8,37 @@ import {
   auth,
 } from "../firebase";
 
+/* =========================
+      THEME
+========================= */
+
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function Topbar({
-  dark,
-  setDark,
+
   setAuthed,
   setCurrentUser,
   currentUser,
   medicines = [],
   sales = [],
+
 }) {
+
+  const {
+    darkMode,
+    toggleTheme,
+  } = useTheme();
 
   const [
     showNotifications,
     setShowNotifications,
   ] = useState(false);
+
+  /* =========================
+        NOTIFICATIONS
+  ========================= */
 
   const notifications = [];
 
@@ -36,6 +53,7 @@ function Topbar({
 
       notifications.push({
         type: "danger",
+
         message:
           `${medicine.name} stock is low`,
       });
@@ -75,6 +93,7 @@ function Topbar({
 
         notifications.push({
           type: "danger",
+
           message:
             `${medicine.name} expired`,
         });
@@ -83,6 +102,7 @@ function Topbar({
 
         notifications.push({
           type: "warning",
+
           message:
             `${medicine.name} expiring soon`,
         });
@@ -102,13 +122,16 @@ function Topbar({
 
       notifications.push({
         type: "danger",
+
         message:
           `${sale.customerName} unpaid debt`,
       });
     }
   });
 
-  /* LOGOUT */
+  /* =========================
+        LOGOUT
+  ========================= */
 
   const handleLogout =
     async () => {
@@ -129,267 +152,359 @@ function Topbar({
 
   return (
 
-    <div style={{
-      ...styles.container,
+    <>
 
-      background:
-        dark
-          ? "#020617"
-          : "#ffffff",
+      {/* RESPONSIVE */}
 
-      borderBottom:
-        dark
-          ? "1px solid #1e293b"
-          : "1px solid #e5e7eb",
-    }}>
+      <style>
+        {`
 
-      {/* LEFT */}
+          @media (max-width: 768px) {
 
-      <div style={styles.left}>
+            .topbar-mobile {
 
-        <h1 style={{
-          ...styles.title,
+              flex-direction: column !important;
 
-          color:
-            dark
-              ? "#ffffff"
-              : "#111827",
-        }}>
-          Welcome 👋
-        </h1>
-
-        <p style={{
-          ...styles.subtitle,
-
-          color:
-            dark
-              ? "#94a3b8"
-              : "#6b7280",
-        }}>
-          Pharmacy management system
-        </p>
-
-      </div>
-
-      {/* RIGHT */}
-
-      <div style={styles.right}>
-
-        {/* NOTIFICATION */}
-
-        <div style={styles.notificationWrapper}>
-
-          <button
-            onClick={() =>
-              setShowNotifications(
-                !showNotifications
-              )
+              align-items: flex-start !important;
             }
+
+            .topbar-right {
+
+              width: 100% !important;
+
+              justify-content: flex-start !important;
+            }
+
+            .topbar-dropdown {
+
+              right: auto !important;
+
+              left: 0 !important;
+
+              width: 100% !important;
+
+              max-width: calc(100vw - 30px) !important;
+            }
+
+            .topbar-user {
+
+              width: 100% !important;
+
+              max-width: 100% !important;
+            }
+
+            .topbar-logout {
+
+              width: 100% !important;
+            }
+          }
+
+        `}
+      </style>
+
+      <div
+        className="topbar-mobile"
+
+        style={{
+          ...styles.container,
+
+          background:
+            darkMode
+              ? "#020617"
+              : "#ffffff",
+
+          borderBottom:
+            darkMode
+              ? "1px solid #1e293b"
+              : "1px solid #e5e7eb",
+        }}
+      >
+
+        {/* LEFT */}
+
+        <div style={styles.left}>
+
+          <h1
             style={{
-              ...styles.iconButton,
-
-              border:
-                dark
-                  ? "1px solid #1e293b"
-                  : "1px solid #e5e7eb",
-
-              background:
-                dark
-                  ? "#111827"
-                  : "#f9fafb",
+              ...styles.title,
 
               color:
-                dark
+                darkMode
                   ? "#ffffff"
                   : "#111827",
             }}
           >
+            Welcome 👋
+          </h1>
 
-            🔔
+          <p
+            style={{
+              ...styles.subtitle,
 
-            {notifications.length > 0 && (
+              color:
+                darkMode
+                  ? "#94a3b8"
+                  : "#6b7280",
+            }}
+          >
+            Pharmacy management system
+          </p>
 
-              <div style={styles.badge}>
-                {notifications.length}
-              </div>
+        </div>
 
-            )}
+        {/* RIGHT */}
 
-          </button>
+        <div
+          className="topbar-right"
 
-          {/* DROPDOWN */}
+          style={styles.right}
+        >
 
-          {showNotifications && (
+          {/* NOTIFICATION */}
 
-            <div style={{
-              ...styles.dropdown,
+          <div style={styles.notificationWrapper}>
 
-              background:
-                dark
-                  ? "#111827"
-                  : "#ffffff",
+            <button
+              onClick={() =>
+                setShowNotifications(
+                  !showNotifications
+                )
+              }
 
-              border:
-                dark
-                  ? "1px solid #1f2937"
-                  : "1px solid #e5e7eb",
-            }}>
+              style={{
+                ...styles.iconButton,
 
-              <h3 style={{
-                ...styles.dropdownTitle,
+                border:
+                  darkMode
+                    ? "1px solid #1e293b"
+                    : "1px solid #e5e7eb",
+
+                background:
+                  darkMode
+                    ? "#111827"
+                    : "#f9fafb",
 
                 color:
-                  dark
+                  darkMode
                     ? "#ffffff"
                     : "#111827",
-              }}>
-                Notifications
-              </h3>
+              }}
+            >
 
-              {notifications.length === 0 ? (
+              🔔
 
-                <div style={{
-                  color:
-                    dark
-                      ? "#94a3b8"
-                      : "#6b7280",
-                }}>
-                  No alerts
+              {notifications.length > 0 && (
+
+                <div style={styles.badge}>
+                  {notifications.length}
                 </div>
 
-              ) : (
+              )}
 
-                notifications.map(
-                  (
-                    notification,
-                    index
-                  ) => (
+            </button>
 
-                    <div
-                      key={index}
-                      style={{
-                        ...styles.notificationItem,
+            {/* DROPDOWN */}
 
-                        background:
+            {showNotifications && (
+
+              <div
+                className="topbar-dropdown"
+
+                style={{
+                  ...styles.dropdown,
+
+                  background:
+                    darkMode
+                      ? "#111827"
+                      : "#ffffff",
+
+                  border:
+                    darkMode
+                      ? "1px solid #1f2937"
+                      : "1px solid #e5e7eb",
+                }}
+              >
+
+                <h3
+                  style={{
+                    ...styles.dropdownTitle,
+
+                    color:
+                      darkMode
+                        ? "#ffffff"
+                        : "#111827",
+                  }}
+                >
+                  Notifications
+                </h3>
+
+                {notifications.length === 0 ? (
+
+                  <div
+                    style={{
+                      color:
+                        darkMode
+                          ? "#94a3b8"
+                          : "#6b7280",
+                    }}
+                  >
+                    No alerts
+                  </div>
+
+                ) : (
+
+                  notifications.map(
+                    (
+                      notification,
+                      index
+                    ) => (
+
+                      <div
+                        key={index}
+
+                        style={{
+                          ...styles.notificationItem,
+
+                          background:
+                            notification.type ===
+                            "danger"
+
+                              ? "#7f1d1d"
+
+                              : "#92400e",
+                        }}
+                      >
+
+                        {
                           notification.type ===
                           "danger"
 
-                            ? "#7f1d1d"
+                            ? "🔥 "
 
-                            : "#92400e",
-                      }}
-                    >
+                            : "⏰ "
+                        }
 
-                      {
-                        notification.type ===
-                        "danger"
+                        {
+                          notification.message
+                        }
 
-                          ? "🔥 "
-
-                          : "⏰ "
-                      }
-
-                      {
-                        notification.message
-                      }
-
-                    </div>
+                      </div>
+                    )
                   )
-                )
-              )}
+                )}
 
-            </div>
-          )}
+              </div>
+            )}
 
-        </div>
+          </div>
 
-        {/* DARK MODE */}
+          {/* DARK MODE */}
 
-        <button
-          onClick={() =>
-            setDark(!dark)
-          }
-          style={{
-            ...styles.iconButton,
+          <button
+            onClick={toggleTheme}
 
-            border:
-              dark
-                ? "1px solid #1e293b"
-                : "1px solid #e5e7eb",
+            style={{
+              ...styles.iconButton,
 
-            background:
-              dark
-                ? "#16a34a"
-                : "#f9fafb",
-          }}
-        >
-          {
-            dark
-              ? "🌙"
-              : "☀️"
-          }
-        </button>
+              border:
+                darkMode
+                  ? "1px solid #1e293b"
+                  : "1px solid #e5e7eb",
 
-        {/* USER */}
-
-        <div style={{
-          ...styles.userCard,
-
-          background:
-            dark
-              ? "#111827"
-              : "#f9fafb",
-        }}>
-
-          <div style={styles.avatar}>
-
+              background:
+                darkMode
+                  ? "#16a34a"
+                  : "#f9fafb",
+            }}
+          >
             {
-              currentUser?.name
-                ?.charAt(0)
-                ?.toUpperCase()
+              darkMode
+                ? "🌙"
+                : "☀️"
             }
+          </button>
+
+          {/* USER */}
+
+          <div
+            className="topbar-user"
+
+            style={{
+              ...styles.userCard,
+
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#f9fafb",
+            }}
+          >
+
+            <div style={styles.avatar}>
+
+              {
+                currentUser?.name
+                  ?.charAt(0)
+                  ?.toUpperCase()
+              }
+
+            </div>
+
+            <div style={styles.userInfo}>
+
+              <div
+                style={{
+                  ...styles.userName,
+
+                  color:
+                    darkMode
+                      ? "#ffffff"
+                      : "#111827",
+                }}
+              >
+                {currentUser?.name}
+              </div>
+
+              <div style={styles.userRole}>
+                {currentUser?.role}
+              </div>
+
+            </div>
 
           </div>
 
-          <div style={styles.userInfo}>
+          {/* LOGOUT */}
 
-            <div style={{
-              ...styles.userName,
+          <button
+            onClick={handleLogout}
 
-              color:
-                dark
-                  ? "#ffffff"
-                  : "#111827",
-            }}>
-              {currentUser?.name}
-            </div>
+            className="topbar-logout"
 
-            <div style={styles.userRole}>
-              {currentUser?.role}
-            </div>
-
-          </div>
+            style={styles.logoutButton}
+          >
+            Logout
+          </button>
 
         </div>
-
-        {/* LOGOUT */}
-
-        <button
-          onClick={handleLogout}
-          style={styles.logoutButton}
-        >
-          Logout
-        </button>
 
       </div>
 
-    </div>
+    </>
   );
 }
+
+/* =========================
+      STYLES
+========================= */
 
 const styles = {
 
   container: {
+    position: "sticky",
+
+    top: 0,
+
+    zIndex: 100,
+
     padding: "16px 20px",
 
     display: "flex",
@@ -405,13 +520,17 @@ const styles = {
 
     width: "100%",
 
-    overflowX: "hidden",
+    overflow: "visible",
 
     boxSizing: "border-box",
+
+    backdropFilter:
+      "blur(10px)",
   },
 
   left: {
-    flex: 1,
+    flex: "1 1 250px",
+
     minWidth: 0,
   },
 
@@ -422,12 +541,16 @@ const styles = {
       "clamp(22px,4vw,30px)",
 
     fontWeight: "700",
+
+    wordBreak: "break-word",
   },
 
   subtitle: {
     marginTop: "6px",
 
     fontSize: "14px",
+
+    wordBreak: "break-word",
   },
 
   right: {
@@ -441,6 +564,8 @@ const styles = {
 
     justifyContent:
       "flex-end",
+
+    flex: "1 1 300px",
   },
 
   notificationWrapper: {
@@ -500,11 +625,14 @@ const styles = {
 
     width: "320px",
 
-    maxWidth: "90vw",
+    maxWidth:
+      "calc(100vw - 20px)",
 
-    maxHeight: "420px",
+    maxHeight: "400px",
 
     overflowY: "auto",
+
+    overflowX: "hidden",
 
     borderRadius: "20px",
 
@@ -553,7 +681,11 @@ const styles = {
 
     maxWidth: "220px",
 
+    minWidth: 0,
+
     overflow: "hidden",
+
+    flex: "1 1 auto",
   },
 
   avatar: {
@@ -604,8 +736,6 @@ const styles = {
     background: "#dc2626",
 
     color: "#ffffff",
-
-    border: "none",
 
     padding: "12px 20px",
 

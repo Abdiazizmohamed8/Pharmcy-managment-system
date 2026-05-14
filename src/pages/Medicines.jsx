@@ -1,10 +1,7 @@
 import {
   useState,
+  useEffect,
 } from "react";
-
-/* =========================
-      FIREBASE
-========================= */
 
 import {
   collection,
@@ -12,21 +9,34 @@ import {
   updateDoc,
   deleteDoc,
   doc,
+  onSnapshot,
 } from "firebase/firestore";
 
 import {
   db,
 } from "../firebase";
 
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function Medicines({
-  medicines,
-  dark,
   toast,
+  openSidebar,
 }) {
+
+  const {
+    darkMode,
+  } = useTheme();
 
   /* =========================
         STATES
   ========================= */
+
+  const [
+    medicines,
+    setMedicines,
+  ] = useState([]);
 
   const [
     search,
@@ -37,11 +47,6 @@ function Medicines({
     categoryFilter,
     setCategoryFilter,
   ] = useState("All");
-
-  const [
-    sortStock,
-    setSortStock,
-  ] = useState("default");
 
   const [
     showModal,
@@ -60,18 +65,51 @@ function Medicines({
     name: "",
     category: "",
     stock: "",
-    minStock: "",
     buyPrice: "",
     sellPrice: "",
     expiryDate: "",
     supplier: "",
+    minStock: "",
   });
+
+  /* =========================
+        REALTIME FIRESTORE
+  ========================= */
+
+  useEffect(() => {
+
+    const unsubscribe =
+      onSnapshot(
+
+        collection(
+          db,
+          "medicines"
+        ),
+
+        (snapshot) => {
+
+          const data =
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            );
+
+          setMedicines(data);
+        }
+      );
+
+    return () =>
+      unsubscribe();
+
+  }, []);
 
   /* =========================
         FILTER
   ========================= */
 
-  let filteredMedicines =
+  const filteredMedicines =
     medicines.filter(
       (medicine) => {
 
@@ -96,30 +134,6 @@ function Medicines({
         );
       }
     );
-
-  /* =========================
-        SORT
-  ========================= */
-
-  if (
-    sortStock === "low"
-  ) {
-
-    filteredMedicines.sort(
-      (a, b) =>
-        a.stock - b.stock
-    );
-  }
-
-  if (
-    sortStock === "high"
-  ) {
-
-    filteredMedicines.sort(
-      (a, b) =>
-        b.stock - a.stock
-    );
-  }
 
   /* =========================
         CATEGORIES
@@ -152,8 +166,9 @@ function Medicines({
         !formData.sellPrice
       ) {
 
-        alert(
-          "Please fill all fields"
+        toast?.(
+          "Fill all fields",
+          "error"
         );
 
         return;
@@ -164,19 +179,14 @@ function Medicines({
         const medicineData = {
 
           name:
-            formData.name.trim(),
+            formData.name,
 
           category:
-            formData.category.trim(),
+            formData.category,
 
           stock:
             Number(
               formData.stock
-            ),
-
-          minStock:
-            Number(
-              formData.minStock || 0
             ),
 
           buyPrice:
@@ -193,7 +203,12 @@ function Medicines({
             formData.expiryDate,
 
           supplier:
-            formData.supplier.trim(),
+            formData.supplier,
+
+          minStock:
+            Number(
+              formData.minStock || 0
+            ),
         };
 
         if (
@@ -211,6 +226,11 @@ function Medicines({
             medicineData
           );
 
+          toast?.(
+            "Medicine updated",
+            "success"
+          );
+
         } else {
 
           await addDoc(
@@ -222,6 +242,11 @@ function Medicines({
 
             medicineData
           );
+
+          toast?.(
+            "Medicine added",
+            "success"
+          );
         }
 
         resetForm();
@@ -230,14 +255,15 @@ function Medicines({
 
         console.log(error);
 
-        alert(
-          "Failed to save medicine"
+        toast?.(
+          "Operation failed",
+          "error"
         );
       }
     };
 
   /* =========================
-        RESET
+        RESET FORM
   ========================= */
 
   const resetForm = () => {
@@ -246,20 +272,18 @@ function Medicines({
       name: "",
       category: "",
       stock: "",
-      minStock: "",
       buyPrice: "",
       sellPrice: "",
       expiryDate: "",
       supplier: "",
+      minStock: "",
     });
 
     setEditingMedicine(
       null
     );
 
-    setShowModal(
-      false
-    );
+    setShowModal(false);
   };
 
   /* =========================
@@ -274,30 +298,7 @@ function Medicines({
       );
 
       setFormData({
-
-        name:
-          medicine.name,
-
-        category:
-          medicine.category,
-
-        stock:
-          medicine.stock,
-
-        minStock:
-          medicine.minStock,
-
-        buyPrice:
-          medicine.buyPrice,
-
-        sellPrice:
-          medicine.sellPrice,
-
-        expiryDate:
-          medicine.expiryDate,
-
-        supplier:
-          medicine.supplier,
+        ...medicine,
       });
 
       setShowModal(true);
@@ -312,7 +313,7 @@ function Medicines({
 
       const confirmDelete =
         window.confirm(
-          "Delete this medicine?"
+          "Delete medicine?"
         );
 
       if (!confirmDelete)
@@ -321,6 +322,7 @@ function Medicines({
       try {
 
         await deleteDoc(
+
           doc(
             db,
             "medicines",
@@ -328,89 +330,121 @@ function Medicines({
           )
         );
 
+        toast?.(
+          "Medicine deleted",
+          "success"
+        );
+
       } catch (error) {
 
         console.log(error);
 
-        alert(
-          "Delete failed"
+        toast?.(
+          "Delete failed",
+          "error"
         );
       }
     };
 
   /* =========================
-        EXPIRY
+        STATUS
   ========================= */
 
-  const isExpiringSoon =
-    (date) => {
+  const getStatus =
+    (medicine) => {
 
-      if (!date)
-        return false;
+      if (
+        medicine.stock <=
+        medicine.minStock
+      ) {
 
-      const today =
-        new Date();
+        return {
+          text: "Low",
+          bg: "#7f1d1d",
+          color: "#fca5a5",
+        };
+      }
 
-      const expiry =
-        new Date(date);
-
-      const diff =
-        expiry - today;
-
-      const days =
-        diff /
-        (1000 *
-          60 *
-          60 *
-          24);
-
-      return days <= 30;
+      return {
+        text: "Good",
+        bg: "#14532d",
+        color: "#86efac",
+      };
     };
 
   return (
 
-    <div style={styles.container}>
+    <div style={{
+      ...styles.container,
+
+      background:
+        darkMode
+          ? "#020617"
+          : "#f3f4f6",
+    }}>
 
       {/* HEADER */}
 
-      <div style={styles.header}>
+      <div style={styles.topBar}>
 
-        {/* LEFT */}
+        <div style={styles.mobileTop}>
 
-        <div>
+          <button
+            onClick={openSidebar}
 
-          <h1 style={{
-            ...styles.title,
+            style={{
+              ...styles.menuButton,
 
-            color:
-              dark
-                ? "#ffffff"
-                : "#111827",
-          }}>
-            Medicines 💊
-          </h1>
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
 
-          <p style={{
-            ...styles.subtitle,
+              color:
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
+            }}
+          >
+            ☰
+          </button>
 
-            color:
-              dark
-                ? "#94a3b8"
-                : "#6b7280",
-          }}>
-            Manage pharmacy medicines
-          </p>
+          <div>
+
+            <h1 style={{
+              ...styles.title,
+
+              color:
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
+            }}>
+              Medicines 💊
+            </h1>
+
+            <p style={{
+              ...styles.subtitle,
+
+              color:
+                darkMode
+                  ? "#94a3b8"
+                  : "#6b7280",
+            }}>
+              Manage pharmacy medicines
+            </p>
+
+          </div>
 
         </div>
-
-        {/* BUTTON */}
 
         <button
           onClick={() =>
             setShowModal(true)
           }
 
-          style={styles.addButton}
+          style={
+            styles.addButton
+          }
         >
           + Add Medicine
         </button>
@@ -420,8 +454,6 @@ function Medicines({
       {/* FILTERS */}
 
       <div style={styles.filters}>
-
-        {/* SEARCH */}
 
         <input
           type="text"
@@ -439,24 +471,22 @@ function Medicines({
           style={{
             ...styles.searchInput,
 
-            border:
-              dark
-                ? "1px solid #374151"
-                : "1px solid #d1d5db",
-
             background:
-              dark
+              darkMode
                 ? "#111827"
                 : "#ffffff",
 
+            border:
+              darkMode
+                ? "1px solid #374151"
+                : "1px solid #d1d5db",
+
             color:
-              dark
+              darkMode
                 ? "#ffffff"
                 : "#111827",
           }}
         />
-
-        {/* CATEGORY */}
 
         <select
           value={
@@ -469,7 +499,7 @@ function Medicines({
             )
           }
 
-          style={select(dark)}
+          style={select(darkMode)}
         >
 
           {categories.map(
@@ -486,34 +516,6 @@ function Medicines({
 
         </select>
 
-        {/* SORT */}
-
-        <select
-          value={sortStock}
-
-          onChange={(e) =>
-            setSortStock(
-              e.target.value
-            )
-          }
-
-          style={select(dark)}
-        >
-
-          <option value="default">
-            Sort Stock
-          </option>
-
-          <option value="low">
-            Low Stock
-          </option>
-
-          <option value="high">
-            High Stock
-          </option>
-
-        </select>
-
       </div>
 
       {/* TABLE */}
@@ -522,47 +524,61 @@ function Medicines({
         ...styles.tableWrapper,
 
         background:
-          dark
+          darkMode
             ? "#111827"
             : "#ffffff",
 
         border:
-          dark
+          darkMode
             ? "1px solid #1f2937"
             : "1px solid #e5e7eb",
       }}>
 
         <table style={styles.table}>
 
-          <thead style={{
-            background:
-              dark
-                ? "#0f172a"
-                : "#f9fafb",
-          }}>
+          <thead>
 
             <tr>
 
-              {[
-                "Medicine",
-                "Category",
-                "Stock",
-                "Buy",
-                "Sell",
-                "Profit",
-                "Expiry",
-                "Supplier",
-                "Status",
-                "Action",
-              ].map((item) => (
+              <th style={th(darkMode)}>
+                Medicine
+              </th>
 
-                <th
-                  key={item}
-                  style={th(dark)}
-                >
-                  {item}
-                </th>
-              ))}
+              <th style={th(darkMode)}>
+                Category
+              </th>
+
+              <th style={th(darkMode)}>
+                Stock
+              </th>
+
+              <th style={th(darkMode)}>
+                Buy
+              </th>
+
+              <th style={th(darkMode)}>
+                Sell
+              </th>
+
+              <th style={th(darkMode)}>
+                Profit
+              </th>
+
+              <th style={th(darkMode)}>
+                Expiry
+              </th>
+
+              <th style={th(darkMode)}>
+                Supplier
+              </th>
+
+              <th style={th(darkMode)}>
+                Status
+              </th>
+
+              <th style={th(darkMode)}>
+                Action
+              </th>
 
             </tr>
 
@@ -570,174 +586,185 @@ function Medicines({
 
           <tbody>
 
-            {filteredMedicines.length === 0 ? (
+            {
+              filteredMedicines.length === 0 ? (
 
-              <tr>
+                <tr>
 
-                <td
-                  colSpan="10"
+                  <td
+                    colSpan="10"
 
-                  style={{
-                    padding:
-                      "70px 20px",
+                    style={{
+                      padding: "50px",
+                      textAlign: "center",
+                      color:
+                        darkMode
+                          ? "#94a3b8"
+                          : "#6b7280",
+                    }}
+                  >
+                    No medicines found
+                  </td>
 
-                    textAlign:
-                      "center",
+                </tr>
 
-                    color:
-                      dark
-                        ? "#94a3b8"
-                        : "#9ca3af",
+              ) : (
 
-                    fontSize:
-                      "16px",
-                  }}
-                >
-                  No medicines available
-                </td>
+                filteredMedicines.map(
+                  (medicine) => {
 
-              </tr>
+                    const profit =
+                      (
+                        medicine.sellPrice -
+                        medicine.buyPrice
+                      ).toFixed(2);
 
-            ) : (
+                    const status =
+                      getStatus(
+                        medicine
+                      );
 
-              filteredMedicines.map(
-                (
-                  medicine
-                ) => {
+                    return (
 
-                  const profit =
-                    (
-                      medicine.sellPrice -
-                      medicine.buyPrice
-                    ).toFixed(2);
+                      <tr
+                        key={medicine.id}
+                      >
 
-                  const lowStock =
-                    medicine.stock <=
-                    medicine.minStock;
+                        <td style={td(darkMode)}>
+                          {medicine.name}
+                        </td>
 
-                  const expiring =
-                    isExpiringSoon(
-                      medicine.expiryDate
+                        <td style={td(darkMode)}>
+                          {medicine.category}
+                        </td>
+
+                        <td style={{
+                          ...td(darkMode),
+
+                          color:
+                            medicine.stock <=
+                            medicine.minStock
+
+                              ? "#ef4444"
+
+                              : "#22c55e",
+
+                          fontWeight:
+                            "bold",
+                        }}>
+                          {medicine.stock}
+                        </td>
+
+                        <td style={td(darkMode)}>
+                          $
+                          {
+                            medicine.buyPrice
+                          }
+                        </td>
+
+                        <td style={td(darkMode)}>
+                          $
+                          {
+                            medicine.sellPrice
+                          }
+                        </td>
+
+                        <td style={{
+                          ...td(darkMode),
+
+                          color:
+                            "#22c55e",
+
+                          fontWeight:
+                            "bold",
+                        }}>
+                          ${profit}
+                        </td>
+
+                        <td style={td(darkMode)}>
+                          {
+                            medicine.expiryDate ||
+                            "N/A"
+                          }
+                        </td>
+
+                        <td style={td(darkMode)}>
+                          {
+                            medicine.supplier ||
+                            "N/A"
+                          }
+                        </td>
+
+                        <td style={td(darkMode)}>
+
+                          <span style={{
+                            background:
+                              status.bg,
+
+                            color:
+                              status.color,
+
+                            padding:
+                              "7px 12px",
+
+                            borderRadius:
+                              "999px",
+
+                            fontSize:
+                              "12px",
+
+                            fontWeight:
+                              "bold",
+                          }}>
+                            {status.text}
+                          </span>
+
+                        </td>
+
+                        <td style={td(darkMode)}>
+
+                          <div style={
+                            styles.actionButtons
+                          }>
+
+                            <button
+                              onClick={() =>
+                                editMedicine(
+                                  medicine
+                                )
+                              }
+
+                              style={
+                                styles.editBtn
+                              }
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                deleteMedicine(
+                                  medicine.id
+                                )
+                              }
+
+                              style={
+                                styles.deleteBtn
+                              }
+                            >
+                              Delete
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
                     );
-
-                  return (
-
-                    <tr
-                      key={medicine.id}
-
-                      style={{
-                        borderTop:
-                          dark
-                            ? "1px solid #1f2937"
-                            : "1px solid #e5e7eb",
-                      }}
-                    >
-
-                      <td style={td(dark)}>
-                        {medicine.name}
-                      </td>
-
-                      <td style={td(dark)}>
-                        {medicine.category}
-                      </td>
-
-                      <td style={td(dark)}>
-                        {medicine.stock}
-                      </td>
-
-                      <td style={td(dark)}>
-                        ${medicine.buyPrice}
-                      </td>
-
-                      <td style={td(dark)}>
-                        ${medicine.sellPrice}
-                      </td>
-
-                      <td style={td(dark)}>
-                        ${profit}
-                      </td>
-
-                      <td style={td(dark)}>
-                        {
-                          medicine.expiryDate ||
-                          "N/A"
-                        }
-                      </td>
-
-                      <td style={td(dark)}>
-                        {
-                          medicine.supplier ||
-                          "N/A"
-                        }
-                      </td>
-
-                      <td style={td(dark)}>
-
-                        {lowStock ? (
-
-                          <Status
-                            bg="#fee2e2"
-                            color="#dc2626"
-                            text="Low"
-                          />
-
-                        ) : expiring ? (
-
-                          <Status
-                            bg="#fef3c7"
-                            color="#92400e"
-                            text="Expiring"
-                          />
-
-                        ) : (
-
-                          <Status
-                            bg="#dcfce7"
-                            color="#166534"
-                            text="Good"
-                          />
-
-                        )}
-
-                      </td>
-
-                      <td style={td(dark)}>
-
-                        <div style={styles.actionButtons}>
-
-                          <button
-                            onClick={() =>
-                              editMedicine(
-                                medicine
-                              )
-                            }
-
-                            style={editBtn}
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              deleteMedicine(
-                                medicine.id
-                              )
-                            }
-
-                            style={deleteBtn}
-                          >
-                            Delete
-                          </button>
-
-                        </div>
-
-                      </td>
-
-                    </tr>
-                  );
-                }
+                  }
+                )
               )
-            )}
+            }
 
           </tbody>
 
@@ -755,120 +782,152 @@ function Medicines({
             ...styles.modal,
 
             background:
-              dark
+              darkMode
                 ? "#111827"
                 : "#ffffff",
           }}>
 
             <h2 style={{
-              ...styles.modalTitle,
+              marginTop: 0,
 
               color:
-                dark
+                darkMode
                   ? "#ffffff"
                   : "#111827",
             }}>
               {
                 editingMedicine
-
                   ? "Edit Medicine"
-
                   : "Add Medicine"
               }
             </h2>
 
-            {/* FORM */}
-
             <div style={styles.formGrid}>
 
-              {[
-                {
-                  key: "name",
-                  placeholder:
-                    "Medicine name",
-                },
+              <input
+                type="text"
+                placeholder="Medicine"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    name:
+                      e.target.value,
+                  })
+                }
+                style={input(darkMode)}
+              />
 
-                {
-                  key: "category",
-                  placeholder:
-                    "Category",
-                },
+              <input
+                type="text"
+                placeholder="Category"
+                value={
+                  formData.category
+                }
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    category:
+                      e.target.value,
+                  })
+                }
+                style={input(darkMode)}
+              />
 
-                {
-                  key: "stock",
-                  placeholder:
-                    "Stock",
-                  type: "number",
-                },
+              <input
+                type="number"
+                placeholder="Stock"
+                value={formData.stock}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    stock:
+                      e.target.value,
+                  })
+                }
+                style={input(darkMode)}
+              />
 
-                {
-                  key: "minStock",
-                  placeholder:
-                    "Minimum stock",
-                  type: "number",
-                },
+              <input
+                type="number"
+                placeholder="Buy Price"
+                value={
+                  formData.buyPrice
+                }
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    buyPrice:
+                      e.target.value,
+                  })
+                }
+                style={input(darkMode)}
+              />
 
-                {
-                  key: "buyPrice",
-                  placeholder:
-                    "Buy price",
-                  type: "number",
-                },
+              <input
+                type="number"
+                placeholder="Sell Price"
+                value={
+                  formData.sellPrice
+                }
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    sellPrice:
+                      e.target.value,
+                  })
+                }
+                style={input(darkMode)}
+              />
 
-                {
-                  key: "sellPrice",
-                  placeholder:
-                    "Sell price",
-                  type: "number",
-                },
+              <input
+                type="number"
+                placeholder="Minimum Stock"
+                value={
+                  formData.minStock
+                }
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    minStock:
+                      e.target.value,
+                  })
+                }
+                style={input(darkMode)}
+              />
 
-                {
-                  key: "expiryDate",
-                  type: "date",
-                },
+              <input
+                type="text"
+                placeholder="Supplier"
+                value={
+                  formData.supplier
+                }
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    supplier:
+                      e.target.value,
+                  })
+                }
+                style={input(darkMode)}
+              />
 
-                {
-                  key: "supplier",
-                  placeholder:
-                    "Supplier",
-                },
-
-              ].map((field) => (
-
-                <input
-                  key={field.key}
-
-                  type={
-                    field.type ||
-                    "text"
-                  }
-
-                  placeholder={
-                    field.placeholder
-                  }
-
-                  value={
-                    formData[
-                      field.key
-                    ]
-                  }
-
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-
-                      [field.key]:
-                        e.target.value,
-                    })
-                  }
-
-                  style={input(dark)}
-                />
-              ))}
+              <input
+                type="date"
+                value={
+                  formData.expiryDate
+                }
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    expiryDate:
+                      e.target.value,
+                  })
+                }
+                style={input(darkMode)}
+              />
 
             </div>
-
-            {/* BUTTONS */}
 
             <div style={styles.modalButtons}>
 
@@ -877,15 +936,15 @@ function Medicines({
                   saveMedicine
                 }
 
-                style={saveBtn}
+                style={
+                  styles.saveBtn
+                }
               >
-
-                {editingMedicine
-
-                  ? "Update Medicine"
-
-                  : "Save Medicine"}
-
+                {
+                  editingMedicine
+                    ? "Update"
+                    : "Save"
+                }
               </button>
 
               <button
@@ -894,7 +953,7 @@ function Medicines({
                 }
 
                 style={
-                  cancelBtn(dark)
+                  cancelBtn(darkMode)
                 }
               >
                 Cancel
@@ -912,38 +971,6 @@ function Medicines({
 }
 
 /* =========================
-      STATUS
-========================= */
-
-function Status({
-  bg,
-  color,
-  text,
-}) {
-
-  return (
-
-    <span style={{
-      background: bg,
-
-      color: color,
-
-      padding: "8px 14px",
-
-      borderRadius: "999px",
-
-      fontWeight: "bold",
-
-      fontSize: "12px",
-
-      whiteSpace: "nowrap",
-    }}>
-      {text}
-    </span>
-  );
-}
-
-/* =========================
       STYLES
 ========================= */
 
@@ -951,330 +978,251 @@ const styles = {
 
   container: {
     width: "100%",
-
     minHeight: "100vh",
-
+    padding: "14px",
+    overflowX: "hidden",
     boxSizing: "border-box",
   },
 
-  header: {
+  topBar: {
     display: "flex",
-
     justifyContent:
       "space-between",
-
     alignItems: "center",
-
     flexWrap: "wrap",
+    gap: "16px",
+    marginBottom: "20px",
+  },
 
-    gap: "18px",
+  mobileTop: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    flexWrap: "wrap",
+  },
 
-    marginBottom: "26px",
+  menuButton: {
+    width: "46px",
+    height: "46px",
+    borderRadius: "12px",
+    border: "none",
+    fontSize: "20px",
+    cursor: "pointer",
   },
 
   title: {
     margin: 0,
-
     fontSize:
       "clamp(28px,5vw,34px)",
   },
 
   subtitle: {
     marginTop: "8px",
-
-    fontSize: "15px",
+    fontSize: "14px",
   },
 
   addButton: {
+    width: "fit-content",
+    minWidth: "170px",
     background: "#16a34a",
-
     color: "#ffffff",
-
     border: "none",
-
-    padding: "14px 22px",
-
-    borderRadius: "16px",
-
+    padding: "12px 18px",
+    borderRadius: "12px",
     fontWeight: "bold",
-
     cursor: "pointer",
-
-    fontSize: "15px",
-
-    width: "100%",
-
-    maxWidth: "220px",
+    fontSize: "14px",
   },
 
   filters: {
-    display: "flex",
-
+    display: "grid",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(220px,1fr))",
     gap: "14px",
-
-    flexWrap: "wrap",
-
-    marginBottom: "24px",
+    marginBottom: "20px",
   },
 
   searchInput: {
-    flex: 1,
-
-    minWidth: "220px",
-
-    padding: "14px 16px",
-
+    width: "100%",
+    padding: "14px",
     borderRadius: "14px",
-
-    fontSize: "14px",
-
     outline: "none",
-
     boxSizing: "border-box",
+    fontSize: "14px",
   },
 
   tableWrapper: {
-    borderRadius: "24px",
-
+    width: "100%",
     overflowX: "auto",
+    borderRadius: "22px",
   },
 
   table: {
     width: "100%",
-
     minWidth: "1100px",
-
     borderCollapse: "collapse",
   },
 
   actionButtons: {
     display: "flex",
-
-    gap: "10px",
-
+    gap: "8px",
     flexWrap: "wrap",
+  },
+
+  editBtn: {
+    background: "#2563eb",
+    color: "#ffffff",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    whiteSpace: "nowrap",
+  },
+
+  deleteBtn: {
+    background: "#dc2626",
+    color: "#ffffff",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    whiteSpace: "nowrap",
   },
 
   modalOverlay: {
     position: "fixed",
-
     inset: 0,
-
     background:
       "rgba(0,0,0,0.6)",
-
     display: "flex",
-
     justifyContent:
       "center",
-
     alignItems: "center",
-
     zIndex: 999,
-
     padding: "20px",
   },
 
   modal: {
     width: "100%",
-
-    maxWidth: "750px",
-
+    maxWidth: "700px",
     borderRadius: "24px",
-
-    padding: "28px",
-
+    padding: "24px",
     boxSizing: "border-box",
-
-    maxHeight: "95vh",
-
-    overflowY: "auto",
-  },
-
-  modalTitle: {
-    marginTop: 0,
-
-    marginBottom: "24px",
   },
 
   formGrid: {
     display: "grid",
-
     gridTemplateColumns:
       "repeat(auto-fit,minmax(220px,1fr))",
-
     gap: "16px",
   },
 
   modalButtons: {
     display: "flex",
-
     gap: "14px",
-
     marginTop: "24px",
-
     flexWrap: "wrap",
+  },
+
+  saveBtn: {
+    flex: 1,
+    background: "#16a34a",
+    color: "#ffffff",
+    border: "none",
+    padding: "15px",
+    borderRadius: "14px",
+    fontWeight: "bold",
+    cursor: "pointer",
   },
 };
 
-const th = (dark) => ({
+const th = (darkMode) => ({
+  padding: "16px",
   textAlign: "left",
-
-  padding: "18px",
-
-  fontSize: "14px",
-
+  background:
+    darkMode
+      ? "#0f172a"
+      : "#f9fafb",
   color:
-    dark
+    darkMode
       ? "#ffffff"
-      : "#374151",
-
-  whiteSpace: "nowrap",
+      : "#111827",
+  fontWeight: "700",
+  borderBottom:
+    darkMode
+      ? "1px solid #1f2937"
+      : "1px solid #e5e7eb",
 });
 
-const td = (dark) => ({
-  padding: "18px",
-
+const td = (darkMode) => ({
+  padding: "16px",
   color:
-    dark
+    darkMode
       ? "#e5e7eb"
       : "#111827",
-
-  whiteSpace: "nowrap",
+  borderBottom:
+    darkMode
+      ? "1px solid #1f2937"
+      : "1px solid #f3f4f6",
 });
 
-const input = (dark) => ({
+const input = (darkMode) => ({
   width: "100%",
-
   padding: "14px",
-
   borderRadius: "14px",
-
   border:
-    dark
+    darkMode
       ? "1px solid #374151"
       : "1px solid #d1d5db",
-
   background:
-    dark
+    darkMode
       ? "#0f172a"
       : "#ffffff",
-
   color:
-    dark
+    darkMode
       ? "#ffffff"
       : "#111827",
-
   outline: "none",
-
   boxSizing: "border-box",
 });
 
-const select = (dark) => ({
+const select = (darkMode) => ({
+  width: "100%",
   padding: "14px",
-
   borderRadius: "14px",
-
   border:
-    dark
+    darkMode
       ? "1px solid #374151"
       : "1px solid #d1d5db",
-
   background:
-    dark
+    darkMode
       ? "#111827"
       : "#ffffff",
-
   color:
-    dark
+    darkMode
       ? "#ffffff"
       : "#111827",
-
   outline: "none",
-
-  minWidth: "180px",
+  boxSizing: "border-box",
 });
 
-const editBtn = {
-  background: "#2563eb",
-
-  color: "#ffffff",
-
-  border: "none",
-
-  padding: "10px 14px",
-
-  borderRadius: "10px",
-
-  cursor: "pointer",
-
-  fontWeight: "bold",
-
-  whiteSpace: "nowrap",
-};
-
-const deleteBtn = {
-  background: "#dc2626",
-
-  color: "#ffffff",
-
-  border: "none",
-
-  padding: "10px 14px",
-
-  borderRadius: "10px",
-
-  cursor: "pointer",
-
-  fontWeight: "bold",
-
-  whiteSpace: "nowrap",
-};
-
-const saveBtn = {
+const cancelBtn = (darkMode) => ({
   flex: 1,
-
-  background: "#16a34a",
-
-  color: "#ffffff",
-
-  border: "none",
-
-  padding: "16px",
-
-  borderRadius: "14px",
-
-  fontWeight: "bold",
-
-  cursor: "pointer",
-
-  minWidth: "180px",
-};
-
-const cancelBtn = (dark) => ({
-  flex: 1,
-
   background:
-    dark
+    darkMode
       ? "#1f2937"
       : "#f3f4f6",
-
   color:
-    dark
+    darkMode
       ? "#ffffff"
       : "#111827",
-
   border: "none",
-
-  padding: "16px",
-
+  padding: "15px",
   borderRadius: "14px",
-
   fontWeight: "bold",
-
   cursor: "pointer",
-
-  minWidth: "180px",
 });
 
 export default Medicines;

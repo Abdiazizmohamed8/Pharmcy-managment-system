@@ -1,9 +1,21 @@
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function Sidebar({
   page,
   setPage,
   currentUser,
-  dark,
+  sidebarOpen,
+  setSidebarOpen,
 }) {
+
+  const {
+    darkMode,
+  } = useTheme();
+
+  const isMobile =
+    window.innerWidth < 768;
 
   const isAdmin =
     currentUser?.role
@@ -89,130 +101,279 @@ function Sidebar({
     },
   ];
 
+  const handleNavigate =
+    (id) => {
+
+      setPage(id);
+
+      if (isMobile) {
+        setSidebarOpen(false);
+      }
+    };
+
   return (
 
-    <div style={styles.sidebar}>
+    <>
 
-      {/* TOP */}
+      {/* OVERLAY */}
 
-      <div>
+      {
+        sidebarOpen &&
+        isMobile && (
 
-        <div style={styles.logoContainer}>
+          <div
+            onClick={() =>
+              setSidebarOpen(false)
+            }
 
-          <div style={styles.logoIcon}>
-            💊
+            style={styles.overlay}
+          />
+        )
+      }
+
+      {/* SIDEBAR */}
+
+      <div
+        style={{
+          ...styles.sidebar,
+
+          width:
+            isMobile
+              ? "250px"
+              : "280px",
+
+          transform:
+
+            isMobile
+
+              ? sidebarOpen
+                ? "translateX(0)"
+                : "translateX(-100%)"
+
+              : "translateX(0)",
+
+          background:
+            darkMode
+              ? "linear-gradient(180deg,#052e16,#064e3b)"
+              : "#ffffff",
+
+          borderRight:
+            darkMode
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
+
+          color:
+            darkMode
+              ? "#ffffff"
+              : "#111827",
+        }}
+      >
+
+        {/* TOP */}
+
+        <div>
+
+          {/* LOGO */}
+
+          <div style={styles.logoContainer}>
+
+            <div style={styles.logoIcon}>
+              💊
+            </div>
+
+            <h2
+              style={{
+                ...styles.logoText,
+
+                color:
+                  darkMode
+                    ? "#ffffff"
+                    : "#111827",
+              }}
+            >
+              ANFAC
+            </h2>
+
+            <p
+              style={{
+                ...styles.logoSub,
+
+                color:
+                  darkMode
+                    ? "#bbf7d0"
+                    : "#16a34a",
+              }}
+            >
+              Pharmacy System
+            </p>
+
           </div>
 
-          <h2 style={styles.logoText}>
-            ANFAC
-          </h2>
+          {/* NAVIGATION */}
 
-          <p style={styles.logoSub}>
-            Pharmacy System
-          </p>
+          <div style={styles.navContainer}>
+
+            {
+              navItems.map(
+                (item) => {
+
+                  const active =
+                    page === item.id;
+
+                  return (
+
+                    <div
+                      key={item.id}
+
+                      onClick={() =>
+                        handleNavigate(
+                          item.id
+                        )
+                      }
+
+                      style={{
+                        ...styles.navItem,
+
+                        background:
+                          active
+                            ? "#16a34a"
+                            : darkMode
+                            ? "#0f172a"
+                            : "#f3f4f6",
+
+                        border:
+                          active
+                            ? "1px solid rgba(255,255,255,0.15)"
+                            : darkMode
+                            ? "1px solid transparent"
+                            : "1px solid #e5e7eb",
+
+                        color:
+                          darkMode
+                            ? "#ffffff"
+                            : "#111827",
+
+                        fontWeight:
+                          active
+                            ? "700"
+                            : "500",
+                      }}
+                    >
+
+                      <div
+                        style={{
+                          ...styles.iconBox,
+
+                          background:
+                            active
+                              ? "rgba(255,255,255,0.18)"
+                              : darkMode
+                              ? "#111827"
+                              : "#ffffff",
+                        }}
+                      >
+                        {item.icon}
+                      </div>
+
+                      <span
+                        style={
+                          styles.navLabel
+                        }
+                      >
+                        {item.label}
+                      </span>
+
+                    </div>
+                  );
+                }
+              )
+            }
+
+          </div>
 
         </div>
 
-        {/* NAV */}
+        {/* USER */}
 
-        <div style={styles.navContainer}>
+        <div
+          style={{
+            ...styles.userCard,
 
-          {navItems.map((item) => {
+            background:
+              darkMode
+                ? "#111827"
+                : "#f9fafb",
 
-            const active =
-              page === item.id;
+            border:
+              darkMode
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
+          }}
+        >
 
-            return (
+          <div style={styles.userRow}>
+
+            {
+              currentUser?.image ? (
+
+                <img
+                  src={
+                    currentUser.image
+                  }
+
+                  alt="user"
+
+                  style={
+                    styles.userImage
+                  }
+                />
+
+              ) : (
+
+                <div style={styles.avatar}>
+
+                  {
+                    currentUser?.name
+                      ?.charAt(0)
+                      ?.toUpperCase()
+                  }
+
+                </div>
+              )
+            }
+
+            <div
+              style={{
+                overflow: "hidden",
+              }}
+            >
 
               <div
-                key={item.id}
-                onClick={() =>
-                  setPage(item.id)
-                }
                 style={{
-                  ...styles.navItem,
+                  ...styles.userName,
 
-                  background:
-                    active
-                      ? "#16a34a"
-                      : dark
-                      ? "#0f172a"
-                      : "transparent",
-
-                  border:
-                    active
-                      ? "1px solid rgba(255,255,255,0.15)"
-                      : "1px solid transparent",
-
-                  fontWeight:
-                    active
-                      ? "700"
-                      : "500",
+                  color:
+                    darkMode
+                      ? "#ffffff"
+                      : "#111827",
                 }}
               >
-
-                <div
-                  style={{
-                    ...styles.iconBox,
-
-                    background:
-                      active
-                        ? "rgba(255,255,255,0.18)"
-                        : "#111827",
-                  }}
-                >
-                  {item.icon}
-                </div>
-
-                <span style={styles.navLabel}>
-                  {item.label}
-                </span>
-
+                {currentUser?.name}
               </div>
-            );
-          })}
 
-        </div>
+              <div
+                style={{
+                  ...styles.userRole,
 
-      </div>
+                  color:
+                    darkMode
+                      ? "#bbf7d0"
+                      : "#16a34a",
+                }}
+              >
+                {currentUser?.role}
+              </div>
 
-      {/* USER */}
-
-      <div style={styles.userCard}>
-
-        <div style={styles.userRow}>
-
-          {currentUser?.image ? (
-
-            <img
-              src={currentUser.image}
-              alt="user"
-              style={styles.userImage}
-            />
-
-          ) : (
-
-            <div style={styles.avatar}>
-
-              {
-                currentUser?.name
-                  ?.charAt(0)
-                  ?.toUpperCase()
-              }
-
-            </div>
-          )}
-
-          <div style={{
-            overflow: "hidden",
-          }}>
-
-            <div style={styles.userName}>
-              {currentUser?.name}
-            </div>
-
-            <div style={styles.userRole}>
-              {currentUser?.role}
             </div>
 
           </div>
@@ -221,20 +382,35 @@ function Sidebar({
 
       </div>
 
-    </div>
+    </>
   );
 }
 
 const styles = {
 
-  sidebar: {
-    width: "280px",
-    height: "100dvh",
+  overlay: {
+
+    position: "fixed",
+
+    inset: 0,
 
     background:
-      "linear-gradient(180deg,#052e16,#064e3b)",
+      "rgba(0,0,0,0.45)",
 
-    color: "#ffffff",
+    zIndex: 998,
+  },
+
+  sidebar: {
+
+    position: "fixed",
+
+    top: 0,
+
+    left: 0,
+
+    zIndex: 999,
+
+    height: "100dvh",
 
     padding: "20px 14px",
 
@@ -250,17 +426,23 @@ const styles = {
 
     boxSizing: "border-box",
 
+    transition: "0.3s ease",
+
     boxShadow:
-      "4px 0 15px rgba(0,0,0,0.08)",
+      "4px 0 15px rgba(0,0,0,0.15)",
   },
 
   logoContainer: {
+
     textAlign: "center",
+
     marginBottom: "35px",
   },
 
   logoIcon: {
+
     width: "78px",
+
     height: "78px",
 
     margin: "0 auto 14px",
@@ -279,18 +461,16 @@ const styles = {
   },
 
   logoText: {
+
     margin: 0,
 
     fontSize:
       "clamp(24px,4vw,28px)",
 
     fontWeight: "bold",
-
-    color: "#ffffff",
   },
 
   logoSub: {
-    color: "#bbf7d0",
 
     marginTop: "6px",
 
@@ -298,6 +478,7 @@ const styles = {
   },
 
   navContainer: {
+
     display: "flex",
 
     flexDirection: "column",
@@ -306,13 +487,14 @@ const styles = {
   },
 
   navItem: {
+
     display: "flex",
 
     alignItems: "center",
 
     gap: "14px",
 
-    padding: "14px 16px",
+    padding: "13px 14px",
 
     borderRadius: "18px",
 
@@ -326,6 +508,7 @@ const styles = {
   },
 
   iconBox: {
+
     width: "38px",
 
     height: "38px",
@@ -344,6 +527,7 @@ const styles = {
   },
 
   navLabel: {
+
     fontSize: "15px",
 
     whiteSpace: "nowrap",
@@ -354,20 +538,18 @@ const styles = {
   },
 
   userCard: {
+
     marginTop: "20px",
 
     padding: "16px",
 
     borderRadius: "20px",
 
-    background: "#111827",
-
-    border: "1px solid #1f2937",
-
     boxSizing: "border-box",
   },
 
   userRow: {
+
     display: "flex",
 
     alignItems: "center",
@@ -376,6 +558,7 @@ const styles = {
   },
 
   userImage: {
+
     width: "52px",
 
     height: "52px",
@@ -390,6 +573,7 @@ const styles = {
   },
 
   avatar: {
+
     width: "52px",
 
     height: "52px",
@@ -414,11 +598,10 @@ const styles = {
   },
 
   userName: {
+
     fontWeight: "700",
 
     fontSize: "15px",
-
-    color: "#ffffff",
 
     overflow: "hidden",
 
@@ -428,7 +611,6 @@ const styles = {
   },
 
   userRole: {
-    color: "#bbf7d0",
 
     fontSize: "13px",
 

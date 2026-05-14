@@ -20,11 +20,19 @@ import {
   auth,
 } from "../firebase";
 
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function Users({
   currentUser,
   toast,
-  darkMode,
+  openSidebar,
 }) {
+
+  const {
+    darkMode,
+  } = useTheme();
 
   /* =========================
         STATES
@@ -44,6 +52,16 @@ function Users({
     loading,
     setLoading,
   ] = useState(false);
+
+  const [
+    editId,
+    setEditId,
+  ] = useState(null);
+
+  const [
+    visiblePasswords,
+    setVisiblePasswords,
+  ] = useState({});
 
   const [
     form,
@@ -110,8 +128,8 @@ function Users({
         !form.password.trim()
       ) {
 
-        toast(
-          "Please fill all fields",
+        toast?.(
+          "Fill all fields",
           "error"
         );
 
@@ -122,31 +140,15 @@ function Users({
 
         setLoading(true);
 
-        const cleanEmail =
-          form.email
-            .trim()
-            .toLowerCase();
-
-        const cleanName =
-          form.name.trim();
-
-        /* =========================
-              CREATE AUTH USER
-        ========================= */
-
         const userCredential =
           await createUserWithEmailAndPassword(
             auth,
-            cleanEmail,
+            form.email,
             form.password
           );
 
         const firebaseUser =
           userCredential.user;
-
-        /* =========================
-              SAVE FIRESTORE
-        ========================= */
 
         const newUser = {
 
@@ -154,14 +156,16 @@ function Users({
             firebaseUser.uid,
 
           name:
-            cleanName,
+            form.name,
 
           email:
-            cleanEmail,
+            form.email,
+
+          password:
+            form.password,
 
           role:
-            form.role
-              .toLowerCase(),
+            form.role,
 
           status:
             "active",
@@ -178,14 +182,10 @@ function Users({
           newUser
         );
 
-        toast(
-          "User created successfully",
+        toast?.(
+          "User created",
           "success"
         );
-
-        /* =========================
-              RESET
-        ========================= */
 
         setForm({
           name: "",
@@ -200,27 +200,12 @@ function Users({
 
       } catch (error) {
 
-        console.log(
-          error
+        console.log(error);
+
+        toast?.(
+          error.message,
+          "error"
         );
-
-        if (
-          error.code ===
-          "auth/email-already-in-use"
-        ) {
-
-          toast(
-            "Email already exists",
-            "error"
-          );
-
-        } else {
-
-          toast(
-            error.message,
-            "error"
-          );
-        }
 
       } finally {
 
@@ -235,21 +220,9 @@ function Users({
   const deleteUser =
     async (id) => {
 
-      if (
-        currentUser?.id === id
-      ) {
-
-        toast(
-          "Cannot delete your own account",
-          "error"
-        );
-
-        return;
-      }
-
       const confirmDelete =
         window.confirm(
-          "Delete this user?"
+          "Delete user?"
         );
 
       if (!confirmDelete)
@@ -258,7 +231,6 @@ function Users({
       try {
 
         await deleteDoc(
-
           doc(
             db,
             "users",
@@ -266,19 +238,55 @@ function Users({
           )
         );
 
-        toast(
+        toast?.(
           "User deleted",
           "success"
         );
 
       } catch (error) {
 
-        console.log(
-          error
+        console.log(error);
+
+        toast?.(
+          "Delete failed",
+          "error"
+        );
+      }
+    };
+
+  /* =========================
+        SAVE EDIT
+  ========================= */
+
+  const saveEdit =
+    async (user) => {
+
+      try {
+
+        await setDoc(
+
+          doc(
+            db,
+            "users",
+            user.id
+          ),
+
+          user
         );
 
-        toast(
-          "Delete failed",
+        toast?.(
+          "User updated",
+          "success"
+        );
+
+        setEditId(null);
+
+      } catch (error) {
+
+        console.log(error);
+
+        toast?.(
+          "Update failed",
           "error"
         );
       }
@@ -293,20 +301,8 @@ function Users({
     return (
 
       <div style={{
-        ...styles.deniedCard,
-
-        background:
-          darkMode
-            ? "#111827"
-            : "#ffffff",
-
-        color:
-          "#ef4444",
-
-        border:
-          darkMode
-            ? "1px solid #1f2937"
-            : "1px solid #e5e7eb",
+        padding: "40px",
+        color: "red",
       }}>
 
         Access Denied 🚫
@@ -335,44 +331,35 @@ function Users({
 
       <div style={styles.header}>
 
-        {/* LEFT */}
+        <div style={styles.headerLeft}>
 
-        <div>
+          <button
+            onClick={openSidebar}
+            style={styles.menuButton}
+          >
+            ☰
+          </button>
 
-          <h1 style={{
-            ...styles.title,
+          <div>
 
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-          }}>
-            Users 👤
-          </h1>
+            <h1 style={styles.title}>
+              Users 👤
+            </h1>
 
-          <p style={{
-            ...styles.subtitle,
+            <p style={styles.subtitle}>
+              Manage all users
+            </p>
 
-            color:
-              darkMode
-                ? "#9ca3af"
-                : "#6b7280",
-          }}>
-            Manage admins and users
-          </p>
+          </div>
 
         </div>
-
-        {/* BUTTON */}
 
         <button
           onClick={() =>
             setShowModal(true)
           }
 
-          style={
-            styles.addButton
-          }
+          style={styles.addButton}
         >
           + Add User
         </button>
@@ -388,21 +375,11 @@ function Users({
           darkMode
             ? "#111827"
             : "#ffffff",
-
-        border:
-          darkMode
-            ? "1px solid #1f2937"
-            : "1px solid #e5e7eb",
       }}>
 
         <table style={styles.table}>
 
-          <thead style={{
-            background:
-              darkMode
-                ? "#0f172a"
-                : "#f9fafb",
-          }}>
+          <thead>
 
             <tr>
 
@@ -412,6 +389,10 @@ function Users({
 
               <th style={th(darkMode)}>
                 Email
+              </th>
+
+              <th style={th(darkMode)}>
+                Password
               </th>
 
               <th style={th(darkMode)}>
@@ -437,59 +418,240 @@ function Users({
 
                 <tr
                   key={user.id}
-
-                  style={{
-                    borderTop:
-                      darkMode
-                        ? "1px solid #1f2937"
-                        : "1px solid #e5e7eb",
-                  }}
                 >
 
                   {/* NAME */}
 
                   <td style={td(darkMode)}>
-                    {user.name}
+
+                    {
+                      editId ===
+                      user.id ? (
+
+                        <input
+                          value={
+                            user.name
+                          }
+
+                          onChange={(e) => {
+
+                            setUsers((prev) =>
+                              prev.map((u) =>
+
+                                u.id ===
+                                user.id
+
+                                  ? {
+                                      ...u,
+
+                                      name:
+                                        e.target.value,
+                                    }
+
+                                  : u
+                              )
+                            );
+                          }}
+
+                          style={input(
+                            darkMode
+                          )}
+                        />
+
+                      ) : (
+
+                        user.name
+                      )
+                    }
+
                   </td>
 
                   {/* EMAIL */}
 
-                  <td style={{
-                    ...td(darkMode),
+                  <td style={td(darkMode)}>
 
-                    wordBreak:
-                      "break-word",
-                  }}>
-                    {user.email}
+                    {
+                      editId ===
+                      user.id ? (
+
+                        <input
+                          value={
+                            user.email
+                          }
+
+                          onChange={(e) => {
+
+                            setUsers((prev) =>
+                              prev.map((u) =>
+
+                                u.id ===
+                                user.id
+
+                                  ? {
+                                      ...u,
+
+                                      email:
+                                        e.target.value,
+                                    }
+
+                                  : u
+                              )
+                            );
+                          }}
+
+                          style={input(
+                            darkMode
+                          )}
+                        />
+
+                      ) : (
+
+                        user.email
+                      )
+                    }
+
+                  </td>
+
+                  {/* PASSWORD */}
+
+                  <td style={td(darkMode)}>
+
+                    {
+                      editId ===
+                      user.id ? (
+
+                        <input
+                          type={
+                            visiblePasswords[
+                              user.id
+                            ]
+
+                              ? "text"
+
+                              : "password"
+                          }
+
+                          value={
+                            user.password || ""
+                          }
+
+                          onChange={(e) => {
+
+                            setUsers((prev) =>
+                              prev.map((u) =>
+
+                                u.id ===
+                                user.id
+
+                                  ? {
+                                      ...u,
+
+                                      password:
+                                        e.target.value,
+                                    }
+
+                                  : u
+                              )
+                            );
+                          }}
+
+                          style={input(
+                            darkMode
+                          )}
+                        />
+
+                      ) : (
+
+                        visiblePasswords[
+                          user.id
+                        ]
+
+                          ? (
+                            user.password ||
+                            "No Password"
+                          )
+
+                          : "••••••••"
+                      )
+                    }
+
                   </td>
 
                   {/* ROLE */}
 
                   <td style={td(darkMode)}>
 
-                    <span style={{
-                      ...styles.roleBadge,
+                    {
+                      editId ===
+                      user.id ? (
 
-                      background:
-                        user.role ===
-                        "admin"
+                        <select
+                          value={
+                            user.role
+                          }
 
-                          ? "#dcfce7"
+                          onChange={(e) => {
 
-                          : "#dbeafe",
+                            setUsers((prev) =>
+                              prev.map((u) =>
 
-                      color:
-                        user.role ===
-                        "admin"
+                                u.id ===
+                                user.id
 
-                          ? "#166534"
+                                  ? {
+                                      ...u,
 
-                          : "#1d4ed8",
-                    }}>
+                                      role:
+                                        e.target.value,
+                                    }
 
-                      {user.role}
+                                  : u
+                              )
+                            );
+                          }}
 
-                    </span>
+                          style={input(
+                            darkMode
+                          )}
+                        >
+
+                          <option value="user">
+                            User
+                          </option>
+
+                          <option value="admin">
+                            Admin
+                          </option>
+
+                        </select>
+
+                      ) : (
+
+                        <span style={{
+                          ...styles.badge,
+
+                          background:
+                            user.role ===
+                            "admin"
+
+                              ? "#14532d"
+
+                              : "#1e3a8a",
+
+                          color:
+                            user.role ===
+                            "admin"
+
+                              ? "#22c55e"
+
+                              : "#60a5fa",
+                        }}>
+
+                          {user.role}
+
+                        </span>
+                      )
+                    }
 
                   </td>
 
@@ -498,26 +660,14 @@ function Users({
                   <td style={td(darkMode)}>
 
                     <span style={{
-                      ...styles.statusBadge,
-
+                      ...styles.badge,
                       background:
-                        user.status ===
-                        "active"
-
-                          ? "#dcfce7"
-
-                          : "#fee2e2",
-
+                        "#14532d",
                       color:
-                        user.status ===
-                        "active"
-
-                          ? "#166534"
-
-                          : "#dc2626",
+                        "#22c55e",
                     }}>
 
-                      {user.status}
+                      Active
 
                     </span>
 
@@ -527,19 +677,92 @@ function Users({
 
                   <td style={td(darkMode)}>
 
-                    <button
-                      onClick={() =>
-                        deleteUser(
-                          user.id
+                    <div style={styles.actions}>
+
+                      <button
+                        onClick={() =>
+
+                          setVisiblePasswords(
+                            (prev) => ({
+
+                              ...prev,
+
+                              [user.id]:
+                                !prev[
+                                  user.id
+                                ],
+                            })
+                          )
+                        }
+
+                        style={
+                          styles.showButton
+                        }
+                      >
+
+                        {
+                          visiblePasswords[
+                            user.id
+                          ]
+
+                            ? "Hide"
+
+                            : "Show"
+                        }
+
+                      </button>
+
+                      {
+                        editId ===
+                        user.id ? (
+
+                          <button
+                            onClick={() =>
+                              saveEdit(
+                                user
+                              )
+                            }
+
+                            style={
+                              styles.saveButton
+                            }
+                          >
+                            Save
+                          </button>
+
+                        ) : (
+
+                          <button
+                            onClick={() =>
+                              setEditId(
+                                user.id
+                              )
+                            }
+
+                            style={
+                              styles.editButton
+                            }
+                          >
+                            Edit
+                          </button>
                         )
                       }
 
-                      style={
-                        styles.deleteButton
-                      }
-                    >
-                      Delete
-                    </button>
+                      <button
+                        onClick={() =>
+                          deleteUser(
+                            user.id
+                          )
+                        }
+
+                        style={
+                          styles.deleteButton
+                        }
+                      >
+                        Delete
+                      </button>
+
+                    </div>
 
                   </td>
 
@@ -568,91 +791,72 @@ function Users({
                 : "#ffffff",
           }}>
 
-            <h2 style={{
-              ...styles.modalTitle,
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}>
+            <h2>
               Add User
             </h2>
-
-            {/* FORM */}
 
             <div style={styles.formGrid}>
 
               <input
                 type="text"
-
-                placeholder="Full name"
-
+                placeholder="Full Name"
                 value={form.name}
-
                 onChange={(e) =>
                   setForm({
                     ...form,
-
                     name:
                       e.target.value,
                   })
                 }
-
-                style={input(darkMode)}
+                style={input(
+                  darkMode
+                )}
               />
 
               <input
                 type="email"
-
                 placeholder="Email"
-
                 value={form.email}
-
                 onChange={(e) =>
                   setForm({
                     ...form,
-
                     email:
                       e.target.value,
                   })
                 }
-
-                style={input(darkMode)}
+                style={input(
+                  darkMode
+                )}
               />
 
               <input
-                type="password"
-
+                type="text"
                 placeholder="Password"
-
                 value={form.password}
-
                 onChange={(e) =>
                   setForm({
                     ...form,
-
                     password:
                       e.target.value,
                   })
                 }
-
-                style={input(darkMode)}
+                style={input(
+                  darkMode
+                )}
               />
 
               <select
                 value={form.role}
-
                 onChange={(e) =>
                   setForm({
                     ...form,
-
                     role:
                       e.target.value,
                   })
                 }
-
-                style={input(darkMode)}
+                style={input(
+                  darkMode
+                )}
               >
 
                 <option value="user">
@@ -667,23 +871,12 @@ function Users({
 
             </div>
 
-            {/* BUTTONS */}
-
             <div style={styles.modalButtons}>
 
               <button
                 onClick={addUser}
-
                 disabled={loading}
-
-                style={{
-                  ...styles.saveButton,
-
-                  opacity:
-                    loading
-                      ? 0.7
-                      : 1,
-                }}
+                style={styles.saveButton}
               >
 
                 {
@@ -698,20 +891,9 @@ function Users({
                 onClick={() =>
                   setShowModal(false)
                 }
-
-                style={{
-                  ...styles.cancelButton,
-
-                  background:
-                    darkMode
-                      ? "#1f2937"
-                      : "#f3f4f6",
-
-                  color:
-                    darkMode
-                      ? "#ffffff"
-                      : "#111827",
-                }}
+                style={
+                  styles.cancelButton
+                }
               >
                 Cancel
               </button>
@@ -735,360 +917,210 @@ const styles = {
 
   container: {
     width: "100%",
-
     minHeight: "100vh",
-
-    padding: "24px",
-
-    boxSizing: "border-box",
-  },
-
-  deniedCard: {
-    padding: "40px",
-
-    borderRadius: "24px",
-
-    fontWeight: "bold",
-
-    fontSize:
-      "clamp(24px,5vw,30px)",
-
-    textAlign: "center",
-
-    width: "100%",
-
+    padding: "14px",
+    overflowX: "hidden",
     boxSizing: "border-box",
   },
 
   header: {
     display: "flex",
-
     justifyContent:
       "space-between",
-
-    alignItems:
-      "center",
-
-    marginBottom:
-      "24px",
-
-    flexWrap:
-      "wrap",
-
+    alignItems: "center",
+    flexWrap: "wrap",
     gap: "16px",
+    marginBottom: "20px",
+  },
+
+  headerLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+  },
+
+  menuButton: {
+    width: "45px",
+    height: "45px",
+    borderRadius: "12px",
+    border: "none",
+    background: "#2563eb",
+    color: "#ffffff",
+    cursor: "pointer",
+    fontSize: "20px",
   },
 
   title: {
     margin: 0,
-
-    fontSize:
-      "clamp(28px,6vw,34px)",
+    fontSize: "30px",
   },
 
   subtitle: {
-    marginTop:
-      "8px",
-
-    fontSize:
-      "15px",
+    marginTop: "5px",
+    color: "#94a3b8",
   },
 
   addButton: {
-    background:
-      "#16a34a",
-
-    color:
-      "#ffffff",
-
-    border:
-      "none",
-
-    padding:
-      "14px 22px",
-
-    borderRadius:
-      "14px",
-
-    cursor:
-      "pointer",
-
-    fontWeight:
-      "bold",
-
-    width: "100%",
-
-    maxWidth:
-      "220px",
+    background: "#16a34a",
+    color: "#ffffff",
+    border: "none",
+    padding: "12px 20px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "bold",
   },
 
   tableWrapper: {
-    borderRadius:
-      "24px",
-
-    overflowX:
-      "auto",
+    width: "100%",
+    overflowX: "auto",
+    borderRadius: "20px",
   },
 
   table: {
     width: "100%",
-
-    minWidth:
-      "850px",
-
-    borderCollapse:
-      "collapse",
+    borderCollapse: "collapse",
+    minWidth: "900px",
   },
 
-  roleBadge: {
-    padding:
-      "8px 14px",
-
-    borderRadius:
-      "999px",
-
-    fontWeight:
-      "bold",
-
-    fontSize:
-      "12px",
-
-    textTransform:
-      "capitalize",
-
-    whiteSpace:
-      "nowrap",
+  actions: {
+    display: "flex",
+    gap: "8px",
+    flexWrap: "wrap",
   },
 
-  statusBadge: {
-    padding:
-      "8px 14px",
+  badge: {
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "bold",
+    textTransform: "capitalize",
+  },
 
-    borderRadius:
-      "999px",
+  showButton: {
+    background: "#f59e0b",
+    color: "#ffffff",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "bold",
+  },
 
-    fontWeight:
-      "bold",
+  editButton: {
+    background: "#2563eb",
+    color: "#ffffff",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "bold",
+  },
 
-    fontSize:
-      "12px",
-
-    textTransform:
-      "capitalize",
-
-    whiteSpace:
-      "nowrap",
+  saveButton: {
+    background: "#16a34a",
+    color: "#ffffff",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "bold",
   },
 
   deleteButton: {
-    background:
-      "#dc2626",
-
-    color:
-      "#ffffff",
-
-    border:
-      "none",
-
-    padding:
-      "10px 14px",
-
-    borderRadius:
-      "12px",
-
-    cursor:
-      "pointer",
-
-    fontWeight:
-      "bold",
-
-    whiteSpace:
-      "nowrap",
+    background: "#dc2626",
+    color: "#ffffff",
+    border: "none",
+    padding: "10px 14px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "bold",
   },
 
   modalOverlay: {
-    position:
-      "fixed",
-
+    position: "fixed",
     inset: 0,
-
     background:
       "rgba(0,0,0,0.6)",
-
-    display:
-      "flex",
-
-    justifyContent:
-      "center",
-
-    alignItems:
-      "center",
-
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 999,
-
-    padding:
-      "20px",
+    padding: "20px",
   },
 
   modal: {
     width: "100%",
-
-    maxWidth:
-      "500px",
-
-    borderRadius:
-      "24px",
-
-    padding:
-      "30px",
-
-    boxSizing:
-      "border-box",
-  },
-
-  modalTitle: {
-    marginTop: 0,
-
-    marginBottom:
-      "24px",
+    maxWidth: "500px",
+    borderRadius: "24px",
+    padding: "30px",
+    boxSizing: "border-box",
   },
 
   formGrid: {
     display: "grid",
-
     gap: "16px",
+    marginTop: "20px",
   },
 
   modalButtons: {
     display: "flex",
-
-    gap: "14px",
-
-    marginTop:
-      "24px",
-
-    flexWrap:
-      "wrap",
-  },
-
-  saveButton: {
-    flex: 1,
-
-    background:
-      "#16a34a",
-
-    color:
-      "#ffffff",
-
-    border:
-      "none",
-
-    padding:
-      "14px",
-
-    borderRadius:
-      "14px",
-
-    fontWeight:
-      "bold",
-
-    cursor:
-      "pointer",
-
-    minWidth:
-      "140px",
+    gap: "12px",
+    marginTop: "24px",
   },
 
   cancelButton: {
     flex: 1,
-
-    border:
-      "none",
-
-    padding:
-      "14px",
-
-    borderRadius:
-      "14px",
-
-    fontWeight:
-      "bold",
-
-    cursor:
-      "pointer",
-
-    minWidth:
-      "140px",
+    background: "#374151",
+    color: "#ffffff",
+    border: "none",
+    padding: "12px",
+    borderRadius: "12px",
+    cursor: "pointer",
+    fontWeight: "bold",
   },
 };
 
-const th = (
-  darkMode
-) => ({
-  padding: "18px",
-
+const th = (darkMode) => ({
+  padding: "16px",
   textAlign: "left",
-
+  background:
+    darkMode
+      ? "#0f172a"
+      : "#e5e7eb",
   color:
     darkMode
       ? "#ffffff"
       : "#111827",
-
-  whiteSpace:
-    "nowrap",
-
-  fontSize:
-    "14px",
+  fontWeight: "bold",
 });
 
-const td = (
-  darkMode
-) => ({
-  padding: "18px",
-
-  color:
+const td = (darkMode) => ({
+  padding: "16px",
+  borderBottom:
     darkMode
-      ? "#e5e7eb"
-      : "#111827",
-
-  whiteSpace:
-    "nowrap",
-
-  fontSize:
-    "14px",
+      ? "1px solid #1e293b"
+      : "1px solid #d1d5db",
 });
 
 const input = (
   darkMode
 ) => ({
   width: "100%",
-
-  padding: "14px",
-
-  borderRadius:
-    "14px",
-
+  padding: "12px",
+  borderRadius: "10px",
   border:
     darkMode
       ? "1px solid #374151"
       : "1px solid #d1d5db",
-
   background:
     darkMode
       ? "#0f172a"
       : "#ffffff",
-
   color:
     darkMode
       ? "#ffffff"
       : "#111827",
-
   outline: "none",
-
-  boxSizing:
-    "border-box",
-
-  fontSize:
-    "14px",
+  boxSizing: "border-box",
 });
 
 export default Users;

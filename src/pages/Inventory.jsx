@@ -1,26 +1,76 @@
 import {
   useState,
   useEffect,
+  useMemo,
 } from "react";
 
+import {
+  collection,
+  onSnapshot,
+} from "firebase/firestore";
+
+import { db } from "../firebase";
+
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function Inventory({
-  medicines = [],
-  darkMode = false,
-  toast,
+  openSidebar,
 }) {
 
-  /* =========================
-        SEARCH
-  ========================= */
+  const { darkMode } = useTheme();
+
+  /* =========================================
+        STATES
+  ========================================= */
+
+  const [
+    medicines,
+    setMedicines,
+  ] = useState([]);
 
   const [
     search,
     setSearch,
   ] = useState("");
 
-  /* =========================
-        FILTERED
-  ========================= */
+  /* =========================================
+        FIRESTORE
+  ========================================= */
+
+  useEffect(() => {
+
+    const unsubscribe =
+      onSnapshot(
+
+        collection(
+          db,
+          "medicines"
+        ),
+
+        (snapshot) => {
+
+          const data =
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            );
+
+          setMedicines(data);
+        }
+      );
+
+    return () =>
+      unsubscribe();
+
+  }, []);
+
+  /* =========================================
+        FILTERED MEDICINES
+  ========================================= */
 
   const filteredMedicines =
     medicines.filter(
@@ -33,110 +83,74 @@ function Inventory({
           )
     );
 
-  /* =========================
-        LOW STOCK COUNT
-  ========================= */
+  /* =========================================
+        INVENTORY ANALYTICS
+  ========================================= */
 
-  const lowStockCount =
-    medicines.filter(
-      (medicine) =>
+  const mostSoldMedicine = useMemo(() => {
 
-        Number(
-          medicine.stock
-        ) <=
+    const grouped = {};
 
-        Number(
-          medicine.minStock || 5
-        )
-    ).length;
+    medicines.forEach((medicine) => {
 
-  /* =========================
-        EXPIRING COUNT
-  ========================= */
+      grouped[medicine.name] =
+        Number(medicine.sold || 0);
 
-  const expiringSoon =
-    medicines.filter(
-      (medicine) => {
+    });
 
-        const expiryDate =
-          medicine.expiryDate ||
-          medicine.expiry;
-
-        if (!expiryDate)
-          return false;
-
-        const today =
-          new Date();
-
-        today.setHours(
-          0,
-          0,
-          0,
-          0
-        );
-
-        const expiry =
-          new Date(
-            `${expiryDate}T00:00:00`
-          );
-
-        const diff =
-          expiry - today;
-
-        const days =
-          Math.ceil(
-            diff /
-            (1000 *
-              60 *
-              60 *
-              24)
-          );
-
-        return (
-          days >= 0 &&
-          days <= 60
-        );
-      }
-    ).length;
-
-  /* =========================
-        ALERT TOASTS
-  ========================= */
-
-  useEffect(() => {
-
-    if (
-      lowStockCount > 0
-    ) {
-
-      toast(
-        `${lowStockCount} medicines low stock`,
-        "error"
+    const sorted =
+      Object.entries(grouped).sort(
+        (a, b) => b[1] - a[1]
       );
-    }
 
-    const timer =
-      setTimeout(() => {
+    return sorted[0];
 
-        if (
-          expiringSoon > 0
-        ) {
+  }, [medicines]);
 
-          toast(
-            `${expiringSoon} medicines expiring soon`,
-            "warning"
-          );
-        }
+  const leastSoldMedicine = useMemo(() => {
 
-      }, 3500);
+    const grouped = {};
 
-    return () =>
-      clearTimeout(timer);
+    medicines.forEach((medicine) => {
 
-  }, [
-    lowStockCount,
-    expiringSoon,
-  ]);
+      grouped[medicine.name] =
+        Number(medicine.sold || 0);
+
+    });
+
+    const sorted =
+      Object.entries(grouped).sort(
+        (a, b) => a[1] - b[1]
+      );
+
+    return sorted[0];
+
+  }, [medicines]);
+
+  const fastMovingStock = useMemo(() => {
+
+    return medicines
+      .filter(
+        (medicine) =>
+          Number(medicine.sold || 0) >= 50
+      )
+      .sort(
+        (a, b) =>
+          Number(b.sold || 0) -
+          Number(a.sold || 0)
+      )
+      .slice(0, 5);
+
+  }, [medicines]);
+
+  const deadStock = useMemo(() => {
+
+    return medicines.filter(
+      (medicine) =>
+        Number(medicine.sold || 0) === 0
+    );
+
+  }, [medicines]);
 
   return (
 
@@ -158,7 +172,32 @@ function Inventory({
 
       {/* HEADER */}
 
-      <div style={styles.header}>
+      <div style={styles.mobileTop}>
+
+        <button
+          onClick={openSidebar}
+
+          style={{
+            ...styles.menuButton,
+
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
+
+            border:
+              darkMode
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
+          }}
+        >
+          ☰
+        </button>
 
         <div>
 
@@ -185,56 +224,8 @@ function Inventory({
                   : "#6b7280",
             }}
           >
-            Manage pharmacy stock
+            Manage medicine inventory
           </p>
-
-        </div>
-
-        {/* ALERT CARDS */}
-
-        <div style={styles.cardsWrapper}>
-
-          <div
-            style={{
-              ...styles.alertCard,
-
-              background:
-                darkMode
-                  ? "#7f1d1d"
-                  : "#dc2626",
-            }}
-          >
-
-            <div style={styles.alertLabel}>
-              🔴 Low Stock
-            </div>
-
-            <div style={styles.alertNumber}>
-              {lowStockCount}
-            </div>
-
-          </div>
-
-          <div
-            style={{
-              ...styles.alertCard,
-
-              background:
-                darkMode
-                  ? "#92400e"
-                  : "#f59e0b",
-            }}
-          >
-
-            <div style={styles.alertLabel}>
-              ⏰ Expiring Soon
-            </div>
-
-            <div style={styles.alertNumber}>
-              {expiringSoon}
-            </div>
-
-          </div>
 
         </div>
 
@@ -275,7 +266,106 @@ function Inventory({
         }}
       />
 
-      {/* EMPTY */}
+      {/* ANALYTICS */}
+
+      <div style={styles.analyticsGrid}>
+
+        <div
+          style={{
+            ...styles.analyticsCard,
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+          }}
+        >
+          <p style={styles.analyticsTitle}>
+            Most Sold Medicine
+          </p>
+
+          <h2 style={styles.analyticsValue}>
+            {mostSoldMedicine?.[0] || "N/A"}
+          </h2>
+
+          <span style={styles.analyticsSmall}>
+            {mostSoldMedicine?.[1] || 0} sold
+          </span>
+        </div>
+
+        <div
+          style={{
+            ...styles.analyticsCard,
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+          }}
+        >
+          <p style={styles.analyticsTitle}>
+            Least Sold Medicine
+          </p>
+
+          <h2 style={styles.analyticsValue}>
+            {leastSoldMedicine?.[0] || "N/A"}
+          </h2>
+
+          <span style={styles.analyticsSmall}>
+            {leastSoldMedicine?.[1] || 0} sold
+          </span>
+        </div>
+
+        <div
+          style={{
+            ...styles.analyticsCard,
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+          }}
+        >
+          <p style={styles.analyticsTitle}>
+            Fast Moving Stock
+          </p>
+
+          <h2 style={styles.analyticsValue}>
+            {fastMovingStock.length}
+          </h2>
+
+          <span style={styles.analyticsSmall}>
+            High demand medicines
+          </span>
+        </div>
+
+        <div
+          style={{
+            ...styles.analyticsCard,
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+          }}
+        >
+          <p style={styles.analyticsTitle}>
+            Dead Stock
+          </p>
+
+          <h2
+            style={{
+              ...styles.analyticsValue,
+              color: "#dc2626",
+            }}
+          >
+            {deadStock.length}
+          </h2>
+
+          <span style={styles.analyticsSmall}>
+            Not selling medicines
+          </span>
+        </div>
+
+      </div>
+
+      {/* TABLE */}
 
       {filteredMedicines.length === 0 ? (
 
@@ -287,14 +377,9 @@ function Inventory({
               darkMode
                 ? "#111827"
                 : "#ffffff",
-
-            color:
-              darkMode
-                ? "#94a3b8"
-                : "#9ca3af",
           }}
         >
-          No inventory available
+          No medicines available
         </div>
 
       ) : (
@@ -307,10 +392,15 @@ function Inventory({
               darkMode
                 ? "#111827"
                 : "#ffffff",
+
+            border:
+              darkMode
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
           }}
         >
 
-          {/* TABLE HEADER */}
+          {/* HEADER */}
 
           <div
             style={{
@@ -324,15 +414,10 @@ function Inventory({
           >
 
             <div>Medicine</div>
-
             <div>Category</div>
-
             <div>Stock</div>
-
-            <div>Min Stock</div>
-
+            <div>Sold</div>
             <div>Expiry</div>
-
             <div>Status</div>
 
           </div>
@@ -342,59 +427,12 @@ function Inventory({
           {filteredMedicines.map(
             (medicine) => {
 
-              const low =
-                Number(
-                  medicine.stock
-                ) <=
+              const lowStock =
+                Number(medicine.stock) <=
+                Number(medicine.minStock || 5);
 
-                Number(
-                  medicine.minStock || 5
-                );
-
-              const expiryDate =
-                medicine.expiryDate ||
-                medicine.expiry;
-
-              const expiring =
-                expiryDate
-
-                  ? (() => {
-
-                      const today =
-                        new Date();
-
-                      today.setHours(
-                        0,
-                        0,
-                        0,
-                        0
-                      );
-
-                      const expiry =
-                        new Date(
-                          `${expiryDate}T00:00:00`
-                        );
-
-                      const diff =
-                        expiry - today;
-
-                      const days =
-                        Math.ceil(
-                          diff /
-                          (1000 *
-                            60 *
-                            60 *
-                            24)
-                        );
-
-                      return (
-                        days >= 0 &&
-                        days <= 60
-                      );
-
-                    })()
-
-                  : false;
+              const outOfStock =
+                Number(medicine.stock) <= 0;
 
               return (
 
@@ -411,31 +449,13 @@ function Inventory({
                   }}
                 >
 
-                  {/* NAME */}
-
-                  <div>
-
-                    <h3 style={styles.medicineName}>
-                      {medicine.name}
-                    </h3>
-
-                    <p
-                      style={{
-                        ...styles.price,
-
-                        color:
-                          darkMode
-                            ? "#94a3b8"
-                            : "#9ca3af",
-                      }}
-                    >
-                      Sell: $
-                      {medicine.sellPrice}
-                    </p>
-
+                  <div
+                    style={{
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {medicine.name}
                   </div>
-
-                  {/* CATEGORY */}
 
                   <div>
 
@@ -447,6 +467,11 @@ function Inventory({
                           darkMode
                             ? "#14532d"
                             : "#dcfce7",
+
+                        color:
+                          darkMode
+                            ? "#bbf7d0"
+                            : "#16a34a",
                       }}
                     >
                       {medicine.category}
@@ -454,86 +479,66 @@ function Inventory({
 
                   </div>
 
-                  {/* STOCK */}
-
                   <div
                     style={{
-                      ...styles.stockText,
-
                       color:
-                        low
+                        outOfStock
                           ? "#dc2626"
+                          : lowStock
+                          ? "#f59e0b"
                           : "#16a34a",
+
+                      fontWeight: "bold",
                     }}
                   >
                     {medicine.stock}
                   </div>
 
-                  {/* MIN STOCK */}
+                  <div>
+                    {medicine.sold || 0}
+                  </div>
 
                   <div>
-                    {medicine.minStock}
+                    {medicine.expiryDate || "N/A"}
                   </div>
-
-                  {/* EXPIRY */}
-
-                  <div
-                    style={{
-                      color:
-                        expiring
-                          ? "#f59e0b"
-                          : darkMode
-                          ? "#ffffff"
-                          : "#111827",
-
-                      fontWeight:
-                        "600",
-                    }}
-                  >
-                    {expiryDate || "N/A"}
-                  </div>
-
-                  {/* STATUS */}
 
                   <div>
 
-                    <Badge
-                      bg={
-                        low
-                          ? darkMode
+                    <span
+                      style={{
+                        padding: "8px 14px",
+
+                        borderRadius: "999px",
+
+                        fontSize: "12px",
+
+                        fontWeight: "bold",
+
+                        background:
+                          outOfStock
                             ? "#7f1d1d"
-                            : "#fee2e2"
-
-                          : expiring
-                          ? darkMode
+                            : lowStock
                             ? "#78350f"
-                            : "#fef3c7"
+                            : "#14532d",
 
-                          : darkMode
-                          ? "#14532d"
-                          : "#dcfce7"
+                        color:
+                          outOfStock
+                            ? "#fecaca"
+                            : lowStock
+                            ? "#fde68a"
+                            : "#bbf7d0",
+                      }}
+                    >
+
+                      {
+                        outOfStock
+                          ? "Out"
+                          : lowStock
+                          ? "Low"
+                          : "Good"
                       }
 
-                      color={
-                        low
-                          ? "#dc2626"
-
-                          : expiring
-                          ? "#f59e0b"
-
-                          : "#16a34a"
-                      }
-
-                      text={
-                        low
-                          ? "Low Stock"
-
-                          : expiring
-                          ? "Expiring Soon"
-
-                          : "In Stock"
-                      }
-                    />
+                    </span>
 
                   </div>
 
@@ -549,226 +554,159 @@ function Inventory({
   );
 }
 
-/* =========================
-      BADGE
-========================= */
-
-function Badge({
-  bg,
-  color,
-  text,
-}) {
-
-  return (
-
-    <span
-      style={{
-        background: bg,
-
-        color: color,
-
-        padding: "10px 16px",
-
-        borderRadius: "999px",
-
-        fontSize: "13px",
-
-        fontWeight: "bold",
-
-        whiteSpace: "normal",
-
-        wordBreak: "break-word",
-
-        display: "inline-block",
-      }}
-    >
-      {text}
-    </span>
-  );
-}
-
-/* =========================
+/* =========================================
       STYLES
-========================= */
+========================================= */
 
 const styles = {
 
   container: {
     width: "100%",
-
     minHeight: "100vh",
-
-    padding: "24px",
-
-    boxSizing:
-      "border-box",
-
-    overflowX:
-      "hidden",
+    padding: "14px",
+    boxSizing: "border-box",
+    overflowX: "hidden",
   },
 
-  header: {
+  mobileTop: {
     display: "flex",
-
-    justifyContent:
-      "space-between",
-
-    alignItems:
-      "center",
-
+    alignItems: "center",
+    gap: "14px",
+    marginBottom: "24px",
     flexWrap: "wrap",
+  },
 
-    gap: "20px",
-
-    marginBottom: "30px",
+  menuButton: {
+    width: "46px",
+    height: "46px",
+    borderRadius: "12px",
+    border: "none",
+    fontSize: "20px",
+    cursor: "pointer",
   },
 
   title: {
     margin: 0,
-
     fontSize:
-      "clamp(30px,6vw,38px)",
+      "clamp(28px,5vw,36px)",
   },
 
   subtitle: {
     marginTop: "8px",
-
-    fontSize: "15px",
-  },
-
-  cardsWrapper: {
-    display: "flex",
-
-    gap: "16px",
-
-    flexWrap: "wrap",
-
-    width: "100%",
-
-    maxWidth: "500px",
-  },
-
-  alertCard: {
-    color: "#ffffff",
-
-    padding: "18px 24px",
-
-    borderRadius: "22px",
-
-    minWidth: "220px",
-
-    flex: 1,
-
-    boxSizing: "border-box",
-  },
-
-  alertLabel: {
     fontSize: "14px",
-
-    marginBottom: "8px",
-  },
-
-  alertNumber: {
-    fontSize:
-      "clamp(28px,5vw,34px)",
-
-    fontWeight: "bold",
   },
 
   searchInput: {
     width: "100%",
-
-    maxWidth: "420px",
-
-    padding: "16px 18px",
-
-    borderRadius: "18px",
-
+    padding: "14px 16px",
+    borderRadius: "14px",
     outline: "none",
-
-    fontSize: "15px",
-
-    marginBottom: "24px",
-
+    fontSize: "14px",
+    marginBottom: "20px",
     boxSizing: "border-box",
   },
 
+  analyticsGrid: {
+    display: "grid",
+
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(220px,1fr))",
+
+    gap: "16px",
+
+    marginBottom: "24px",
+  },
+
+  analyticsCard: {
+    padding: "20px",
+
+    borderRadius: "20px",
+
+    boxShadow:
+      "0 4px 12px rgba(0,0,0,0.05)",
+  },
+
+  analyticsTitle: {
+    fontSize: "14px",
+
+    marginBottom: "12px",
+
+    color: "#64748b",
+
+    fontWeight: "600",
+  },
+
+  analyticsValue: {
+    margin: 0,
+
+    fontSize: "28px",
+
+    fontWeight: "bold",
+  },
+
+  analyticsSmall: {
+    display: "block",
+
+    marginTop: "10px",
+
+    fontSize: "13px",
+
+    color: "#94a3b8",
+  },
+
   emptyBox: {
-    borderRadius: "28px",
-
-    padding: "90px 20px",
-
+    borderRadius: "24px",
+    padding: "80px 20px",
     textAlign: "center",
-
-    fontSize: "20px",
+    fontSize: "18px",
   },
 
   tableWrapper: {
-    borderRadius: "30px",
-
-    overflowX: "auto",
-
     width: "100%",
+    borderRadius: "24px",
+    overflowX: "auto",
   },
 
   tableHeader: {
     display: "grid",
 
     gridTemplateColumns:
-      "repeat(6,minmax(140px,1fr))",
+      "1.5fr 1fr .8fr .8fr 1fr .8fr",
 
-    padding: "20px",
+    padding: "16px",
 
     fontWeight: "bold",
 
-    gap: "14px",
+    gap: "10px",
 
-    minWidth: "850px",
+    minWidth: "750px",
+
+    fontSize: "13px",
   },
 
   row: {
     display: "grid",
 
     gridTemplateColumns:
-      "repeat(6,minmax(140px,1fr))",
+      "1.5fr 1fr .8fr .8fr 1fr .8fr",
 
     alignItems: "center",
 
-    padding: "20px",
+    padding: "16px",
 
-    gap: "14px",
+    gap: "10px",
 
-    minWidth: "850px",
-  },
+    minWidth: "750px",
 
-  medicineName: {
-    margin: "0 0 8px",
-
-    fontSize: "20px",
-  },
-
-  price: {
-    margin: 0,
+    fontSize: "14px",
   },
 
   categoryBadge: {
-    color: "#16a34a",
-
-    padding: "8px 16px",
-
+    padding: "8px 14px",
     borderRadius: "999px",
-
-    fontSize: "13px",
-
+    fontSize: "12px",
     fontWeight: "bold",
-
     display: "inline-block",
-  },
-
-  stockText: {
-    fontSize: "26px",
-
-    fontWeight: "bold",
   },
 };
 

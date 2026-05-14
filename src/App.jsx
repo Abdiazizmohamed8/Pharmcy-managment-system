@@ -4,6 +4,14 @@ import {
 } from "react";
 
 /* =========================
+      THEME
+========================= */
+
+import {
+  useTheme,
+} from "./context/ThemeContext";
+
+/* =========================
       FIREBASE
 ========================= */
 
@@ -55,6 +63,9 @@ import "./App.css";
 
 function App() {
 
+  const { darkMode } =
+    useTheme();
+
   /* =========================
         AUTH
   ========================= */
@@ -71,13 +82,6 @@ function App() {
     authLoading,
     setAuthLoading,
   ] = useState(true);
-
-  /* =========================
-        THEME
-  ========================= */
-
-  const [dark, setDark] =
-    useState(true);
 
   /* =========================
         PAGE
@@ -224,6 +228,7 @@ function App() {
           } else {
 
             setAuthed(false);
+
             setCurrentUser(null);
           }
 
@@ -416,7 +421,6 @@ function App() {
             medicines={medicines}
             customers={customers}
             sales={sales}
-            dark={dark}
           />
         );
 
@@ -431,7 +435,6 @@ function App() {
             sales={sales}
             setSales={setSales}
             toast={toast}
-            dark={dark}
           />
         );
 
@@ -442,7 +445,6 @@ function App() {
             medicines={medicines}
             setMedicines={setMedicines}
             toast={toast}
-            dark={dark}
           />
         );
 
@@ -451,7 +453,6 @@ function App() {
         return (
           <Inventory
             medicines={medicines}
-            darkMode={dark}
             toast={toast}
           />
         );
@@ -463,7 +464,6 @@ function App() {
             customers={customers}
             setCustomers={setCustomers}
             toast={toast}
-            darkMode={dark}
           />
         );
 
@@ -474,7 +474,6 @@ function App() {
             suppliers={suppliers}
             setSuppliers={setSuppliers}
             toast={toast}
-            darkMode={dark}
           />
         );
 
@@ -485,7 +484,6 @@ function App() {
             sales={sales}
             setSales={setSales}
             toast={toast}
-            dark={dark}
           />
         );
 
@@ -498,7 +496,6 @@ function App() {
             sales={sales}
             setSales={setSales}
             toast={toast}
-            dark={dark}
           />
         );
 
@@ -509,7 +506,6 @@ function App() {
             expenses={expenses}
             setExpenses={setExpenses}
             toast={toast}
-            dark={dark}
           />
         );
 
@@ -520,7 +516,6 @@ function App() {
             sales={sales}
             medicines={medicines}
             expenses={expenses}
-            dark={dark}
           />
         );
 
@@ -543,7 +538,6 @@ function App() {
           <Users
             currentUser={currentUser}
             toast={toast}
-            darkMode={dark}
           />
         );
 
@@ -551,8 +545,6 @@ function App() {
 
         return (
           <Settings
-            dark={dark}
-            setDark={setDark}
             currentUser={currentUser}
             toast={toast}
           />
@@ -565,7 +557,6 @@ function App() {
             medicines={medicines}
             customers={customers}
             sales={sales}
-            dark={dark}
           />
         );
     }
@@ -573,7 +564,21 @@ function App() {
 
   return (
 
-    <div style={styles.app}>
+    <div
+      style={{
+        ...styles.app,
+
+        background:
+          darkMode
+            ? "#020617"
+            : "#f3f4f6",
+
+        color:
+          darkMode
+            ? "#ffffff"
+            : "#111827",
+      }}
+    >
 
       {/* SIDEBAR */}
 
@@ -583,7 +588,6 @@ function App() {
           page={page}
           setPage={setPage}
           currentUser={currentUser}
-          dark={dark}
         />
 
       </div>
@@ -593,8 +597,6 @@ function App() {
       <div style={styles.main}>
 
         <Topbar
-          dark={dark}
-          setDark={setDark}
           setAuthed={setAuthed}
           setCurrentUser={setCurrentUser}
           currentUser={currentUser}
@@ -638,8 +640,7 @@ const styles = {
     width: "100%",
     overflow: "hidden",
     flexDirection: "row",
-    background: "#020617",
-    color: "#ffffff",
+    transition: "0.3s ease",
   },
 
   main: {

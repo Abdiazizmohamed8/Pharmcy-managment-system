@@ -1,5 +1,7 @@
 import {
   useState,
+  useEffect,
+  useRef,
 } from "react";
 
 import {
@@ -8,26 +10,48 @@ import {
   doc,
   updateDoc,
   setDoc,
+  onSnapshot,
+  getDocs,
 } from "firebase/firestore";
 
+import { db } from "../firebase";
+
 import {
-  db,
-} from "../firebase";
+  useTheme,
+} from "../context/ThemeContext";
+
+import {
+  useReactToPrint,
+} from "react-to-print";
+
+import Invoice
+from "../components/Invoice";
 
 function POS({
-  medicines,
-  setMedicines,
-  sales,
+  sales = [],
   setSales,
-  customers,
-  setCustomers,
   toast,
-  dark,
+  openSidebar,
 }) {
 
-  /* =========================
+  const { darkMode } =
+    useTheme();
+
+  /* =========================================
+        REFS
+  ========================================= */
+
+  const invoiceRef =
+    useRef(null);
+
+  /* =========================================
         STATES
-  ========================= */
+  ========================================= */
+
+  const [
+    medicines,
+    setMedicines,
+  ] = useState([]);
 
   const [
     search,
@@ -69,9 +93,68 @@ function POS({
     setLoading,
   ] = useState(false);
 
-  /* =========================
+  const [
+    discountType,
+    setDiscountType,
+  ] = useState("percent");
+
+  const [
+    discountValue,
+    setDiscountValue,
+  ] = useState("");
+
+  const [
+    tax,
+    setTax,
+  ] = useState("");
+
+  /* =========================================
+        FIRESTORE
+  ========================================= */
+
+  useEffect(() => {
+
+    const unsubscribe =
+      onSnapshot(
+
+        collection(
+          db,
+          "medicines"
+        ),
+
+        (snapshot) => {
+
+          const data =
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            );
+
+          setMedicines(data);
+        }
+      );
+
+    return () =>
+      unsubscribe();
+
+  }, []);
+
+  /* =========================================
+        PRINT INVOICE
+  ========================================= */
+
+  const handlePrintInvoice =
+    useReactToPrint({
+
+      contentRef:
+        invoiceRef,
+    });
+
+  /* =========================================
         SEARCH
-  ========================= */
+  ========================================= */
 
   const filteredMedicines =
     medicines.filter(
@@ -95,84 +178,83 @@ function POS({
       }
     );
 
-  /* =========================
+  /* =========================================
         ADD TO CART
-  ========================= */
+  ========================================= */
 
-  const addToCart = (
-    medicine
-  ) => {
-
-    if (
-      medicine.stock <= 0
-    ) {
-
-      toast(
-        "Out of stock",
-        "error"
-      );
-
-      return;
-    }
-
-    const exists =
-      cart.find(
-        (item) =>
-          item.id ===
-          medicine.id
-      );
-
-    if (exists) {
+  const addToCart =
+    (medicine) => {
 
       if (
-        exists.qty >=
-        medicine.stock
+        medicine.stock <= 0
       ) {
 
-        toast(
-          "Stock limit reached",
+        toast?.(
+          "Out of stock",
           "error"
         );
 
         return;
       }
 
-      setCart(
-        cart.map((item) =>
+      const exists =
+        cart.find(
+          (item) =>
+            item.id ===
+            medicine.id
+        );
 
-          item.id ===
-          medicine.id
+      if (exists) {
 
-            ? {
-                ...item,
-                qty:
-                  item.qty + 1,
-              }
+        if (
+          exists.qty >=
+          medicine.stock
+        ) {
 
-            : item
-        )
+          toast?.(
+            "Stock limit reached",
+            "error"
+          );
+
+          return;
+        }
+
+        setCart(
+          cart.map((item) =>
+
+            item.id ===
+            medicine.id
+
+              ? {
+                  ...item,
+                  qty:
+                    item.qty + 1,
+                }
+
+              : item
+          )
+        );
+
+      } else {
+
+        setCart([
+          ...cart,
+
+          {
+            ...medicine,
+            qty: 1,
+          },
+        ]);
+      }
+
+      toast?.(
+        `${medicine.name} added`
       );
+    };
 
-    } else {
-
-      setCart([
-        ...cart,
-
-        {
-          ...medicine,
-          qty: 1,
-        },
-      ]);
-    }
-
-    toast(
-      `${medicine.name} added`
-    );
-  };
-
-  /* =========================
+  /* =========================================
         QUANTITY
-  ========================= */
+  ========================================= */
 
   const increaseQty =
     (id) => {
@@ -189,18 +271,11 @@ function POS({
               item.stock
             ) {
 
-              toast(
-                "No more stock",
-                "error"
-              );
-
               return item;
             }
 
             return {
-
               ...item,
-
               qty:
                 item.qty + 1,
             };
@@ -237,16 +312,13 @@ function POS({
       );
     };
 
-  /* =========================
-        TOTAL
-  ========================= */
+  /* =========================================
+        TOTALS
+  ========================================= */
 
-  const total =
+  const subtotal =
     cart.reduce(
-      (
-        acc,
-        item
-      ) =>
+      (acc, item) =>
 
         acc +
         item.sellPrice *
@@ -255,9 +327,54 @@ function POS({
       0
     );
 
-  /* =========================
+  const discount =
+    discountType === "percent"
+
+      ? subtotal *
+        (
+          Number(
+            discountValue || 0
+          ) / 100
+        )
+
+      : Number(
+          discountValue || 0
+        );
+
+  const taxAmount =
+    subtotal *
+    (
+      Number(tax || 0) / 100
+    );
+
+  const total =
+    subtotal -
+    discount +
+    taxAmount;
+
+  const paid =
+    Number(
+      paidAmount || 0
+    );
+
+  const debt =
+    total - paid;
+
+  const saleStatus =
+
+    debt <= 0
+
+      ? "Paid"
+
+      : paid > 0
+
+      ? "Partial"
+
+      : "Unpaid";
+
+  /* =========================================
         COMPLETE SALE
-  ========================= */
+  ========================================= */
 
   const completeSale =
     async () => {
@@ -266,8 +383,8 @@ function POS({
         cart.length === 0
       ) {
 
-        toast(
-          "Cart is empty",
+        toast?.(
+          "Cart empty",
           "error"
         );
 
@@ -278,135 +395,78 @@ function POS({
         !customerName
       ) {
 
-        toast(
+        toast?.(
           "Customer required",
           "error"
         );
 
         return;
       }
+      // Generate invoice number
+const snapshot = await getDocs(
+  collection(db, "sales")
+);
 
-      const totalAmount =
-        Number(total);
-
-      const paid =
-        Math.max(
-          0,
-
-          Number(
-            paidAmount || 0
-          )
-        );
-
-      const debtAmount =
-        totalAmount - paid;
-
-      /* =========================
-            STATUS
-      ========================= */
-
-      let status =
-        "paid";
-
-      if (paid <= 0) {
-
-        status =
-          "unpaid";
-
-      } else if (
-        paid < totalAmount
-      ) {
-
-        status =
-          "partial";
-
-      } else {
-
-        status =
-          "paid";
-      }
+const invoiceId =
+  snapshot.size + 1;
 
       try {
 
         setLoading(true);
 
-        /* =========================
-              SALE OBJECT
-        ========================= */
-
-        const newSale = {
-
-          invoice:
-            `INV-${sales.length + 1}`,
+        const saleData = {
 
           customer:
-            customerName
-              .trim(),
+            customerName,
 
           phone:
-            customerPhone
-              .trim(),
+            customerPhone,
 
           address:
-            customerAddress
-              .trim(),
+            customerAddress,
 
           items: cart,
 
-          total:
-            totalAmount,
+          subtotal,
 
-          paid:
-            paymentMethod ===
-            "Debt"
+          discount,
 
-              ? 0
+          taxAmount,
 
-              : paid ||
-                totalAmount,
+          total,
 
-          debt:
-            debtAmount,
+          paid,
+
+          debt,
 
           method:
             paymentMethod,
 
-          status,
+          status:
+            saleStatus,
+
+          createdAt:
+            Date.now(),
 
           date:
             new Date()
               .toISOString(),
-
-          createdAt:
-            Date.now(),
         };
 
-        /* =========================
-              SAVE FIREBASE
-        ========================= */
+       await setDoc(
 
-        const saleRef =
-          await addDoc(
+  doc(
+    db,
+    "sales",
+    String(invoiceId)
+  ),
 
-            collection(
-              db,
-              "sales"
-            ),
-
-            newSale
-          );
-
-        /* =========================
-              UPDATE STOCK
-        ========================= */
+  saleData
+);
 
         for (
           const item of cart
         ) {
-
-          const newStock =
-            item.stock -
-            item.qty;
 
           await updateDoc(
 
@@ -418,35 +478,16 @@ function POS({
 
             {
               stock:
-                newStock,
+                item.stock -
+                item.qty,
+
+              sold:
+                Number(
+                  item.sold || 0
+                ) + item.qty,
             }
           );
         }
-
-        /* =========================
-              SAVE CUSTOMER
-        ========================= */
-
-        const customerData = {
-
-          name:
-            customerName
-              .trim(),
-
-          phone:
-            customerPhone
-              .trim(),
-
-          address:
-            customerAddress
-              .trim(),
-
-          debt:
-            debtAmount,
-
-          updatedAt:
-            Date.now(),
-        };
 
         await setDoc(
 
@@ -458,73 +499,46 @@ function POS({
             customerName
           ),
 
-          customerData,
+          {
+
+            name:
+              customerName,
+
+            phone:
+              customerPhone,
+
+            address:
+              customerAddress,
+
+            debt,
+
+            status:
+              debt > 0
+                ? "Debt"
+                : "Paid",
+
+            updatedAt:
+              Date.now(),
+          },
 
           {
             merge: true,
           }
         );
 
-        /* =========================
-              LOCAL UPDATE
-        ========================= */
+   setSales?.([
+  {
+    id: invoiceId,
+    ...saleData,
+  },
 
-        setSales([
-          {
-            id:
-              saleRef.id,
+  ...sales,
+]);
 
-            ...newSale,
-          },
-
-          ...sales,
-        ]);
-
-        const updatedMedicines =
-          medicines.map(
-            (medicine) => {
-
-              const cartItem =
-                cart.find(
-                  (item) =>
-                    item.id ===
-                    medicine.id
-                );
-
-              if (
-                cartItem
-              ) {
-
-                return {
-
-                  ...medicine,
-
-                  stock:
-                    medicine.stock -
-                    cartItem.qty,
-                };
-              }
-
-              return medicine;
-            }
-          );
-
-        setMedicines(
-          updatedMedicines
-        );
-
-        /* =========================
-              SUCCESS
-        ========================= */
-
-        toast(
+        toast?.(
           "Sale completed",
           "success"
         );
-
-        /* =========================
-              RESET
-        ========================= */
 
         setCart([]);
 
@@ -536,17 +550,19 @@ function POS({
 
         setPaidAmount("");
 
+        setDiscountValue("");
+
+        setTax("");
+
         setPaymentMethod(
           "Cash"
         );
 
       } catch (error) {
 
-        console.log(
-          error
-        );
+        console.log(error);
 
-        toast(
+        toast?.(
           "Sale failed",
           "error"
         );
@@ -559,44 +575,76 @@ function POS({
 
   return (
 
-    <div style={{
-      ...styles.container,
+    <div
+      style={{
+        ...styles.container,
 
-      background:
-        dark
-          ? "#020617"
-          : "#f3f4f6",
-    }}>
+        background:
+          darkMode
+            ? "#020617"
+            : "#f8fafc",
+      }}
+    >
 
       {/* LEFT */}
 
-      <div style={styles.leftSection}>
+      <div>
 
         {/* HEADER */}
 
-        <div style={styles.header}>
+        <div style={styles.mobileTop}>
 
-          <h1 style={{
-            ...styles.title,
+          <button
+            onClick={
+              openSidebar
+            }
 
-            color:
-              dark
-                ? "#ffffff"
-                : "#111827",
-          }}>
-            POS / Sales 🛒
-          </h1>
+            style={{
+              ...styles.menuButton,
 
-          <p style={{
-            ...styles.subtitle,
+              background:
+                darkMode
+                  ? "#111827"
+                  : "#ffffff",
 
-            color:
-              dark
-                ? "#d1d5db"
-                : "#6b7280",
-          }}>
-            Pharmacy sales system
-          </p>
+              color:
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
+            }}
+          >
+            ☰
+          </button>
+
+          <div>
+
+            <h1
+              style={{
+                ...styles.title,
+
+                color:
+                  darkMode
+                    ? "#ffffff"
+                    : "#111827",
+              }}
+            >
+              POS 🛒
+            </h1>
+
+            <p
+              style={{
+                ...styles.subtitle,
+
+                color:
+                  darkMode
+                    ? "#94a3b8"
+                    : "#6b7280",
+              }}
+            >
+              Pharmacy sales system
+            </p>
+
+          </div>
 
         </div>
 
@@ -615,149 +663,77 @@ function POS({
             )
           }
 
-          style={{
-            ...styles.searchInput,
-
-            border:
-              dark
-                ? "1px solid #374151"
-                : "1px solid #d1d5db",
-
-            background:
-              dark
-                ? "#111827"
-                : "#ffffff",
-
-            color:
-              dark
-                ? "#ffffff"
-                : "#111827",
-          }}
+          style={input(darkMode)}
         />
 
-        {/* TABLE */}
+        {/* MEDICINES */}
 
-        <div style={{
-          ...styles.tableWrapper,
+        <div style={styles.medicineGrid}>
 
-          background:
-            dark
-              ? "#111827"
-              : "#ffffff",
+          {
+            filteredMedicines.map(
+              (medicine) => (
 
-          border:
-            dark
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}>
+                <div
+                  key={medicine.id}
 
-          <table style={styles.table}>
+                  style={{
+                    ...styles.card,
 
-            <thead style={{
-              background:
-                dark
-                  ? "#0f172a"
-                  : "#f9fafb",
-            }}>
+                    background:
+                      darkMode
+                        ? "#111827"
+                        : "#ffffff",
+                  }}
+                >
 
-              <tr>
+                  <div>
 
-                <th style={th(dark)}>
-                  Medicine
-                </th>
-
-                <th style={th(dark)}>
-                  Category
-                </th>
-
-                <th style={th(dark)}>
-                  Stock
-                </th>
-
-                <th style={th(dark)}>
-                  Price
-                </th>
-
-                <th style={th(dark)}>
-                  Add
-                </th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {filteredMedicines.map(
-                (medicine) => (
-
-                  <tr
-                    key={medicine.id}
-
-                    style={{
-                      borderBottom:
-                        dark
-                          ? "1px solid #1f2937"
-                          : "1px solid #f3f4f6",
-                    }}
-                  >
-
-                    <td style={td(dark)}>
+                    <h3>
                       {medicine.name}
-                    </td>
+                    </h3>
 
-                    <td style={td(dark)}>
-                      {medicine.category}
-                    </td>
+                    <p style={styles.gray}>
+                      {
+                        medicine.category
+                      }
+                    </p>
 
-                    <td style={{
-                      ...td(dark),
+                    <p style={styles.stock}>
+                      Stock:
+                      {" "}
+                      {
+                        medicine.stock
+                      }
+                    </p>
 
-                      color:
-                        "#22c55e",
-
-                      fontWeight:
-                        "bold",
-                    }}>
-                      {medicine.stock}
-                    </td>
-
-                    <td style={{
-                      ...td(dark),
-
-                      color:
-                        "#22c55e",
-
-                      fontWeight:
-                        "bold",
-                    }}>
+                    <h2 style={styles.price}>
                       $
-                      {medicine.sellPrice}
-                    </td>
+                      {
+                        medicine.sellPrice
+                      }
+                    </h2>
 
-                    <td style={td(dark)}>
+                  </div>
 
-                      <button
-                        onClick={() =>
-                          addToCart(
-                            medicine
-                          )
-                        }
+                  <button
+                    onClick={() =>
+                      addToCart(
+                        medicine
+                      )
+                    }
 
-                        style={styles.addButton}
-                      >
-                        Add
-                      </button>
+                    style={
+                      styles.addButton
+                    }
+                  >
+                    Add Cart
+                  </button>
 
-                    </td>
-
-                  </tr>
-                )
-              )}
-
-            </tbody>
-
-          </table>
+                </div>
+              )
+            )
+          }
 
         </div>
 
@@ -765,99 +741,65 @@ function POS({
 
       {/* RIGHT */}
 
-      <div style={{
-        ...styles.cartContainer,
+      <div
+        style={{
+          ...styles.cartSection,
 
-        background:
-          dark
-            ? "#111827"
-            : "#ffffff",
+          background:
+            darkMode
+              ? "#111827"
+              : "#ffffff",
+        }}
+      >
 
-        border:
-          dark
-            ? "1px solid #1f2937"
-            : "1px solid #e5e7eb",
-      }}>
-
-        <h2 style={{
-          ...styles.cartTitle,
-
-          color:
-            dark
-              ? "#ffffff"
-              : "#111827",
-        }}>
+        <h2>
           Cart 🛒
         </h2>
 
-        {/* FORM */}
-
         <input
           type="text"
-
           placeholder="Customer Name"
-
-          value={
-            customerName
-          }
-
+          value={customerName}
           onChange={(e) =>
             setCustomerName(
               e.target.value
             )
           }
-
-          style={input(dark)}
+          style={input(darkMode)}
         />
 
         <input
           type="text"
-
           placeholder="Phone Number"
-
-          value={
-            customerPhone
-          }
-
+          value={customerPhone}
           onChange={(e) =>
             setCustomerPhone(
               e.target.value
             )
           }
-
-          style={input(dark)}
+          style={input(darkMode)}
         />
 
         <input
           type="text"
-
           placeholder="Address"
-
-          value={
-            customerAddress
-          }
-
+          value={customerAddress}
           onChange={(e) =>
             setCustomerAddress(
               e.target.value
             )
           }
-
-          style={input(dark)}
+          style={input(darkMode)}
         />
 
         <select
-          value={
-            paymentMethod
-          }
-
+          value={paymentMethod}
           onChange={(e) =>
             setPaymentMethod(
               e.target.value
             )
           }
-
-          style={input(dark)}
+          style={input(darkMode)}
         >
 
           <option>
@@ -880,158 +822,214 @@ function POS({
 
         <input
           type="number"
-
           placeholder="Paid Amount"
-
-          value={
-            paidAmount
-          }
-
+          value={paidAmount}
           onChange={(e) =>
             setPaidAmount(
               e.target.value
             )
           }
+          style={input(darkMode)}
+        />
 
-          style={input(dark)}
+        {/* DISCOUNT */}
+
+        <select
+          value={discountType}
+          onChange={(e) =>
+            setDiscountType(
+              e.target.value
+            )
+          }
+          style={input(darkMode)}
+        >
+
+          <option value="percent">
+            Percentage %
+          </option>
+
+          <option value="fixed">
+            Fixed Amount
+          </option>
+
+        </select>
+
+        <input
+          type="number"
+          placeholder="Discount"
+          value={discountValue}
+          onChange={(e) =>
+            setDiscountValue(
+              e.target.value
+            )
+          }
+          style={input(darkMode)}
+        />
+
+        <input
+          type="number"
+          placeholder="Tax / VAT %"
+          value={tax}
+          onChange={(e) =>
+            setTax(
+              e.target.value
+            )
+          }
+          style={input(darkMode)}
         />
 
         {/* CART ITEMS */}
 
         <div style={styles.cartItems}>
 
-          {cart.length === 0 ? (
+          {
+            cart.length === 0
 
-            <div style={{
-              textAlign:
-                "center",
-
-              color:
-                dark
-                  ? "#d1d5db"
-                  : "#6b7280",
-
-              padding:
-                "30px 0",
-            }}>
-              Cart is empty
-            </div>
-
-          ) : (
-
-            cart.map(
-              (item) => (
-
-                <div
-                  key={item.id}
-
-                  style={{
-                    ...styles.cartItem,
-
-                    borderBottom:
-                      dark
-                        ? "1px solid #374151"
-                        : "1px solid #f3f4f6",
-                  }}
-                >
-
-                  {/* INFO */}
-
-                  <div>
-
-                    <h4 style={{
-                      margin:
-                        "0 0 6px",
-
-                      color:
-                        dark
-                          ? "#ffffff"
-                          : "#111827",
-                    }}>
-                      {item.name}
-                    </h4>
-
-                    <p style={{
-                      margin: 0,
-
-                      color:
-                        "#16a34a",
-
-                      fontWeight:
-                        "bold",
-                    }}>
-                      $
-                      {item.sellPrice}
-                    </p>
-
-                  </div>
-
-                  {/* QTY */}
-
-                  <div style={styles.qtyWrapper}>
-
-                    <button
-                      onClick={() =>
-                        decreaseQty(
-                          item.id
-                        )
-                      }
-
-                      style={qtyBtn}
-                    >
-                      -
-                    </button>
-
-                    <strong style={{
-                      color:
-                        dark
-                          ? "#ffffff"
-                          : "#111827",
-                    }}>
-                      {item.qty}
-                    </strong>
-
-                    <button
-                      onClick={() =>
-                        increaseQty(
-                          item.id
-                        )
-                      }
-
-                      style={qtyBtn}
-                    >
-                      +
-                    </button>
-
-                  </div>
-
+              ? (
+                <div style={styles.empty}>
+                  Cart empty
                 </div>
               )
-            )
-          )}
+
+              : (
+
+                cart.map(
+                  (item) => (
+
+                    <div
+                      key={item.id}
+
+                      style={
+                        styles.cartItem
+                      }
+                    >
+
+                      <div>
+
+                        <h4>
+                          {item.name}
+                        </h4>
+
+                        <p style={styles.price}>
+                          $
+                          {
+                            item.sellPrice
+                          }
+                        </p>
+
+                      </div>
+
+                      <div style={styles.qtyWrapper}>
+
+                        <button
+                          onClick={() =>
+                            decreaseQty(
+                              item.id
+                            )
+                          }
+                          style={qtyBtn}
+                        >
+                          -
+                        </button>
+
+                        <strong>
+                          {item.qty}
+                        </strong>
+
+                        <button
+                          onClick={() =>
+                            increaseQty(
+                              item.id
+                            )
+                          }
+                          style={qtyBtn}
+                        >
+                          +
+                        </button>
+
+                      </div>
+
+                    </div>
+                  )
+                )
+              )
+          }
 
         </div>
 
-        {/* TOTAL */}
+        {/* TOTALS */}
 
-        <div style={{
-          ...styles.totalSection,
+        <div style={styles.totalBox}>
 
-          borderTop:
-            dark
-              ? "1px solid #374151"
-              : "1px solid #e5e7eb",
-        }}>
+          <p style={styles.gray}>
+            Subtotal:
+            $
+            {
+              subtotal.toFixed(2)
+            }
+          </p>
 
-          <h2 style={{
-            color:
-              dark
-                ? "#ffffff"
-                : "#111827",
-          }}>
-            Total: $
-            {total.toFixed(2)}
+          <p style={styles.gray}>
+            Discount:
+            -$
+            {
+              discount.toFixed(2)
+            }
+          </p>
+
+          <p style={styles.gray}>
+            Tax:
+            +$
+            {
+              taxAmount.toFixed(2)
+            }
+          </p>
+
+          <h2>
+            Total:
+            $
+            {
+              total.toFixed(2)
+            }
           </h2>
+
+          <p style={styles.gray}>
+            Paid:
+            $
+            {
+              paid.toFixed(2)
+            }
+          </p>
+
+          <p
+            style={{
+              color:
+                debt > 0
+                  ? "#dc2626"
+                  : "#16a34a",
+
+              fontWeight:
+                "bold",
+            }}
+          >
+            Debt:
+            $
+            {
+              debt.toFixed(2)
+            }
+          </p>
+
+          <button
+            onClick={
+              handlePrintInvoice
+            }
+
+            style={
+              styles.invoiceButton
+            }
+          >
+            Print Invoice
+          </button>
 
           <button
             onClick={
@@ -1054,9 +1052,7 @@ function POS({
 
             {
               loading
-
                 ? "Processing..."
-
                 : "Complete Sale"
             }
 
@@ -1066,17 +1062,64 @@ function POS({
 
       </div>
 
+      {/* HIDDEN INVOICE */}
+
+      <div
+        style={{
+          position:
+            "absolute",
+
+          left: "-9999px",
+
+          top: 0,
+        }}
+      >
+
+        <Invoice
+          ref={invoiceRef}
+
+          cart={cart}
+
+          customerName={
+            customerName
+          }
+
+          customerPhone={
+            customerPhone
+          }
+
+          total={total}
+
+          subtotal={
+            subtotal
+          }
+
+          taxAmount={
+            taxAmount
+          }
+
+          discount={
+            discount
+          }
+
+          paid={paid}
+
+          debt={debt}
+        />
+
+      </div>
+
     </div>
   );
 }
 
-/* =========================
-      STYLES
-========================= */
-
 const styles = {
 
   container: {
+    width: "100%",
+    minHeight: "100vh",
+    padding: "14px",
+
     display: "grid",
 
     gridTemplateColumns:
@@ -1084,223 +1127,180 @@ const styles = {
 
     gap: "20px",
 
-    alignItems: "start",
-
-    minHeight: "100vh",
-
-    padding: "20px",
+    overflowX: "hidden",
 
     boxSizing: "border-box",
   },
 
-  leftSection: {
-    width: "100%",
+  mobileTop: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    flexWrap: "wrap",
+    marginBottom: "20px",
   },
 
-  header: {
-    marginBottom: "20px",
+  menuButton: {
+    width: "46px",
+    height: "46px",
+    borderRadius: "12px",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "20px",
   },
 
   title: {
     margin: 0,
-
     fontSize:
       "clamp(28px,5vw,34px)",
   },
 
   subtitle: {
     marginTop: "8px",
-
-    fontSize: "15px",
+    fontSize: "14px",
   },
 
-  searchInput: {
-    width: "100%",
+  medicineGrid: {
+    display: "grid",
 
-    padding: "15px 16px",
+    gridTemplateColumns:
+      "repeat(auto-fit,minmax(220px,1fr))",
 
-    borderRadius: "14px",
-
-    fontSize: "15px",
-
-    outline: "none",
-
-    marginBottom: "20px",
-
-    boxSizing: "border-box",
+    gap: "16px",
   },
 
-  tableWrapper: {
-    overflowX: "auto",
-
+  card: {
+    padding: "18px",
     borderRadius: "20px",
-  },
 
-  table: {
-    width: "100%",
+    display: "flex",
+    flexDirection: "column",
 
-    minWidth: "700px",
+    justifyContent:
+      "space-between",
 
-    borderCollapse: "collapse",
+    gap: "18px",
   },
 
   addButton: {
-    background: "#16a34a",
-
-    color: "#ffffff",
-
-    border: "none",
-
-    padding: "10px 14px",
-
-    borderRadius: "10px",
-
-    cursor: "pointer",
-
-    fontWeight: "bold",
-
-    whiteSpace: "nowrap",
-  },
-
-  cartContainer: {
-    borderRadius: "20px",
-
-    padding: "20px",
-
-    position: "sticky",
-
-    top: "20px",
-
-    boxSizing: "border-box",
-
     width: "100%",
+    background: "#16a34a",
+    color: "#ffffff",
+    border: "none",
+    padding: "10px",
+    borderRadius: "10px",
+    fontWeight: "bold",
+    cursor: "pointer",
   },
 
-  cartTitle: {
-    marginTop: 0,
-
-    marginBottom: "20px",
+  cartSection: {
+    borderRadius: "20px",
+    padding: "18px",
   },
 
   cartItems: {
-    marginTop: "20px",
-
-    maxHeight: "320px",
-
-    overflowY: "auto",
+    marginTop: "18px",
   },
 
   cartItem: {
     display: "flex",
-
     justifyContent:
       "space-between",
 
     alignItems: "center",
 
     padding: "14px 0",
-
-    gap: "12px",
-
-    flexWrap: "wrap",
   },
 
   qtyWrapper: {
     display: "flex",
-
     alignItems: "center",
-
     gap: "8px",
   },
 
-  totalSection: {
+  totalBox: {
     marginTop: "20px",
-
-    paddingTop: "18px",
   },
 
   completeButton: {
     width: "100%",
-
     background: "#16a34a",
-
     color: "#ffffff",
-
     border: "none",
-
-    padding: "16px",
-
+    padding: "15px",
     borderRadius: "14px",
-
-    fontSize: "16px",
-
-    fontWeight: "bold",
-
     cursor: "pointer",
+    fontWeight: "bold",
+    marginTop: "10px",
+  },
 
-    marginTop: "14px",
+  invoiceButton: {
+    width: "100%",
+    background: "#0ea5e9",
+    color: "#ffffff",
+    border: "none",
+    padding: "14px",
+    borderRadius: "14px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    marginTop: "10px",
+  },
+
+  gray: {
+    color: "#94a3b8",
+  },
+
+  stock: {
+    color: "#22c55e",
+    fontWeight: "bold",
+  },
+
+  price: {
+    color: "#22c55e",
+  },
+
+  empty: {
+    textAlign: "center",
+    padding: "30px 0",
+    color: "#94a3b8",
   },
 };
 
-const th = (dark) => ({
-  textAlign: "left",
+const input =
+  (darkMode) => ({
 
-  padding: "16px",
+    width: "100%",
 
-  color:
-    dark
-      ? "#ffffff"
-      : "#374151",
+    padding: "14px",
 
-  background:
-    dark
-      ? "#111827"
-      : "#f9fafb",
+    borderRadius: "14px",
 
-  whiteSpace: "nowrap",
-});
+    border:
+      darkMode
+        ? "1px solid #374151"
+        : "1px solid #d1d5db",
 
-const td = (dark) => ({
-  padding: "16px",
+    background:
+      darkMode
+        ? "#0f172a"
+        : "#ffffff",
 
-  color:
-    dark
-      ? "#ffffff"
-      : "#111827",
+    color:
+      darkMode
+        ? "#ffffff"
+        : "#111827",
 
-  whiteSpace: "nowrap",
-});
+    outline: "none",
 
-const input = (dark) => ({
-  width: "100%",
+    boxSizing: "border-box",
 
-  padding: "14px",
+    fontSize: "14px",
 
-  borderRadius: "14px",
-
-  border:
-    dark
-      ? "1px solid #374151"
-      : "1px solid #d1d5db",
-
-  marginBottom: "14px",
-
-  background:
-    dark
-      ? "#0f172a"
-      : "#ffffff",
-
-  color:
-    dark
-      ? "#ffffff"
-      : "#111827",
-
-  outline: "none",
-
-  boxSizing: "border-box",
-});
+    marginBottom: "14px",
+  });
 
 const qtyBtn = {
+
   width: "32px",
 
   height: "32px",
@@ -1313,11 +1313,9 @@ const qtyBtn = {
 
   color: "#ffffff",
 
-  fontWeight: "bold",
-
   cursor: "pointer",
 
-  flexShrink: 0,
+  fontWeight: "bold",
 };
 
 export default POS;

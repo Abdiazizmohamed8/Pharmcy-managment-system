@@ -1,5 +1,6 @@
 import {
   useState,
+  useMemo,
 } from "react";
 
 import {
@@ -11,16 +12,20 @@ import {
   db,
 } from "../firebase";
 
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function SalesHistory({
   sales = [],
   setSales,
   toast,
-  dark = false,
+  openSidebar,
 }) {
 
-  /* =========================
-        STATES
-  ========================= */
+  const {
+    darkMode,
+  } = useTheme();
 
   const [
     search,
@@ -28,63 +33,45 @@ function SalesHistory({
   ] = useState("");
 
   /* =========================
-        SEARCH
+        FILTER SALES
   ========================= */
 
   const filteredSales =
-    sales.filter(
-      (sale) => {
+    useMemo(() => {
 
-        const text =
-          search
-            .toLowerCase()
-            .trim();
+      return sales.filter(
+        (sale) => {
 
-        return (
+          const text =
+            search
+              .toLowerCase()
+              .trim();
 
-          sale.customer
-            ?.toLowerCase()
-            .includes(text) ||
+          return (
 
-          sale.method
-            ?.toLowerCase()
-            .includes(text) ||
+            sale.customer
+              ?.toLowerCase()
+              .includes(text) ||
 
-          sale.status
-            ?.toLowerCase()
-            .includes(text)
-        );
-      }
-    );
+            sale.method
+              ?.toLowerCase()
+              .includes(text) ||
 
-  /* =========================
-        TOTAL SALES
-  ========================= */
+            sale.status
+              ?.toLowerCase()
+              .includes(text) ||
 
-  const totalSales =
-    sales
-
-      .filter(
-        (sale) =>
-
-          sale.status
-            ?.toLowerCase() ===
-          "paid"
-      )
-
-      .reduce(
-        (
-          acc,
-          sale
-        ) =>
-
-          acc +
-          Number(
-            sale.total || 0
-          ),
-
-        0
+            sale.id
+              ?.toLowerCase()
+              .includes(text)
+          );
+        }
       );
+
+    }, [
+      sales,
+      search,
+    ]);
 
   /* =========================
         DELETE SALE
@@ -104,7 +91,6 @@ function SalesHistory({
       try {
 
         await deleteDoc(
-
           doc(
             db,
             "sales",
@@ -120,7 +106,7 @@ function SalesHistory({
 
         setSales(updated);
 
-        toast(
+        toast?.(
           "Sale deleted",
           "success"
         );
@@ -129,7 +115,7 @@ function SalesHistory({
 
         console.log(error);
 
-        toast(
+        toast?.(
           "Delete failed",
           "error"
         );
@@ -143,36 +129,49 @@ function SalesHistory({
   const viewInvoice =
     (sale) => {
 
+      const products =
+        sale.items
+          ?.map(
+            (item) =>
+
+              `${item.name} x${item.qty}`
+          )
+          .join("\n");
+
+      const total =
+        Number(
+          sale.total || 0
+        );
+
+      const paid =
+        Number(
+          sale.paid || 0
+        );
+
+      const debt =
+        total - paid;
+
       alert(`
+
 Invoice: ${sale.id}
 
 Customer: ${sale.customer}
 
-Date: ${sale.date}
+Date: ${sale.date?.slice(0, 10)}
 
 Products:
-${sale.items
-  ?.map(
-    (item) =>
-      `${item.name} x${item.qty}`
-  )
-  .join("\n")}
+${products}
 
-Total: $${Number(
-        sale.total
-      ).toFixed(2)}
+Total: $${total.toFixed(2)}
 
-Paid: $${Number(
-        sale.paid || 0
-      ).toFixed(2)}
+Paid: $${paid.toFixed(2)}
 
-Debt: $${Number(
-        sale.debt || 0
-      ).toFixed(2)}
+Debt: $${debt.toFixed(2)}
 
 Payment: ${sale.method}
 
 Status: ${sale.status}
+
       `);
     };
 
@@ -183,13 +182,26 @@ Status: ${sale.status}
   const printInvoice =
     (sale) => {
 
-      const win =
+      const total =
+        Number(
+          sale.total || 0
+        );
+
+      const paid =
+        Number(
+          sale.paid || 0
+        );
+
+      const debt =
+        total - paid;
+
+      const printWindow =
         window.open(
           "",
           "_blank"
         );
 
-      win.document.write(`
+      printWindow.document.write(`
 
 <html>
 
@@ -226,12 +238,6 @@ th{
 background:#f3f4f6;
 }
 
-.total{
-margin-top:20px;
-font-size:22px;
-font-weight:bold;
-}
-
 </style>
 
 </head>
@@ -243,27 +249,27 @@ ANFAC PHARMACY
 </h1>
 
 <p>
-<strong>Invoice:</strong>
+Invoice:
 ${sale.id}
 </p>
 
 <p>
-<strong>Date:</strong>
-${sale.date}
-</p>
-
-<p>
-<strong>Customer:</strong>
+Customer:
 ${sale.customer}
 </p>
 
 <p>
-<strong>Payment:</strong>
+Date:
+${sale.date?.slice(0, 10)}
+</p>
+
+<p>
+Payment:
 ${sale.method}
 </p>
 
 <p>
-<strong>Status:</strong>
+Status:
 ${sale.status}
 </p>
 
@@ -309,9 +315,9 @@ $${item.sellPrice}
 
 <td>
 $${(
-        item.qty *
-        item.sellPrice
-      ).toFixed(2)}
+  item.sellPrice *
+  item.qty
+).toFixed(2)}
 </td>
 
 </tr>
@@ -324,15 +330,20 @@ $${(
 
 </table>
 
-<div class="total">
+<h2>
+Total:
+$${total.toFixed(2)}
+</h2>
 
-Grand Total:
+<h2>
+Paid:
+$${paid.toFixed(2)}
+</h2>
 
-$${Number(
-        sale.total
-      ).toFixed(2)}
-
-</div>
+<h2>
+Debt:
+$${debt.toFixed(2)}
+</h2>
 
 </body>
 
@@ -340,32 +351,57 @@ $${Number(
 
 `);
 
-      win.document.close();
+      printWindow.document.close();
 
-      win.print();
+      printWindow.print();
     };
 
   return (
 
-    <div style={{
-      ...styles.container,
+    <div
+      style={{
+        ...styles.container,
 
-      background:
-        dark
-          ? "#020617"
-          : "#f3f4f6",
+        background:
+          darkMode
+            ? "#020617"
+            : "#ffffff",
 
-      color:
-        dark
-          ? "#ffffff"
-          : "#111827",
-    }}>
+        color:
+          darkMode
+            ? "#ffffff"
+            : "#111827",
+      }}
+    >
 
       {/* HEADER */}
 
-      <div style={styles.header}>
+      <div style={styles.mobileHeader}>
 
-        {/* LEFT */}
+        <button
+          onClick={openSidebar}
+
+          style={{
+            ...styles.menuButton,
+
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
+
+            border:
+              darkMode
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
+          }}
+        >
+          ☰
+        </button>
 
         <div>
 
@@ -373,41 +409,16 @@ $${Number(
             ...styles.title,
 
             color:
-              dark
+              darkMode
                 ? "#ffffff"
                 : "#111827",
           }}>
             Sales History 📋
           </h1>
 
-          <p style={{
-            ...styles.subtitle,
-
-            color:
-              dark
-                ? "#d1d5db"
-                : "#6b7280",
-          }}>
+          <p style={styles.subtitle}>
             Pharmacy sales records
           </p>
-
-        </div>
-
-        {/* TOTAL */}
-
-        <div style={{
-          ...styles.totalCard,
-
-          boxShadow:
-            dark
-
-              ? "0 4px 18px rgba(0,0,0,0.35)"
-
-              : "0 4px 18px rgba(22,163,74,0.2)",
-        }}>
-
-          $
-          {totalSales.toFixed(2)}
 
         </div>
 
@@ -415,382 +426,351 @@ $${Number(
 
       {/* SEARCH */}
 
-      <input
-        type="text"
+      <div style={styles.topBar}>
 
-        placeholder="Search sales..."
+        <input
+          type="text"
 
-        value={search}
+          placeholder="Search sales..."
 
-        onChange={(e) =>
-          setSearch(
-            e.target.value
-          )
-        }
+          value={search}
 
-        style={{
-          ...styles.searchInput,
+          onChange={(e) =>
+            setSearch(
+              e.target.value
+            )
+          }
 
-          border:
-            dark
+          style={{
+            ...styles.searchInput,
 
-              ? "1px solid #374151"
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
 
-              : "1px solid #d1d5db",
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
 
-          background:
-            dark
-              ? "#111827"
-              : "#ffffff",
+            border:
+              darkMode
+                ? "1px solid #374151"
+                : "1px solid #d1d5db",
+          }}
+        />
 
-          color:
-            dark
-              ? "#ffffff"
-              : "#111827",
-        }}
-      />
+      </div>
 
       {/* TABLE */}
 
-      <div style={{
-        ...styles.tableWrapper,
+      <div
+        style={{
+          ...styles.tableWrapper,
 
-        background:
-          dark
-            ? "#111827"
-            : "#ffffff",
+          background:
+            darkMode
+              ? "#111827"
+              : "#ffffff",
 
-        border:
-          dark
-            ? "1px solid #1f2937"
-            : "1px solid #e5e7eb",
+          border:
+            darkMode
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
+        }}
+      >
 
-        boxShadow:
-          dark
-            ? "0 4px 20px rgba(0,0,0,0.35)"
-            : "0 4px 18px rgba(0,0,0,0.05)",
-      }}>
+        {/* HEADER */}
 
-        <table style={styles.table}>
+        <div style={{
+          ...styles.tableHeader,
 
-          <thead style={{
-            background:
-              dark
-                ? "#0f172a"
-                : "#f9fafb",
-          }}>
+          background:
+            darkMode
+              ? "#0f172a"
+              : "#f8fafc",
 
-            <tr>
+          color:
+            darkMode
+              ? "#ffffff"
+              : "#111827",
+        }}>
 
-              {[
-                "Invoice",
-                "Date",
-                "Customer",
-                "Products",
-                "Total",
-                "Paid",
-                "Debt",
-                "Payment",
-                "Status",
-                "Action",
-              ].map((item) => (
+          <div>Invoice</div>
 
-                <th
-                  key={item}
+          <div>Date</div>
 
-                  style={th(dark)}
-                >
-                  {item}
-                </th>
-              ))}
+          <div>Customer</div>
 
-            </tr>
+          <div>Products</div>
 
-          </thead>
+          <div>Total</div>
 
-          <tbody>
+          <div>Paid</div>
 
-            {
-              filteredSales.length === 0 ? (
+          <div>Debt</div>
 
-                <tr>
+          <div>Payment</div>
 
-                  <td
-                    colSpan="10"
+          <div>Status</div>
 
-                    style={styles.empty}
+          <div>Actions</div>
+
+        </div>
+
+        {/* BODY */}
+
+        {
+          filteredSales.length === 0 ? (
+
+            <div style={styles.empty}>
+              No sales found
+            </div>
+
+          ) : (
+
+            filteredSales.map(
+              (sale) => {
+
+                const total =
+                  Number(
+                    sale.total || 0
+                  );
+
+                const paid =
+                  Number(
+                    sale.paid || 0
+                  );
+
+                const debt =
+                  total - paid;
+
+                let status =
+                  "Paid";
+
+                if (
+                  paid === 0
+                ) {
+
+                  status =
+                    "Unpaid";
+                }
+
+                else if (
+                  debt > 0
+                ) {
+
+                  status =
+                    "Partial";
+                }
+
+                return (
+
+                  <div
+                    key={sale.id}
+
+                    style={{
+                      ...styles.tableRow,
+
+                      borderTop:
+                        darkMode
+                          ? "1px solid #1f2937"
+                          : "1px solid #e5e7eb",
+
+                      color:
+                        darkMode
+                          ? "#ffffff"
+                          : "#111827",
+                    }}
                   >
-                    No sales found
-                  </td>
 
-                </tr>
+                    {/* INVOICE */}
 
-              ) : (
+                    <div style={styles.invoiceText}>
 
-                filteredSales.map(
-                  (sale) => (
+                      {
+                        sale.id?.slice(
+                          0,
+                          8
+                        )
+                      }
 
-                    <tr
-                      key={sale.id}
+                    </div>
 
-                      style={{
-                        borderTop:
-                          dark
+                    {/* DATE */}
 
-                            ? "1px solid #374151"
+                    <div>
+                      {
+                        sale.date?.slice(
+                          0,
+                          10
+                        )
+                      }
+                    </div>
 
-                            : "1px solid #f3f4f6",
-                      }}
-                    >
+                    {/* CUSTOMER */}
 
-                      {/* INVOICE */}
+                    <div style={styles.customerText}>
+                      {sale.customer}
+                    </div>
 
-                      <td style={{
-                        ...td(dark),
+                    {/* PRODUCTS */}
 
-                        color:
-                          "#2563eb",
+                    <div>
 
-                        fontWeight:
-                          "bold",
-                      }}>
+                      <span style={styles.productBadge}>
 
                         {
-                          sale.id?.slice(
-                            0,
-                            8
-                          )
-                        }
+                          sale.items
+                            ?.length || 0
+                        }{" "}
+                        Products
 
-                      </td>
+                      </span>
 
-                      {/* DATE */}
+                    </div>
 
-                      <td style={td(dark)}>
-                        {
-                          sale.date?.slice(
-                            0,
-                            10
-                          )
-                        }
-                      </td>
+                    {/* TOTAL */}
 
-                      {/* CUSTOMER */}
+                    <div style={styles.greenText}>
 
-                      <td style={{
-                        ...td(dark),
+                      $
+                      {total.toFixed(2)}
 
-                        fontWeight:
-                          "bold",
-                      }}>
-                        {sale.customer}
-                      </td>
+                    </div>
 
-                      {/* PRODUCTS */}
+                    {/* PAID */}
 
-                      <td style={td(dark)}>
+                    <div style={styles.greenText}>
 
-                        <span style={{
-                          ...styles.productsBadge,
+                      $
+                      {paid.toFixed(2)}
+
+                    </div>
+
+                    {/* DEBT */}
+
+                    <div style={styles.redText}>
+
+                      $
+                      {debt.toFixed(2)}
+
+                    </div>
+
+                    {/* PAYMENT */}
+
+                    <div>
+
+                      <span
+                        style={{
+                          ...styles.paymentBadge,
 
                           background:
-                            dark
-                              ? "#1e3a8a"
-                              : "#dbeafe",
-                        }}>
 
-                          {
-                            sale.items
-                              ?.length
-                          }{" "}
-                          Products
-
-                        </span>
-
-                      </td>
-
-                      {/* TOTAL */}
-
-                      <td style={{
-                        ...td(dark),
-
-                        color:
-                          "#16a34a",
-
-                        fontWeight:
-                          "bold",
-                      }}>
-
-                        $
-                        {Number(
-                          sale.total
-                        ).toFixed(2)}
-
-                      </td>
-
-                      {/* PAID */}
-
-                      <td style={{
-                        ...td(dark),
-
-                        color:
-                          "#16a34a",
-
-                        fontWeight:
-                          "bold",
-                      }}>
-
-                        $
-                        {Number(
-                          sale.paid || 0
-                        ).toFixed(2)}
-
-                      </td>
-
-                      {/* DEBT */}
-
-                      <td style={{
-                        ...td(dark),
-
-                        color:
-                          "#dc2626",
-
-                        fontWeight:
-                          "bold",
-                      }}>
-
-                        $
-                        {Number(
-                          sale.debt || 0
-                        ).toFixed(2)}
-
-                      </td>
-
-                      {/* PAYMENT */}
-
-                      <td style={td(dark)}>
-
-                        <Badge
-                          bg={
                             sale.method ===
-                            "Debt"
+                            "Cash"
 
-                              ? dark
-                                ? "#7f1d1d"
-                                : "#fee2e2"
+                              ? "#166534"
 
-                              : dark
-                                ? "#14532d"
-                                : "#dcfce7"
-                          }
+                            : sale.method ===
+                              "EVC PLUS"
 
-                          color={
-                            sale.method ===
-                            "Debt"
+                              ? "#14532d"
 
-                              ? "#dc2626"
+                            : sale.method ===
+                              "EDAHAB"
 
-                              : "#16a34a"
-                          }
+                              ? "#1d4ed8"
 
-                          text={
-                            sale.method
-                          }
-                        />
+                            : "#991b1b",
+                        }}
+                      >
 
-                      </td>
+                        {sale.method}
 
-                      {/* STATUS */}
+                      </span>
 
-                      <td style={td(dark)}>
+                    </div>
 
-                        <Badge
-                          bg={
-                            sale.status
-                              ?.toLowerCase() ===
-                            "paid"
+                    {/* STATUS */}
 
-                              ? dark
-                                ? "#14532d"
-                                : "#dcfce7"
+                    <div>
 
-                              : dark
-                                ? "#7f1d1d"
-                                : "#fee2e2"
-                          }
+                      <span
+                        style={{
+                          ...styles.statusBadge,
 
-                          color={
-                            sale.status
-                              ?.toLowerCase() ===
-                            "paid"
+                          background:
 
-                              ? "#16a34a"
+                            status ===
+                            "Paid"
 
-                              : "#dc2626"
-                          }
+                              ? "#166534"
 
-                          text={
-                            sale.status
-                          }
-                        />
+                            : status ===
+                              "Partial"
 
-                      </td>
+                              ? "#ca8a04"
 
-                      {/* ACTION */}
+                              : "#991b1b",
+                        }}
+                      >
 
-                      <td style={td(dark)}>
+                        {status}
 
-                        <div style={styles.actions}>
+                      </span>
 
-                          <button
-                            onClick={() =>
-                              viewInvoice(
-                                sale
-                              )
-                            }
+                    </div>
 
-                            style={viewBtn}
-                          >
-                            View
-                          </button>
+                    {/* ACTIONS */}
 
-                          <button
-                            onClick={() =>
-                              printInvoice(
-                                sale
-                              )
-                            }
+                    <div style={styles.actions}>
 
-                            style={printBtn}
-                          >
-                            Print
-                          </button>
+                      <button
+                        onClick={() =>
+                          viewInvoice(
+                            sale
+                          )
+                        }
 
-                          <button
-                            onClick={() =>
-                              deleteSale(
-                                sale.id
-                              )
-                            }
+                        style={styles.viewButton}
+                      >
+                        View
+                      </button>
 
-                            style={deleteBtn}
-                          >
-                            Delete
-                          </button>
+                      <button
+                        onClick={() =>
+                          printInvoice(
+                            sale
+                          )
+                        }
 
-                        </div>
+                        style={styles.printButton}
+                      >
+                        Print
+                      </button>
 
-                      </td>
+                      <button
+                        onClick={() =>
+                          deleteSale(
+                            sale.id
+                          )
+                        }
 
-                    </tr>
-                  )
-                )
-              )
-            }
+                        style={styles.deleteButton}
+                      >
+                        Delete
+                      </button>
 
-          </tbody>
+                    </div>
 
-        </table>
+                  </div>
+                );
+              }
+            )
+          )
+        }
 
       </div>
 
@@ -799,247 +779,205 @@ $${Number(
 }
 
 /* =========================
-      BADGE
-========================= */
-
-function Badge({
-  bg,
-  color,
-  text,
-}) {
-
-  return (
-
-    <span style={{
-      background: bg,
-
-      color: color,
-
-      padding: "8px 14px",
-
-      borderRadius: "999px",
-
-      fontWeight: "bold",
-
-      fontSize: "12px",
-
-      textTransform:
-        "capitalize",
-
-      whiteSpace: "nowrap",
-    }}>
-      {text}
-    </span>
-  );
-}
-
-/* =========================
-      STYLES
+        STYLES
 ========================= */
 
 const styles = {
 
   container: {
     width: "100%",
-
     minHeight: "100vh",
-
-    padding: "20px",
-
+    padding: "14px",
+    overflowX: "hidden",
     boxSizing: "border-box",
   },
 
-  header: {
+  mobileHeader: {
     display: "flex",
-
-    justifyContent:
-      "space-between",
-
-    alignItems:
-      "center",
-
+    alignItems: "center",
+    gap: "14px",
+    marginBottom: "24px",
     flexWrap: "wrap",
+  },
 
-    gap: "16px",
-
-    marginBottom: "30px",
+  menuButton: {
+    width: "46px",
+    height: "46px",
+    borderRadius: "12px",
+    border: "none",
+    fontSize: "20px",
+    cursor: "pointer",
   },
 
   title: {
     margin: 0,
-
     fontSize:
-      "clamp(28px,6vw,36px)",
+      "clamp(28px,5vw,36px)",
+    fontWeight: "700",
   },
 
   subtitle: {
-    marginTop: "8px",
-
-    fontSize: "15px",
+    marginTop: "6px",
+    fontSize: "14px",
+    color: "#94a3b8",
   },
 
-  totalCard: {
-    background: "#16a34a",
-
-    color: "#ffffff",
-
-    padding: "18px 26px",
-
-    borderRadius: "20px",
-
-    fontSize:
-      "clamp(22px,5vw,28px)",
-
-    fontWeight: "bold",
-
-    width: "100%",
-
-    maxWidth: "220px",
-
-    textAlign: "center",
-
-    boxSizing: "border-box",
+  topBar: {
+    marginBottom: "22px",
   },
 
   searchInput: {
     width: "100%",
-
-    maxWidth: "420px",
-
-    padding: "15px 18px",
-
-    borderRadius: "16px",
-
+    maxWidth: "320px",
+    padding: "14px",
+    borderRadius: "14px",
     outline: "none",
-
-    marginBottom: "24px",
-
-    fontSize: "15px",
-
+    fontSize: "14px",
     boxSizing: "border-box",
   },
 
   tableWrapper: {
-    borderRadius: "24px",
-
-    overflowX: "auto",
-  },
-
-  table: {
     width: "100%",
-
-    minWidth: "1200px",
-
-    borderCollapse: "collapse",
+    borderRadius: "24px",
+    overflow: "hidden",
   },
 
-  empty: {
-    padding: "60px",
+  tableHeader: {
+    display: "grid",
 
-    textAlign: "center",
+    gridTemplateColumns:
+      ".8fr .8fr 1.2fr .8fr .7fr .7fr .7fr .8fr .8fr 1.7fr",
 
-    color: "#9ca3af",
-  },
+    gap: "10px",
 
-  productsBadge: {
-    color: "#2563eb",
+    padding: "16px",
 
-    padding: "8px 14px",
-
-    borderRadius: "999px",
-
-    fontWeight: "bold",
+    fontWeight: "700",
 
     fontSize: "12px",
 
+    alignItems: "center",
+  },
+
+  tableRow: {
+    display: "grid",
+
+    gridTemplateColumns:
+      ".8fr .8fr 1.2fr .8fr .7fr .7fr .7fr .8fr .8fr 1.7fr",
+
+    gap: "10px",
+
+    padding: "16px",
+
+    alignItems: "center",
+
+    fontSize: "12px",
+  },
+
+  invoiceText: {
+    color: "#2563eb",
+    fontWeight: "700",
+  },
+
+  customerText: {
+    fontWeight: "700",
+    lineHeight: "20px",
+    wordBreak: "break-word",
+  },
+
+  productBadge: {
+    background: "#1d4ed8",
+    color: "#ffffff",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700",
+    display: "inline-block",
+    whiteSpace: "nowrap",
+  },
+
+  greenText: {
+    color: "#22c55e",
+    fontWeight: "700",
+  },
+
+  redText: {
+    color: "#ef4444",
+    fontWeight: "700",
+  },
+
+  paymentBadge: {
+    color: "#ffffff",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700",
+    display: "inline-block",
+    whiteSpace: "nowrap",
+  },
+
+  statusBadge: {
+    color: "#ffffff",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: "700",
+    display: "inline-block",
     whiteSpace: "nowrap",
   },
 
   actions: {
     display: "flex",
-
-    gap: "12px",
-
-    flexWrap: "nowrap",
-
     alignItems: "center",
+    gap: "6px",
+    flexWrap: "nowrap",
+    whiteSpace: "nowrap",
   },
-};
 
-const th = (dark) => ({
-  padding: "18px",
+  viewButton: {
+    background: "#2563eb",
+    color: "#ffffff",
+    border: "none",
+    padding: "8px 10px",
+    borderRadius: "10px",
+    fontSize: "11px",
+    fontWeight: "700",
+    cursor: "pointer",
+    minWidth: "65px",
+    height: "38px",
+  },
 
-  textAlign: "left",
+  printButton: {
+    background: "#16a34a",
+    color: "#ffffff",
+    border: "none",
+    padding: "8px 10px",
+    borderRadius: "10px",
+    fontSize: "11px",
+    fontWeight: "700",
+    cursor: "pointer",
+    minWidth: "65px",
+    height: "38px",
+  },
 
-  color:
-    dark
-      ? "#ffffff"
-      : "#374151",
+  deleteButton: {
+    background: "#dc2626",
+    color: "#ffffff",
+    border: "none",
+    padding: "8px 10px",
+    borderRadius: "10px",
+    fontSize: "11px",
+    fontWeight: "700",
+    cursor: "pointer",
+    minWidth: "65px",
+    height: "38px",
+  },
 
-  whiteSpace: "nowrap",
-
-  fontSize: "14px",
-});
-
-const td = (dark) => ({
-  padding: "18px",
-
-  color:
-    dark
-      ? "#ffffff"
-      : "#111827",
-
-  whiteSpace: "nowrap",
-
-  fontSize: "14px",
-});
-
-const commonBtn = {
-
-  border: "none",
-
-  padding: "12px 18px",
-
-  borderRadius: "14px",
-
-  cursor: "pointer",
-
-  fontWeight: "700",
-
-  minWidth: "90px",
-
-  transition: "0.3s",
-
-  fontSize: "14px",
-
-  whiteSpace: "nowrap",
-};
-
-const viewBtn = {
-
-  ...commonBtn,
-
-  background: "#2563eb",
-
-  color: "#ffffff",
-};
-
-const printBtn = {
-
-  ...commonBtn,
-
-  background: "#16a34a",
-
-  color: "#ffffff",
-};
-
-const deleteBtn = {
-
-  ...commonBtn,
-
-  background: "#dc2626",
-
-  color: "#ffffff",
+  empty: {
+    padding: "60px",
+    textAlign: "center",
+    color: "#94a3af",
+  },
 };
 
 export default SalesHistory;

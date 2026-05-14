@@ -1,5 +1,6 @@
 import {
   useState,
+  useMemo,
 } from "react";
 
 import {
@@ -11,18 +12,20 @@ import {
   db,
 } from "../firebase";
 
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function Debts({
-  customers,
-  setCustomers,
-  sales,
+  sales = [],
   setSales,
   toast,
-  dark,
+  openSidebar,
 }) {
 
-  /* =========================
-        STATES
-  ========================= */
+  const {
+    darkMode,
+  } = useTheme();
 
   const [
     search,
@@ -33,44 +36,69 @@ function Debts({
         FILTER DEBTS
   ========================= */
 
-  const debtCustomers =
-    customers.filter(
-      (customer) =>
-        Number(
-          customer.debt
-        ) > 0
-    );
+  const debtSales =
+    useMemo(() => {
 
-  /* =========================
-        SEARCH
-  ========================= */
+      return sales.filter(
+        (sale) => {
 
-  const filteredCustomers =
-    debtCustomers.filter(
-      (customer) =>
-        customer.name
-          ?.toLowerCase()
-          .includes(
-            search.toLowerCase()
-          )
-    );
+          const total =
+            Number(
+              sale.total || 0
+            );
+
+          const paid =
+            Number(
+              sale.paid || 0
+            );
+
+          const debt =
+            total - paid;
+
+          const matchesSearch =
+
+            sale.customer
+              ?.toLowerCase()
+              .includes(
+                search.toLowerCase()
+              );
+
+          return (
+            debt > 0 &&
+            matchesSearch
+          );
+        }
+      );
+
+    }, [
+      sales,
+      search,
+    ]);
 
   /* =========================
         TOTAL DEBT
   ========================= */
 
   const totalDebt =
-    debtCustomers.reduce(
+    debtSales.reduce(
       (
-        acc,
-        customer
-      ) =>
+        total,
+        sale
+      ) => {
 
-        acc +
-        Number(
-          customer.debt || 0
-        ),
+        const debt =
+          Number(
+            sale.total || 0
+          ) -
+          Number(
+            sale.paid || 0
+          );
 
+        return (
+          total + debt
+        );
+
+      },
       0
     );
 
@@ -79,40 +107,72 @@ function Debts({
   ========================= */
 
   const markPaid =
-    async (
-      customer
-    ) => {
+    async (sale) => {
 
       try {
 
-        /* UPDATE CUSTOMER */
+        const total =
+          Number(
+            sale.total || 0
+          );
+
+        /* SALES */
 
         await updateDoc(
+
           doc(
             db,
-            "customers",
-            customer.id
+            "sales",
+            sale.id
           ),
 
           {
-            debt: 0,
+            paid: total,
+            status: "Paid",
           }
         );
 
-        /* UPDATE LOCAL CUSTOMERS */
+        /* CUSTOMERS */
 
-        const updatedCustomers =
-          customers.map(
+      await updateDoc(
+
+  doc(
+
+    db,
+
+    "customers",
+
+    sale.phone ||
+    sale.customer
+  ),
+
+  {
+
+    debt: 0,
+
+    status: "Paid",
+  }
+);
+
+        /* LOCAL UPDATE */
+
+        const updated =
+          sales.map(
             (item) => {
 
               if (
                 item.id ===
-                customer.id
+                sale.id
               ) {
 
                 return {
+
                   ...item,
-                  debt: 0,
+
+                  paid: total,
+
+                  status:
+                    "Paid",
                 };
               }
 
@@ -120,102 +180,18 @@ function Debts({
             }
           );
 
-        setCustomers(
-          updatedCustomers
-        );
+        setSales(updated);
 
-        /* UPDATE SALES */
-
-        const updatedSales =
-          await Promise.all(
-
-            sales.map(
-              async (sale) => {
-
-                if (
-
-                  (
-                    sale.customer ===
-                      customer.name ||
-
-                    sale.customerName ===
-                      customer.name
-                  ) &&
-
-                  (
-                    sale.status ===
-                      "unpaid" ||
-
-                    sale.status ===
-                      "partial"
-                  )
-                ) {
-
-                  await updateDoc(
-
-                    doc(
-                      db,
-                      "sales",
-                      sale.id
-                    ),
-
-                    {
-
-                      status:
-                        "paid",
-
-                      paymentStatus:
-                        "paid",
-
-                      paid:
-                        sale.total,
-
-                      debt: 0,
-
-                      remainingDebt: 0,
-                    }
-                  );
-
-                  return {
-
-                    ...sale,
-
-                    status:
-                      "paid",
-
-                    paymentStatus:
-                      "paid",
-
-                    paid:
-                      sale.total,
-
-                    debt: 0,
-
-                    remainingDebt: 0,
-                  };
-                }
-
-                return sale;
-              }
-            )
-          );
-
-        setSales(
-          updatedSales
-        );
-
-        toast(
-          `${customer.name} paid debt`,
+        toast?.(
+          "Debt paid successfully",
           "success"
         );
 
       } catch (error) {
 
-        console.log(
-          error
-        );
+        console.log(error);
 
-        toast(
+        toast?.(
           "Failed to update debt",
           "error"
         );
@@ -224,74 +200,79 @@ function Debts({
 
   return (
 
-    <div style={{
-      ...styles.container,
+    <div
+      style={{
+        ...styles.container,
 
-      background:
-        dark
-          ? "#020617"
-          : "#f3f4f6",
-    }}>
+        background:
+          darkMode
+            ? "#020617"
+            : "#f8fafc",
+
+        color:
+          darkMode
+            ? "#ffffff"
+            : "#111827",
+      }}
+    >
 
       {/* HEADER */}
 
-      <div style={styles.header}>
+      <div style={styles.mobileHeader}>
 
-        {/* LEFT */}
+        <button
+          onClick={openSidebar}
+
+          style={{
+            ...styles.menuButton,
+
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
+
+            border:
+              darkMode
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
+          }}
+        >
+          ☰
+        </button>
 
         <div>
 
-          <h1 style={{
-            ...styles.title,
+          <h1
+            style={{
+              ...styles.title,
 
-            color:
-              dark
-                ? "#ffffff"
-                : "#111827",
-          }}>
+              color:
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
+            }}
+          >
             Debts 💳
           </h1>
 
-          <p style={{
-            ...styles.subtitle,
-
-            color:
-              dark
-                ? "#d1d5db"
-                : "#6b7280",
-          }}>
-            Manage customer debts
+          <p style={styles.subtitle}>
+            Customer debts management
           </p>
-
-        </div>
-
-        {/* TOTAL */}
-
-        <div style={{
-          ...styles.totalCard,
-
-          boxShadow:
-            dark
-              ? "0 4px 18px rgba(0,0,0,0.4)"
-              : "0 4px 18px rgba(220,38,38,0.2)",
-        }}>
-
-          <div style={styles.totalLabel}>
-            Total Debt
-          </div>
-
-          <div style={styles.totalAmount}>
-            $
-            {totalDebt.toFixed(2)}
-          </div>
 
         </div>
 
       </div>
 
-      {/* SEARCH */}
+      {/* TOP BAR */}
 
-      <div style={styles.searchWrapper}>
+      <div style={styles.topBar}>
+
+        {/* SEARCH */}
 
         <input
           type="text"
@@ -309,274 +290,258 @@ function Debts({
           style={{
             ...styles.searchInput,
 
-            border:
-              dark
-                ? "1px solid #374151"
-                : "1px solid #d1d5db",
-
             background:
-              dark
+              darkMode
                 ? "#111827"
                 : "#ffffff",
 
             color:
-              dark
+              darkMode
                 ? "#ffffff"
                 : "#111827",
+
+            border:
+              darkMode
+                ? "1px solid #374151"
+                : "1px solid #d1d5db",
           }}
         />
 
-      </div>
+        {/* TOTAL */}
 
-      {/* EMPTY */}
+        <div style={styles.totalCard}>
 
-      {filteredCustomers.length === 0 ? (
+          <p style={styles.totalLabel}>
+            Total Debt
+          </p>
 
-        <div style={{
-          ...styles.emptyCard,
+          <h2 style={styles.totalAmount}>
 
-          background:
-            dark
-              ? "#111827"
-              : "#ffffff",
+            $
+            {totalDebt.toFixed(2)}
 
-          color:
-            dark
-              ? "#d1d5db"
-              : "#9ca3af",
+          </h2>
 
-          border:
-            dark
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-
-          boxShadow:
-            dark
-              ? "0 4px 20px rgba(0,0,0,0.35)"
-              : "0 4px 18px rgba(0,0,0,0.05)",
-        }}>
-          No debts found
         </div>
 
-      ) : (
+      </div>
 
-        <div style={{
+      {/* TABLE */}
+
+      <div
+        style={{
           ...styles.tableWrapper,
 
           background:
-            dark
+            darkMode
               ? "#111827"
               : "#ffffff",
 
           border:
-            dark
+            darkMode
               ? "1px solid #1f2937"
               : "1px solid #e5e7eb",
-        }}>
+        }}
+      >
 
-          <table style={styles.table}>
+        {/* HEADER */}
 
-            {/* HEAD */}
+        <div
+          style={{
+            ...styles.tableHeader,
 
-            <thead>
+            background:
+              darkMode
+                ? "#0f172a"
+                : "#f1f5f9",
 
-              <tr style={{
-                borderBottom:
-                  dark
-                    ? "1px solid #1f2937"
-                    : "1px solid #e5e7eb",
-              }}>
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
+          }}
+        >
 
-                {[
-                  "Customer",
-                  "Phone",
-                  "Address",
-                  "Debt",
-                  "Status",
-                  "Action",
-                ].map((item) => (
+          <div>Customer</div>
 
-                  <th
-                    key={item}
-                    style={{
-                      ...styles.th,
+          <div>Invoice</div>
 
-                      color:
-                        dark
-                          ? "#ffffff"
-                          : "#111827",
-                    }}
-                  >
-                    {item}
-                  </th>
-                ))}
+          <div>Total</div>
 
-              </tr>
+          <div>Paid</div>
 
-            </thead>
+          <div>Debt</div>
 
-            {/* BODY */}
+          <div>Status</div>
 
-            <tbody>
-
-              {filteredCustomers.map(
-                (
-                  customer
-                ) => {
-
-                  const customerSales =
-                    sales.filter(
-                      (sale) =>
-
-                        sale.customer ===
-                        customer.name
-                    );
-
-                  const hasPartial =
-                    customerSales.some(
-                      (sale) =>
-
-                        sale.status ===
-                        "partial"
-                    );
-
-                  return (
-
-                    <tr
-                      key={customer.id}
-
-                      style={{
-                        borderBottom:
-                          dark
-                            ? "1px solid #1f2937"
-                            : "1px solid #e5e7eb",
-                      }}
-                    >
-
-                      {/* CUSTOMER */}
-
-                      <td style={{
-                        ...styles.td,
-
-                        color:
-                          dark
-                            ? "#ffffff"
-                            : "#111827",
-
-                        fontWeight: "600",
-                      }}>
-                        {customer.name}
-                      </td>
-
-                      {/* PHONE */}
-
-                      <td style={{
-                        ...styles.td,
-
-                        color:
-                          dark
-                            ? "#d1d5db"
-                            : "#6b7280",
-                      }}>
-                        {customer.phone}
-                      </td>
-
-                      {/* ADDRESS */}
-
-                      <td style={{
-                        ...styles.td,
-
-                        color:
-                          dark
-                            ? "#d1d5db"
-                            : "#6b7280",
-                      }}>
-                        {customer.address}
-                      </td>
-
-                      {/* DEBT */}
-
-                      <td style={{
-                        ...styles.td,
-
-                        color: "#ef4444",
-
-                        fontWeight: "bold",
-                      }}>
-                        $
-                        {Number(
-                          customer.debt
-                        ).toFixed(2)}
-                      </td>
-
-                      {/* STATUS */}
-
-                      <td style={styles.td}>
-
-                        <span style={{
-                          background:
-                            hasPartial
-                              ? "#fef3c7"
-                              : "#fee2e2",
-
-                          color:
-                            hasPartial
-                              ? "#92400e"
-                              : "#dc2626",
-
-                          padding:
-                            "8px 14px",
-
-                          borderRadius:
-                            "999px",
-
-                          fontSize:
-                            "13px",
-
-                          fontWeight:
-                            "bold",
-
-                          whiteSpace:
-                            "nowrap",
-                        }}>
-                          {
-                            hasPartial
-                              ? "Partial"
-                              : "Unpaid"
-                          }
-                        </span>
-
-                      </td>
-
-                      {/* ACTION */}
-
-                      <td style={styles.td}>
-
-                        <button
-                          onClick={() =>
-                            markPaid(
-                              customer
-                            )
-                          }
-
-                          style={styles.payButton}
-                        >
-                          Mark Paid
-                        </button>
-
-                      </td>
-
-                    </tr>
-                  );
-                }
-              )}
-
-            </tbody>
-
-          </table>
+          <div>Action</div>
 
         </div>
-      )}
+
+        {/* BODY */}
+
+        {
+          debtSales.length === 0 ? (
+
+            <div style={styles.empty}>
+              No debts found
+            </div>
+
+          ) : (
+
+            debtSales.map(
+              (sale) => {
+
+                const total =
+                  Number(
+                    sale.total || 0
+                  );
+
+                const paid =
+                  Number(
+                    sale.paid || 0
+                  );
+
+                const debt =
+                  total - paid;
+
+                let status =
+                  "Paid";
+
+                if (
+                  paid === 0
+                ) {
+
+                  status =
+                    "Unpaid";
+                }
+
+                else if (
+                  debt > 0
+                ) {
+
+                  status =
+                    "Partial";
+                }
+
+                return (
+
+                  <div
+                    key={sale.id}
+
+                    style={{
+                      ...styles.tableRow,
+
+                      borderTop:
+                        darkMode
+                          ? "1px solid #1f2937"
+                          : "1px solid #e5e7eb",
+                    }}
+                  >
+
+                    {/* CUSTOMER */}
+
+                    <div style={styles.customerText}>
+                      {sale.customer}
+                    </div>
+
+                    {/* INVOICE */}
+
+                    <div style={styles.invoiceText}>
+
+                      #
+                      {
+                        sale.id?.slice(
+                          0,
+                          8
+                        )
+                      }
+
+                    </div>
+
+                    {/* TOTAL */}
+
+                    <div style={styles.greenText}>
+
+                      $
+                      {total.toFixed(2)}
+
+                    </div>
+
+                    {/* PAID */}
+
+                    <div style={styles.blueText}>
+
+                      $
+                      {paid.toFixed(2)}
+
+                    </div>
+
+                    {/* DEBT */}
+
+                    <div style={styles.redText}>
+
+                      $
+                      {debt.toFixed(2)}
+
+                    </div>
+
+                    {/* STATUS */}
+
+                    <div>
+
+                      <span
+                        style={{
+                          ...styles.statusBadge,
+
+                          background:
+
+                            status ===
+                            "Paid"
+
+                              ? "#16a34a"
+
+                            : status ===
+                              "Partial"
+
+                              ? "#ca8a04"
+
+                            : "#dc2626",
+                        }}
+                      >
+
+                        {status}
+
+                      </span>
+
+                    </div>
+
+                    {/* ACTION */}
+
+                    <div>
+
+                      <button
+                        onClick={() =>
+                          markPaid(
+                            sale
+                          )
+                        }
+
+                        style={styles.payButton}
+                      >
+                        Mark Paid
+                      </button>
+
+                    </div>
+
+                  </div>
+                );
+              }
+            )
+          )
+        }
+
+      </div>
 
     </div>
   );
@@ -590,148 +555,168 @@ const styles = {
 
   container: {
     width: "100%",
-
     minHeight: "100vh",
-
-    padding: "20px",
-
+    padding: "16px",
     boxSizing: "border-box",
+    overflowX: "hidden",
   },
 
-  header: {
+  mobileHeader: {
     display: "flex",
-
-    justifyContent: "space-between",
-
     alignItems: "center",
-
+    gap: "14px",
     flexWrap: "wrap",
-
-    gap: "16px",
-
     marginBottom: "24px",
+  },
+
+  menuButton: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "14px",
+    border: "none",
+    fontSize: "20px",
+    cursor: "pointer",
   },
 
   title: {
     margin: 0,
-
     fontSize:
-      "clamp(28px,5vw,34px)",
+      "clamp(28px,5vw,38px)",
+    fontWeight: "700",
   },
 
   subtitle: {
-    marginTop: "8px",
-
-    fontSize: "15px",
+    marginTop: "6px",
+    color: "#94a3b8",
+    fontSize: "14px",
   },
 
-  totalCard: {
-    background: "#dc2626",
-
-    color: "#ffffff",
-
-    padding: "16px 22px",
-
-    borderRadius: "18px",
-
-    minWidth: "180px",
-
-    width: "100%",
-
-    maxWidth: "250px",
-
-    boxSizing: "border-box",
-  },
-
-  totalLabel: {
-    fontSize: "13px",
-
-    opacity: 0.9,
-
-    marginBottom: "6px",
-  },
-
-  totalAmount: {
-    fontSize:
-      "clamp(24px,5vw,28px)",
-
-    fontWeight: "bold",
-  },
-
-  searchWrapper: {
+  topBar: {
+    display: "flex",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    gap: "14px",
+    flexWrap: "wrap",
     marginBottom: "24px",
   },
 
   searchInput: {
     width: "100%",
-
-    maxWidth: "420px",
-
-    padding: "15px 18px",
-
-    borderRadius: "16px",
-
+    maxWidth: "340px",
+    padding: "14px",
+    borderRadius: "14px",
     outline: "none",
-
-    fontSize: "15px",
-
+    fontSize: "14px",
     boxSizing: "border-box",
   },
 
-  emptyCard: {
-    borderRadius: "24px",
-
-    padding: "80px 20px",
-
+  totalCard: {
+    background: "#dc2626",
+    color: "#ffffff",
+    padding: "14px 20px",
+    borderRadius: "18px",
+    minWidth: "180px",
     textAlign: "center",
+  },
 
-    fontSize: "18px",
+  totalLabel: {
+    margin: 0,
+    fontSize: "13px",
+  },
+
+  totalAmount: {
+    margin: "8px 0 0",
+    fontSize:
+      "clamp(24px,5vw,32px)",
+    fontWeight: "700",
   },
 
   tableWrapper: {
-    overflowX: "auto",
-
+    width: "100%",
     borderRadius: "24px",
+    overflowX: "auto",
   },
 
-  table: {
-    width: "100%",
+  tableHeader: {
+    display: "grid",
 
-    borderCollapse: "collapse",
+    gridTemplateColumns:
+      "1.5fr 1fr 1fr 1fr 1fr 1fr 1fr",
+
+    gap: "14px",
+
+    padding: "18px",
+
+    fontWeight: "700",
 
     minWidth: "900px",
   },
 
-  th: {
+  tableRow: {
+    display: "grid",
+
+    gridTemplateColumns:
+      "1.5fr 1fr 1fr 1fr 1fr 1fr 1fr",
+
+    gap: "14px",
+
     padding: "18px",
 
-    textAlign: "left",
+    alignItems: "center",
 
-    whiteSpace: "nowrap",
+    minWidth: "900px",
   },
 
-  td: {
-    padding: "18px",
+  customerText: {
+    fontWeight: "700",
+    wordBreak: "break-word",
+  },
 
-    whiteSpace: "nowrap",
+  invoiceText: {
+    color: "#3b82f6",
+    fontWeight: "700",
+  },
+
+  greenText: {
+    color: "#22c55e",
+    fontWeight: "700",
+  },
+
+  blueText: {
+    color: "#06b6d4",
+    fontWeight: "700",
+  },
+
+  redText: {
+    color: "#ef4444",
+    fontWeight: "700",
+  },
+
+  statusBadge: {
+    color: "#ffffff",
+    padding: "8px 14px",
+    borderRadius: "999px",
+    fontWeight: "700",
+    fontSize: "12px",
+    display: "inline-block",
   },
 
   payButton: {
     background: "#16a34a",
-
     color: "#ffffff",
-
     border: "none",
-
-    padding: "12px 18px",
-
-    borderRadius: "14px",
-
+    padding: "10px 14px",
+    borderRadius: "10px",
     cursor: "pointer",
+    fontWeight: "700",
+    width: "100%",
+  },
 
-    fontWeight: "bold",
-
-    whiteSpace: "nowrap",
+  empty: {
+    padding: "60px",
+    textAlign: "center",
+    color: "#94a3b8",
   },
 };
 

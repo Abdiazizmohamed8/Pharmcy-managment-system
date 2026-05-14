@@ -6,12 +6,20 @@ import {
   fmt,
 } from "../utils/helpers";
 
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function Expenses({
-  expenses,
+  expenses = [],
   setExpenses,
   toast,
-  darkMode = false,
+  openSidebar,
 }) {
+
+  const {
+    darkMode,
+  } = useTheme();
 
   /* =========================
         STATES
@@ -87,7 +95,7 @@ function Expenses({
       !form.amount
     ) {
 
-      toast(
+      toast?.(
         "Please fill all fields",
         "error"
       );
@@ -124,8 +132,9 @@ function Expenses({
       ]
     );
 
-    toast(
-      "Expense added"
+    toast?.(
+      "Expense added",
+      "success"
     );
 
     setForm({
@@ -153,7 +162,7 @@ function Expenses({
           )
       );
 
-      toast(
+      toast?.(
         "Expense deleted",
         "error"
       );
@@ -167,7 +176,7 @@ function Expenses({
       background:
         darkMode
           ? "#020617"
-          : "#f3f4f6",
+          : "#ffffff",
 
       color:
         darkMode
@@ -177,9 +186,32 @@ function Expenses({
 
       {/* HEADER */}
 
-      <div style={styles.header}>
+      <div style={styles.mobileTop}>
 
-        {/* LEFT */}
+        <button
+          onClick={openSidebar}
+
+          style={{
+            ...styles.menuButton,
+
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
+
+            border:
+              darkMode
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
+          }}
+        >
+          ☰
+        </button>
 
         <div>
 
@@ -207,52 +239,13 @@ function Expenses({
 
         </div>
 
-        {/* RIGHT */}
-
-        <div style={styles.headerRight}>
-
-          {/* TOTAL */}
-
-          <div style={{
-            ...styles.totalCard,
-
-            boxShadow:
-              darkMode
-
-                ? "0 4px 18px rgba(0,0,0,0.35)"
-
-                : "0 4px 18px rgba(220,38,38,0.2)",
-          }}>
-
-            <div style={styles.totalLabel}>
-              Total Expenses
-            </div>
-
-            <div style={styles.totalAmount}>
-              {fmt(totalExpenses)}
-            </div>
-
-          </div>
-
-          {/* BUTTON */}
-
-          <button
-            onClick={() =>
-              setShowModal(true)
-            }
-
-            style={styles.addButton}
-          >
-            + Add Expense
-          </button>
-
-        </div>
-
       </div>
 
-      {/* SEARCH */}
+      {/* TOP */}
 
-      <div style={styles.searchWrapper}>
+      <div style={styles.topActions}>
+
+        {/* SEARCH */}
 
         <input
           type="text"
@@ -289,9 +282,41 @@ function Expenses({
           }}
         />
 
+        {/* RIGHT */}
+
+        <div style={styles.headerRight}>
+
+          {/* TOTAL */}
+
+          <div style={styles.totalCard}>
+
+            <div style={styles.totalLabel}>
+              Total Expenses
+            </div>
+
+            <div style={styles.totalAmount}>
+              {fmt(totalExpenses)}
+            </div>
+
+          </div>
+
+          {/* BUTTON */}
+
+          <button
+            onClick={() =>
+              setShowModal(true)
+            }
+
+            style={styles.addButton}
+          >
+            + Add Expense
+          </button>
+
+        </div>
+
       </div>
 
-      {/* EMPTY */}
+      {/* TABLE */}
 
       {filteredExpenses.length === 0 ? (
 
@@ -311,21 +336,56 @@ function Expenses({
           border:
             darkMode
               ? "1px solid #1f2937"
-              : "none",
-
-          boxShadow:
-            darkMode
-
-              ? "0 4px 18px rgba(0,0,0,0.35)"
-
-              : "0 4px 18px rgba(0,0,0,0.05)",
+              : "1px solid #e5e7eb",
         }}>
           No expenses found
         </div>
 
       ) : (
 
-        <div style={styles.grid}>
+        <div style={{
+          ...styles.tableWrapper,
+
+          background:
+            darkMode
+              ? "#111827"
+              : "#ffffff",
+
+          border:
+            darkMode
+              ? "1px solid #1f2937"
+              : "1px solid #e5e7eb",
+        }}>
+
+          {/* HEADER */}
+
+          <div style={{
+            ...styles.tableHeader,
+
+            background:
+              darkMode
+                ? "#0f172a"
+                : "#f8fafc",
+
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
+          }}>
+
+            <div>Category</div>
+
+            <div>Description</div>
+
+            <div>Amount</div>
+
+            <div>Date</div>
+
+            <div>Action</div>
+
+          </div>
+
+          {/* BODY */}
 
           {filteredExpenses.map(
             (
@@ -336,30 +396,23 @@ function Expenses({
                 key={expense.id}
 
                 style={{
-                  ...styles.card,
+                  ...styles.tableRow,
 
-                  background:
-                    darkMode
-                      ? "#111827"
-                      : "#ffffff",
-
-                  border:
+                  borderTop:
                     darkMode
                       ? "1px solid #1f2937"
-                      : "none",
+                      : "1px solid #e5e7eb",
 
-                  boxShadow:
+                  color:
                     darkMode
-
-                      ? "0 4px 18px rgba(0,0,0,0.35)"
-
-                      : "0 4px 18px rgba(0,0,0,0.05)",
+                      ? "#ffffff"
+                      : "#111827",
                 }}
               >
 
-                {/* TOP */}
+                {/* CATEGORY */}
 
-                <div style={styles.cardTop}>
+                <div>
 
                   <span style={{
                     ...styles.categoryBadge,
@@ -369,49 +422,29 @@ function Expenses({
                         ? "#14532d"
                         : "#dcfce7",
                   }}>
+
                     {expense.category}
+
                   </span>
-
-                  <div style={{
-                    color:
-                      darkMode
-                        ? "#d1d5db"
-                        : "#6b7280",
-
-                    fontSize: "13px",
-                  }}>
-                    {expense.date}
-                  </div>
 
                 </div>
 
                 {/* DESCRIPTION */}
 
-                <div style={{
-                  color:
-                    darkMode
-                      ? "#ffffff"
-                      : "#374151",
+                <div style={styles.descriptionText}>
 
-                  fontSize: "15px",
-
-                  lineHeight: "24px",
-
-                  wordBreak: "break-word",
-                }}>
                   {
                     expense.description ||
                     "No description"
                   }
+
                 </div>
 
-                {/* BOTTOM */}
+                {/* AMOUNT */}
 
-                <div style={styles.cardBottom}>
+                <div>
 
-                  {/* AMOUNT */}
-
-                  <div style={{
+                  <span style={{
                     ...styles.amountBadge,
 
                     background:
@@ -419,10 +452,22 @@ function Expenses({
                         ? "#7f1d1d"
                         : "#fee2e2",
                   }}>
-                    {fmt(expense.amount)}
-                  </div>
 
-                  {/* DELETE */}
+                    {fmt(expense.amount)}
+
+                  </span>
+
+                </div>
+
+                {/* DATE */}
+
+                <div style={styles.dateText}>
+                  {expense.date}
+                </div>
+
+                {/* DELETE */}
+
+                <div>
 
                   <button
                     onClick={() =>
@@ -462,7 +507,7 @@ function Expenses({
             border:
               darkMode
                 ? "1px solid #1f2937"
-                : "none",
+                : "1px solid #e5e7eb",
           }}>
 
             <h2 style={{
@@ -608,210 +653,176 @@ const styles = {
 
   container: {
     width: "100%",
-
     minHeight: "100vh",
-
     transition:
       "0.3s ease",
-
-    padding: "24px",
-
+    padding: "14px",
     boxSizing: "border-box",
+    overflowX: "hidden",
   },
 
-  header: {
+  mobileTop: {
     display: "flex",
-
-    justifyContent:
-      "space-between",
-
-    alignItems:
-      "center",
-
-    flexWrap: "wrap",
-
-    gap: "16px",
-
+    alignItems: "center",
+    gap: "14px",
     marginBottom: "24px",
+    flexWrap: "wrap",
+  },
+
+  menuButton: {
+    width: "46px",
+    height: "46px",
+    borderRadius: "12px",
+    border: "none",
+    fontSize: "20px",
+    cursor: "pointer",
+    flexShrink: 0,
   },
 
   title: {
     margin: 0,
-
     fontSize:
       "clamp(28px,5vw,34px)",
   },
 
   subtitle: {
     marginTop: "8px",
-
     fontSize: "15px",
+  },
+
+  topActions: {
+    display: "flex",
+    justifyContent:
+      "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "16px",
+    marginBottom: "22px",
   },
 
   headerRight: {
     display: "flex",
-
-    gap: "14px",
-
+    gap: "12px",
     flexWrap: "wrap",
-
     alignItems: "center",
+    justifyContent:
+      "flex-end",
   },
 
   totalCard: {
     background: "#dc2626",
-
     color: "#ffffff",
-
-    padding: "16px 20px",
-
-    borderRadius: "18px",
-
-    minWidth: "180px",
-
-    width: "100%",
-
-    maxWidth: "240px",
-
+    padding: "14px 18px",
+    borderRadius: "16px",
+    minWidth: "170px",
+    width: "fit-content",
     boxSizing: "border-box",
   },
 
   totalLabel: {
     fontSize: "13px",
-
     opacity: 0.9,
-
     marginBottom: "6px",
   },
 
   totalAmount: {
     fontSize:
       "clamp(22px,5vw,26px)",
-
     fontWeight: "bold",
   },
 
   addButton: {
     background: "#16a34a",
-
     color: "#ffffff",
-
     border: "none",
-
     padding: "14px 22px",
-
     borderRadius: "16px",
-
     cursor: "pointer",
-
     fontWeight: "bold",
-
     fontSize: "14px",
-
     whiteSpace: "nowrap",
-  },
-
-  searchWrapper: {
-    marginBottom: "22px",
   },
 
   searchInput: {
     width: "100%",
-
     maxWidth: "420px",
-
     padding: "15px",
-
     borderRadius: "16px",
-
     outline: "none",
-
     fontSize: "14px",
-
     boxSizing: "border-box",
   },
 
   emptyBox: {
     borderRadius: "24px",
-
     padding: "80px 20px",
-
     textAlign: "center",
-
     fontSize: "18px",
   },
 
-  grid: {
+  tableWrapper: {
+    width: "100%",
+    borderRadius: "24px",
+    overflow: "hidden",
+  },
+
+  tableHeader: {
     display: "grid",
 
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(300px,1fr))",
+      "1fr 2fr .8fr .8fr .8fr",
 
-    gap: "18px",
+    gap: "10px",
+
+    padding: "16px",
+
+    fontWeight: "700",
+
+    fontSize: "12px",
+
+    alignItems: "center",
   },
 
-  card: {
-    borderRadius: "24px",
+  tableRow: {
+    display: "grid",
 
-    padding: "20px",
+    gridTemplateColumns:
+      "1fr 2fr .8fr .8fr .8fr",
 
-    display: "flex",
+    gap: "10px",
 
-    flexDirection: "column",
-
-    gap: "18px",
-
-    boxSizing: "border-box",
-  },
-
-  cardTop: {
-    display: "flex",
-
-    justifyContent:
-      "space-between",
+    padding: "16px",
 
     alignItems: "center",
 
-    flexWrap: "wrap",
+    fontSize: "12px",
+  },
 
-    gap: "12px",
+  descriptionText: {
+    lineHeight: "20px",
+    wordBreak: "break-word",
+  },
+
+  dateText: {
+    whiteSpace: "nowrap",
   },
 
   categoryBadge: {
     color: "#16a34a",
-
     padding: "8px 14px",
-
     borderRadius: "999px",
-
     fontSize: "13px",
-
     fontWeight: "bold",
-  },
-
-  cardBottom: {
-    display: "flex",
-
-    justifyContent:
-      "space-between",
-
-    alignItems: "center",
-
-    flexWrap: "wrap",
-
-    gap: "12px",
+    display: "inline-block",
   },
 
   amountBadge: {
     color: "#dc2626",
-
     padding: "10px 16px",
-
     borderRadius: "999px",
-
     fontWeight: "bold",
-
     fontSize: "14px",
+    display: "inline-block",
   },
 
   deleteButton: {
@@ -821,105 +832,77 @@ const styles = {
 
     border: "none",
 
-    padding: "11px 18px",
+    padding: "10px 16px",
 
-    borderRadius: "14px",
+    borderRadius: "12px",
 
     cursor: "pointer",
 
     fontWeight: "bold",
 
     fontSize: "13px",
+
+    whiteSpace: "nowrap",
   },
 
   modalOverlay: {
     position: "fixed",
-
     inset: 0,
-
     background:
       "rgba(0,0,0,0.5)",
-
     display: "flex",
-
     justifyContent:
       "center",
-
     alignItems:
       "center",
-
     zIndex: 999,
-
     padding: "20px",
   },
 
   modal: {
     width: "100%",
-
     maxWidth: "460px",
-
     borderRadius: "24px",
-
     padding: "30px",
-
     boxSizing: "border-box",
   },
 
   modalTitle: {
     marginTop: 0,
-
     marginBottom: "24px",
   },
 
   formGrid: {
     display: "grid",
-
     gap: "16px",
   },
 
   modalButtons: {
     display: "flex",
-
     gap: "14px",
-
     marginTop: "24px",
-
     flexWrap: "wrap",
   },
 
   saveButton: {
     flex: 1,
-
     background: "#16a34a",
-
     color: "#ffffff",
-
     border: "none",
-
     padding: "14px",
-
     borderRadius: "14px",
-
     fontWeight: "bold",
-
     cursor: "pointer",
-
     minWidth: "140px",
   },
 
   cancelButton: {
     flex: 1,
-
     border: "none",
-
     padding: "14px",
-
     borderRadius: "14px",
-
     fontWeight: "bold",
-
     cursor: "pointer",
-
     minWidth: "140px",
   },
 };
@@ -932,30 +915,22 @@ const inputStyle = (
   darkMode
 ) => ({
   width: "100%",
-
   padding: "14px",
-
   borderRadius: "14px",
-
   border:
     darkMode
       ? "1px solid #374151"
       : "1px solid #d1d5db",
-
   outline: "none",
-
   fontSize: "14px",
-
   background:
     darkMode
       ? "#0f172a"
       : "#ffffff",
-
   color:
     darkMode
       ? "#ffffff"
       : "#111827",
-
   boxSizing: "border-box",
 });
 

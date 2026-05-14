@@ -2,12 +2,24 @@ import {
   useState,
 } from "react";
 
+/* =========================
+      THEME
+========================= */
+
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function Suppliers({
   suppliers = [],
   setSuppliers,
   toast,
-  darkMode = false,
+  openSidebar,
 }) {
+
+  const {
+    darkMode,
+  } = useTheme();
 
   /* =========================
         STATES
@@ -179,11 +191,34 @@ function Suppliers({
           : "#111827",
     }}>
 
-      {/* HEADER */}
+      {/* MOBILE HEADER */}
 
-      <div style={styles.header}>
+      <div style={styles.mobileTop}>
 
-        {/* LEFT */}
+        <button
+          onClick={openSidebar}
+
+          style={{
+            ...styles.menuButton,
+
+            background:
+              darkMode
+                ? "#111827"
+                : "#ffffff",
+
+            color:
+              darkMode
+                ? "#ffffff"
+                : "#111827",
+
+            border:
+              darkMode
+                ? "1px solid #1f2937"
+                : "1px solid #e5e7eb",
+          }}
+        >
+          ☰
+        </button>
 
         <div>
 
@@ -211,27 +246,11 @@ function Suppliers({
 
         </div>
 
-        {/* BUTTON */}
-
-        <button
-          onClick={() =>
-            setShowModal(
-              true
-            )
-          }
-
-          style={
-            styles.addButton
-          }
-        >
-          + Add Supplier
-        </button>
-
       </div>
 
-      {/* SEARCH */}
+      {/* TOP ACTIONS */}
 
-      <div style={styles.searchWrapper}>
+      <div style={styles.topActions}>
 
         <input
           type="text"
@@ -251,9 +270,7 @@ function Suppliers({
 
             border:
               darkMode
-
                 ? "1px solid #374151"
-
                 : "1px solid #d1d5db",
 
             background:
@@ -267,6 +284,20 @@ function Suppliers({
                 : "#111827",
           }}
         />
+
+        <button
+          onClick={() =>
+            setShowModal(
+              true
+            )
+          }
+
+          style={
+            styles.addButton
+          }
+        >
+          + Add Supplier
+        </button>
 
       </div>
 
@@ -313,14 +344,9 @@ function Suppliers({
               darkMode
                 ? "1px solid #1f2937"
                 : "1px solid #e5e7eb",
-
-            boxShadow:
-              darkMode
-                ? "0 4px 20px rgba(0,0,0,0.35)"
-                : "0 8px 24px rgba(0,0,0,0.05)",
           }}>
 
-            {/* HEAD */}
+            {/* HEADER */}
 
             <div style={{
               ...styles.tableHead,
@@ -343,29 +369,17 @@ function Suppliers({
                   : "1px solid #f3f4f6",
             }}>
 
-              <div>
-                Supplier Name
-              </div>
+              <div>Supplier</div>
 
-              <div>
-                Contact
-              </div>
+              <div>Contact</div>
 
-              <div>
-                Email
-              </div>
+              <div>Email</div>
 
-              <div>
-                City
-              </div>
+              <div>City</div>
 
-              <div>
-                Joined
-              </div>
+              <div>Joined</div>
 
-              <div>
-                Action
-              </div>
+              <div>Action</div>
 
             </div>
 
@@ -407,7 +421,7 @@ function Suppliers({
                             : "#111827",
 
                         fontSize:
-                          "18px",
+                          "15px",
 
                         wordBreak:
                           "break-word",
@@ -421,15 +435,7 @@ function Suppliers({
 
                     {/* CONTACT */}
 
-                    <div style={{
-                      color:
-                        darkMode
-                          ? "#d1d5db"
-                          : "#6b7280",
-
-                      wordBreak:
-                        "break-word",
-                    }}>
+                    <div style={td(darkMode)}>
 
                       {
                         supplier.contact ||
@@ -440,15 +446,7 @@ function Suppliers({
 
                     {/* EMAIL */}
 
-                    <div style={{
-                      color:
-                        darkMode
-                          ? "#d1d5db"
-                          : "#6b7280",
-
-                      wordBreak:
-                        "break-word",
-                    }}>
+                    <div style={td(darkMode)}>
 
                       {
                         supplier.email ||
@@ -459,15 +457,7 @@ function Suppliers({
 
                     {/* CITY */}
 
-                    <div style={{
-                      color:
-                        darkMode
-                          ? "#ffffff"
-                          : "#111827",
-
-                      wordBreak:
-                        "break-word",
-                    }}>
+                    <div style={td(darkMode)}>
 
                       {
                         supplier.city ||
@@ -478,15 +468,7 @@ function Suppliers({
 
                     {/* JOINED */}
 
-                    <div style={{
-                      color:
-                        darkMode
-                          ? "#ffffff"
-                          : "#111827",
-
-                      whiteSpace:
-                        "nowrap",
-                    }}>
+                    <div style={td(darkMode)}>
 
                       {
                         supplier.joined
@@ -509,7 +491,7 @@ function Suppliers({
                           styles.deleteButton
                         }
                       >
-                        Delete
+                        🗑 Delete
                       </button>
 
                     </div>
@@ -696,55 +678,48 @@ function Suppliers({
 const styles = {
 
   container: {
-    minHeight:
-      "100vh",
-
     width: "100%",
-
-    padding:
-      "24px",
-
-    boxSizing:
-      "border-box",
-
-    transition:
-      "0.3s ease",
+    minHeight: "100vh",
+    padding: "14px",
+    boxSizing: "border-box",
+    overflowX: "hidden",
   },
 
-  header: {
+  mobileTop: {
     display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    marginBottom: "24px",
+    flexWrap: "wrap",
+  },
 
-    justifyContent:
-      "space-between",
-
-    alignItems:
-      "center",
-
-    flexWrap:
-      "wrap",
-
-    gap: "18px",
-
-    marginBottom:
-      "30px",
+  menuButton: {
+    width: "46px",
+    height: "46px",
+    borderRadius: "12px",
+    border: "none",
+    fontSize: "20px",
+    cursor: "pointer",
+    flexShrink: 0,
   },
 
   title: {
     margin: 0,
-
     fontSize:
-      "clamp(30px,6vw,38px)",
-
-    wordBreak:
-      "break-word",
+      "clamp(28px,5vw,36px)",
   },
 
   subtitle: {
-    marginTop:
-      "10px",
+    marginTop: "8px",
+    fontSize: "14px",
+  },
 
-    fontSize:
-      "16px",
+  topActions: {
+    display: "flex",
+    gap: "12px",
+    flexWrap: "wrap",
+    marginBottom: "20px",
+    alignItems: "center",
   },
 
   addButton: {
@@ -756,7 +731,7 @@ const styles = {
     border: "none",
 
     padding:
-      "14px 24px",
+      "12px 18px",
 
     borderRadius:
       "14px",
@@ -768,101 +743,72 @@ const styles = {
       "pointer",
 
     fontSize:
-      "15px",
+      "14px",
 
-    width: "100%",
+    width: "fit-content",
 
-    maxWidth:
-      "220px",
-  },
-
-  searchWrapper: {
-    marginBottom:
-      "24px",
+    minWidth:
+      "170px",
   },
 
   searchInput: {
     width: "100%",
-
-    maxWidth:
-      "360px",
-
-    padding:
-      "14px",
-
-    borderRadius:
-      "14px",
-
-    outline:
-      "none",
-
-    fontSize:
-      "15px",
-
-    boxSizing:
-      "border-box",
+    maxWidth: "320px",
+    padding: "14px",
+    borderRadius: "14px",
+    outline: "none",
+    fontSize: "14px",
+    boxSizing: "border-box",
   },
 
   emptyCard: {
-    borderRadius:
-      "24px",
-
-    padding:
-      "70px 20px",
-
-    textAlign:
-      "center",
-
-    fontSize:
-      "18px",
+    borderRadius: "24px",
+    padding: "70px 20px",
+    textAlign: "center",
+    fontSize: "18px",
   },
 
   tableWrapper: {
-    borderRadius:
-      "24px",
-
-    overflowX:
-      "auto",
+    borderRadius: "24px",
+    overflow: "hidden",
+    width: "100%",
   },
 
   tableHead: {
     display: "grid",
 
     gridTemplateColumns:
-      "repeat(6,minmax(160px,1fr))",
+      "1.5fr 1fr 1.5fr 1fr 1fr .9fr",
 
-    padding:
-      "20px",
+    padding: "16px",
 
-    fontWeight:
-      "bold",
+    fontWeight: "bold",
 
-    minWidth:
-      "1000px",
+    gap: "10px",
 
-    gap: "20px",
+    fontSize: "13px",
+
+    wordBreak: "break-word",
   },
 
   row: {
-    display:
-      "grid",
+    display: "grid",
 
     gridTemplateColumns:
-      "repeat(6,minmax(160px,1fr))",
+      "1.5fr 1fr 1.5fr 1fr 1fr .9fr",
 
-    padding:
-      "20px",
+    padding: "16px",
 
-    alignItems:
-      "center",
+    alignItems: "center",
 
-    minWidth:
-      "1000px",
+    gap: "10px",
 
-    gap: "20px",
+    wordBreak: "break-word",
   },
 
   deleteButton: {
+    width: "100%",
+
     background:
       "#dc2626",
 
@@ -873,16 +819,19 @@ const styles = {
       "none",
 
     padding:
-      "10px 16px",
+      "10px 14px",
 
     borderRadius:
-      "12px",
+      "10px",
 
     fontWeight:
       "bold",
 
     cursor:
       "pointer",
+
+    fontSize:
+      "13px",
 
     whiteSpace:
       "nowrap",
@@ -922,7 +871,7 @@ const styles = {
       "24px",
 
     padding:
-      "30px",
+      "24px",
 
     boxSizing:
       "border-box",
@@ -930,27 +879,19 @@ const styles = {
 
   modalTitle: {
     marginTop: 0,
-
-    marginBottom:
-      "24px",
+    marginBottom: "24px",
   },
 
   formGrid: {
     display: "grid",
-
     gap: "16px",
   },
 
   modalButtons: {
     display: "flex",
-
     gap: "14px",
-
-    marginTop:
-      "26px",
-
-    flexWrap:
-      "wrap",
+    marginTop: "26px",
+    flexWrap: "wrap",
   },
 
   saveButton: {
@@ -1010,9 +951,15 @@ const styles = {
   },
 };
 
-/* =========================
-      INPUT STYLE
-========================= */
+const td = (darkMode) => ({
+  color:
+    darkMode
+      ? "#d1d5db"
+      : "#6b7280",
+
+  wordBreak:
+    "break-word",
+});
 
 const inputStyle = (
   darkMode

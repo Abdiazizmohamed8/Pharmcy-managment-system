@@ -2,12 +2,24 @@ import {
   useState,
 } from "react";
 
+/* =========================
+      THEME
+========================= */
+
+import {
+  useTheme,
+} from "../context/ThemeContext";
+
 function Settings({
-  dark,
-  setDark,
   currentUser,
   toast,
+  openSidebar,
 }) {
+
+  const {
+    darkMode,
+    toggleTheme,
+  } = useTheme();
 
   /* =========================
         STATES
@@ -55,7 +67,7 @@ function Settings({
   const saveSettings =
     () => {
 
-      toast(
+      toast?.(
         "Settings saved successfully",
         "success"
       );
@@ -68,7 +80,7 @@ function Settings({
   const backupDatabase =
     () => {
 
-      toast(
+      toast?.(
         "Database backup completed",
         "success"
       );
@@ -80,12 +92,12 @@ function Settings({
       ...styles.container,
 
       background:
-        dark
+        darkMode
           ? "#020617"
           : "#f3f4f6",
 
       color:
-        dark
+        darkMode
           ? "#ffffff"
           : "#111827",
     }}>
@@ -94,27 +106,43 @@ function Settings({
 
       <div style={styles.header}>
 
-        <h1 style={{
-          ...styles.title,
+        <div style={styles.mobileTop}>
 
-          color:
-            dark
-              ? "#ffffff"
-              : "#111827",
-        }}>
-          Settings ⚙️
-        </h1>
+          <button
+            onClick={openSidebar}
 
-        <p style={{
-          ...styles.subtitle,
+            style={styles.menuButton}
+          >
+            ☰
+          </button>
 
-          color:
-            dark
-              ? "#d1d5db"
-              : "#6b7280",
-        }}>
-          Manage pharmacy settings
-        </p>
+          <div>
+
+            <h1 style={{
+              ...styles.title,
+
+              color:
+                darkMode
+                  ? "#ffffff"
+                  : "#111827",
+            }}>
+              Settings ⚙️
+            </h1>
+
+            <p style={{
+              ...styles.subtitle,
+
+              color:
+                darkMode
+                  ? "#d1d5db"
+                  : "#6b7280",
+            }}>
+              Manage pharmacy settings
+            </p>
+
+          </div>
+
+        </div>
 
       </div>
 
@@ -124,9 +152,9 @@ function Settings({
 
         {/* PHARMACY INFO */}
 
-        <div style={card(dark)}>
+        <div style={card(darkMode)}>
 
-          <h2 style={title(dark)}>
+          <h2 style={title(darkMode)}>
             Pharmacy Info 🏥
           </h2>
 
@@ -147,7 +175,7 @@ function Settings({
 
               placeholder="Store Name"
 
-              style={input(dark)}
+              style={input(darkMode)}
             />
 
             <input
@@ -163,7 +191,7 @@ function Settings({
 
               placeholder="Phone"
 
-              style={input(dark)}
+              style={input(darkMode)}
             />
 
             <input
@@ -179,7 +207,7 @@ function Settings({
 
               placeholder="Email"
 
-              style={input(dark)}
+              style={input(darkMode)}
             />
 
             <input
@@ -197,7 +225,7 @@ function Settings({
 
               placeholder="Address"
 
-              style={input(dark)}
+              style={input(darkMode)}
             />
 
             <select
@@ -211,7 +239,7 @@ function Settings({
                 )
               }
 
-              style={input(dark)}
+              style={input(darkMode)}
             >
 
               <option>
@@ -246,9 +274,9 @@ function Settings({
 
         {/* SYSTEM SETTINGS */}
 
-        <div style={card(dark)}>
+        <div style={card(darkMode)}>
 
-          <h2 style={title(dark)}>
+          <h2 style={title(darkMode)}>
             System Settings 🛠️
           </h2>
 
@@ -258,7 +286,7 @@ function Settings({
             ...styles.darkCard,
 
             background:
-              dark
+              darkMode
                 ? "#0f172a"
                 : "#f9fafb",
           }}>
@@ -270,7 +298,7 @@ function Settings({
                   "0 0 6px",
 
                 color:
-                  dark
+                  darkMode
                     ? "#ffffff"
                     : "#111827",
               }}>
@@ -284,7 +312,7 @@ function Settings({
                   "14px",
 
                 color:
-                  dark
+                  darkMode
                     ? "#d1d5db"
                     : "#6b7280",
               }}>
@@ -294,23 +322,21 @@ function Settings({
             </div>
 
             <button
-              onClick={() =>
-                setDark(
-                  !dark
-                )
+              onClick={
+                toggleTheme
               }
 
               style={{
                 ...styles.toggleButton,
 
                 background:
-                  dark
+                  darkMode
                     ? "#16a34a"
                     : "#d1d5db",
               }}
             >
 
-              {dark
+              {darkMode
                 ? "ON"
                 : "OFF"}
 
@@ -322,7 +348,7 @@ function Settings({
 
           <div style={{
             borderTop:
-              dark
+              darkMode
 
                 ? "1px solid #1f2937"
 
@@ -339,7 +365,7 @@ function Settings({
                 "18px",
 
               color:
-                dark
+                darkMode
                   ? "#ffffff"
                   : "#111827",
             }}>
@@ -371,7 +397,7 @@ function Settings({
                     "0 0 6px",
 
                   color:
-                    dark
+                    darkMode
                       ? "#ffffff"
                       : "#111827",
 
@@ -391,7 +417,7 @@ function Settings({
                   margin: 0,
 
                   color:
-                    dark
+                    darkMode
                       ? "#d1d5db"
                       : "#6b7280",
 
@@ -450,49 +476,58 @@ const styles = {
 
   container: {
     width: "100%",
-
     minHeight: "100vh",
-
-    padding: "24px",
-
-    transition:
-      "0.3s ease",
-
-    boxSizing:
-      "border-box",
+    padding: "14px",
+    overflowX: "hidden",
+    boxSizing: "border-box",
   },
 
   header: {
-    marginBottom:
-      "30px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: "14px",
+    marginBottom: "24px",
+  },
+
+  mobileTop: {
+    display: "flex",
+    alignItems: "center",
+    gap: "14px",
+    flexWrap: "wrap",
+  },
+
+  menuButton: {
+    width: "46px",
+    height: "46px",
+    borderRadius: "12px",
+    border: "none",
+    background: "#2563eb",
+    color: "#ffffff",
+    cursor: "pointer",
+    fontSize: "20px",
+    flexShrink: 0,
   },
 
   title: {
     margin: 0,
-
     fontSize:
       "clamp(30px,6vw,40px)",
-
-    fontWeight:
-      "bold",
-
-    wordBreak:
-      "break-word",
+    fontWeight: "bold",
+    wordBreak: "break-word",
   },
 
   subtitle: {
-    marginTop:
-      "10px",
-
-    fontSize:
-      "15px",
+    marginTop: "10px",
+    fontSize: "15px",
   },
 
   grid: {
     display: "grid",
 
     gridTemplateColumns:
-      "repeat(auto-fit,minmax(320px,1fr))",
+      "repeat(auto-fit,minmax(280px,1fr))",
 
     gap: "24px",
 
@@ -609,27 +644,22 @@ const styles = {
 ========================= */
 
 const card = (
-  dark
+  darkMode
 ) => ({
   background:
-    dark
+    darkMode
       ? "#111827"
       : "#ffffff",
 
-  padding: "28px",
+  padding: "24px",
 
   borderRadius:
     "24px",
 
   border:
-    dark
+    darkMode
       ? "1px solid #1f2937"
       : "1px solid #e5e7eb",
-
-  boxShadow:
-    dark
-      ? "0 4px 20px rgba(0,0,0,0.35)"
-      : "0 8px 24px rgba(0,0,0,0.05)",
 
   width: "100%",
 
@@ -642,7 +672,7 @@ const card = (
 ========================= */
 
 const title = (
-  dark
+  darkMode
 ) => ({
   marginTop: 0,
 
@@ -650,7 +680,7 @@ const title = (
     "24px",
 
   color:
-    dark
+    darkMode
       ? "#ffffff"
       : "#111827",
 
@@ -663,7 +693,7 @@ const title = (
 ========================= */
 
 const input = (
-  dark
+  darkMode
 ) => ({
   width: "100%",
 
@@ -674,19 +704,19 @@ const input = (
     "14px",
 
   border:
-    dark
+    darkMode
 
       ? "1px solid #374151"
 
       : "1px solid #d1d5db",
 
   background:
-    dark
+    darkMode
       ? "#0f172a"
       : "#ffffff",
 
   color:
-    dark
+    darkMode
       ? "#ffffff"
       : "#111827",
 
