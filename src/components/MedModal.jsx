@@ -5,75 +5,62 @@ function MedModal({
   onClose,
   mode,
 }) {
+  // Input style
+  const inputClass =
+    "w-full px-4 py-3 rounded-xl border border-gray-300 bg-gray-50 text-sm outline-none focus:ring-2 focus:ring-green-500";
 
-  /* =========================
-        INPUT STYLE
-  ========================= */
+  // Label style
+  const labelClass =
+    "block mb-2 text-sm font-semibold text-gray-700";
 
-  const inputStyle = {
-    width: "100%",
-    padding: "14px 16px",
-    borderRadius: "14px",
-    border: "1px solid #d1d5db",
-    outline: "none",
-    fontSize: "15px",
-    background: "#f9fafb",
-    boxSizing: "border-box",
-  };
-
-  const labelStyle = {
-    display: "block",
-    marginBottom: "8px",
-    fontSize: "14px",
-    fontWeight: "600",
-    color: "#374151",
+  // Handle form update
+  const handleChange = (
+    key,
+    value
+  ) => {
+    setForm({
+      ...form,
+      [key]: value,
+    });
   };
 
   return (
-
-    <div style={styles.overlay}>
-
-      {/* MODAL */}
-
-      <div style={styles.modal}>
-
-        {/* HEADER */}
-
-        <div style={styles.header}>
-
+    <div className="fixed inset-0 z-[999] bg-black/60 flex items-center justify-center p-4">
+      {/* Modal */}
+      <div
+        className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl
+        max-h-[90vh] overflow-y-auto p-5 sm:p-8"
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 mb-8 flex-wrap">
           <div>
-
-            <h2 style={styles.title}>
-              {
-                mode === "add"
-                  ? "Add Medicine"
-                  : "Edit Medicine"
-              }
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              {mode === "add"
+                ? "Add Medicine"
+                : "Edit Medicine"}
             </h2>
 
-            <p style={styles.subtitle}>
+            <p className="text-sm text-gray-500 mt-1">
               Pharmacy medicine management
             </p>
-
           </div>
 
+          {/* Close Button */}
           <button
             onClick={onClose}
-            style={styles.closeBtn}
+            className="w-11 h-11 rounded-xl bg-gray-100 hover:bg-gray-200 transition flex items-center justify-center text-lg"
           >
             ✕
           </button>
-
         </div>
 
-        {/* FORM */}
-
-        <div style={styles.formGrid}>
-
-          {/* NAME */}
-
+        {/* Form */}
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+        >
+          {/* Medicine Name */}
           <div>
-            <label style={labelStyle}>
+            <label className={labelClass}>
               Medicine Name
             </label>
 
@@ -82,19 +69,18 @@ function MedModal({
               placeholder="Medicine name"
               value={form.name}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  name: e.target.value,
-                })
+                handleChange(
+                  "name",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
           </div>
 
-          {/* CATEGORY */}
-
+          {/* Category */}
           <div>
-            <label style={labelStyle}>
+            <label className={labelClass}>
               Category
             </label>
 
@@ -103,20 +89,18 @@ function MedModal({
               placeholder="Category"
               value={form.category}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  category:
-                    e.target.value,
-                })
+                handleChange(
+                  "category",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
           </div>
 
-          {/* STOCK */}
-
+          {/* Stock */}
           <div>
-            <label style={labelStyle}>
+            <label className={labelClass}>
               Stock Quantity
             </label>
 
@@ -124,19 +108,18 @@ function MedModal({
               type="number"
               value={form.stock}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  stock: e.target.value,
-                })
+                handleChange(
+                  "stock",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
           </div>
 
-          {/* MIN STOCK */}
-
+          {/* Minimum Stock */}
           <div>
-            <label style={labelStyle}>
+            <label className={labelClass}>
               Minimum Stock
             </label>
 
@@ -144,20 +127,18 @@ function MedModal({
               type="number"
               value={form.minStock}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  minStock:
-                    e.target.value,
-                })
+                handleChange(
+                  "minStock",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
           </div>
 
-          {/* BUY PRICE */}
-
+          {/* Buy Price */}
           <div>
-            <label style={labelStyle}>
+            <label className={labelClass}>
               Buy Price
             </label>
 
@@ -165,20 +146,18 @@ function MedModal({
               type="number"
               value={form.buyPrice}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  buyPrice:
-                    e.target.value,
-                })
+                handleChange(
+                  "buyPrice",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
           </div>
 
-          {/* SELL PRICE */}
-
+          {/* Sell Price */}
           <div>
-            <label style={labelStyle}>
+            <label className={labelClass}>
               Sell Price
             </label>
 
@@ -186,20 +165,18 @@ function MedModal({
               type="number"
               value={form.sellPrice}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  sellPrice:
-                    e.target.value,
-                })
+                handleChange(
+                  "sellPrice",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
           </div>
 
-          {/* BARCODE */}
-
+          {/* Barcode */}
           <div>
-            <label style={labelStyle}>
+            <label className={labelClass}>
               Barcode
             </label>
 
@@ -208,20 +185,18 @@ function MedModal({
               placeholder="Barcode"
               value={form.barcode}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  barcode:
-                    e.target.value,
-                })
+                handleChange(
+                  "barcode",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
           </div>
 
           {/* SKU */}
-
           <div>
-            <label style={labelStyle}>
+            <label className={labelClass}>
               SKU
             </label>
 
@@ -230,20 +205,18 @@ function MedModal({
               placeholder="SKU"
               value={form.sku}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  sku:
-                    e.target.value,
-                })
+                handleChange(
+                  "sku",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
           </div>
 
-          {/* EXPIRY */}
-
+          {/* Expiry */}
           <div>
-            <label style={labelStyle}>
+            <label className={labelClass}>
               Expiry Date
             </label>
 
@@ -251,20 +224,18 @@ function MedModal({
               type="date"
               value={form.expiry}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  expiry:
-                    e.target.value,
-                })
+                handleChange(
+                  "expiry",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
           </div>
 
-          {/* BATCH */}
-
+          {/* Batch */}
           <div>
-            <label style={labelStyle}>
+            <label className={labelClass}>
               Batch Number
             </label>
 
@@ -273,21 +244,18 @@ function MedModal({
               placeholder="Batch"
               value={form.batch}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  batch:
-                    e.target.value,
-                })
+                handleChange(
+                  "batch",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
           </div>
 
-          {/* SUPPLIER */}
-
-          <div style={styles.fullWidth}>
-
-            <label style={labelStyle}>
+          {/* Supplier */}
+          <div className="sm:col-span-2 lg:col-span-3">
+            <label className={labelClass}>
               Supplier
             </label>
 
@@ -296,152 +264,35 @@ function MedModal({
               placeholder="Supplier name"
               value={form.supplier}
               onChange={(e) =>
-                setForm({
-                  ...form,
-                  supplier:
-                    e.target.value,
-                })
+                handleChange(
+                  "supplier",
+                  e.target.value
+                )
               }
-              style={inputStyle}
+              className={inputClass}
             />
-
           </div>
-
         </div>
 
-        {/* BUTTONS */}
-
-        <div style={styles.buttonGroup}>
-
+        {/* Buttons */}
+        <div className="flex flex-col sm:flex-row gap-4 mt-8">
           <button
             onClick={onSave}
-            style={styles.saveBtn}
+            className="flex-1 py-3 rounded-xl bg-green-600 hover:bg-green-700 text-white font-bold transition"
           >
             Save Medicine
           </button>
 
           <button
             onClick={onClose}
-            style={styles.cancelBtn}
+            className="flex-1 py-3 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-900 font-bold transition"
           >
             Cancel
           </button>
-
         </div>
-
       </div>
-
     </div>
   );
 }
-
-/* =========================
-      RESPONSIVE STYLES
-========================= */
-
-const styles = {
-
-  overlay: {
-    position: "fixed",
-    inset: 0,
-    background:
-      "rgba(0,0,0,0.55)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: "20px",
-    zIndex: 999,
-  },
-
-  modal: {
-    width: "100%",
-    maxWidth: "850px",
-    background: "#ffffff",
-    borderRadius: "24px",
-    padding: "30px",
-    maxHeight: "90vh",
-    overflowY: "auto",
-    boxShadow:
-      "0 20px 50px rgba(0,0,0,0.2)",
-    boxSizing: "border-box",
-  },
-
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: "15px",
-    marginBottom: "28px",
-    flexWrap: "wrap",
-  },
-
-  title: {
-    margin: 0,
-    fontSize: "clamp(24px,4vw,30px)",
-    color: "#111827",
-    fontWeight: "700",
-  },
-
-  subtitle: {
-    color: "#6b7280",
-    marginTop: "6px",
-    fontSize: "14px",
-  },
-
-  closeBtn: {
-    border: "none",
-    background: "#f3f4f6",
-    width: "42px",
-    height: "42px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontSize: "18px",
-    flexShrink: 0,
-  },
-
-  formGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(240px,1fr))",
-    gap: "18px",
-  },
-
-  fullWidth: {
-    gridColumn: "1 / -1",
-  },
-
-  buttonGroup: {
-    display: "flex",
-    gap: "14px",
-    marginTop: "30px",
-    flexWrap: "wrap",
-  },
-
-  saveBtn: {
-    flex: 1,
-    minWidth: "180px",
-    padding: "14px",
-    background: "#16a34a",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "14px",
-    fontWeight: "bold",
-    fontSize: "15px",
-    cursor: "pointer",
-  },
-
-  cancelBtn: {
-    flex: 1,
-    minWidth: "180px",
-    padding: "14px",
-    background: "#e5e7eb",
-    color: "#111827",
-    border: "none",
-    borderRadius: "14px",
-    fontWeight: "bold",
-    fontSize: "15px",
-    cursor: "pointer",
-  },
-};
 
 export default MedModal;

@@ -1,10 +1,4 @@
-import {
-  useState,
-} from "react";
-
-/* =========================
-      THEME
-========================= */
+import { useState } from "react";
 
 import {
   useTheme,
@@ -21,225 +15,195 @@ function Settings({
     toggleTheme,
   } = useTheme();
 
-  /* =========================
-        STATES
-  ========================= */
+  // Theme
+  const ui = {
+    bg: darkMode
+      ? "bg-[#020617] text-white"
+      : "bg-slate-100 text-black",
 
-  const [
-    storeName,
-    setStoreName,
-  ] = useState(
-    "ANFAC Pharmacy"
-  );
+    card: darkMode
+      ? "bg-[#111827] border-[#1f2937]"
+      : "bg-white border-slate-200",
 
-  const [
-    phone,
-    setPhone,
-  ] = useState(
-    "+252612345678"
-  );
+    input: darkMode
+      ? "bg-[#0f172a] border-[#374151] text-white"
+      : "bg-white border-slate-300 text-black",
 
-  const [
-    email,
-    setEmail,
-  ] = useState(
-    "info@anfac.so"
-  );
+    text: darkMode
+      ? "text-slate-400"
+      : "text-slate-500",
+  };
 
-  const [
-    address,
-    setAddress,
-  ] = useState(
-    "Mogadishu Somalia"
-  );
+  // States
+  const [form, setForm] =
+    useState({
 
-  const [
-    currency,
-    setCurrency,
-  ] = useState(
-    "USD"
-  );
+      storeName:
+        "ANFAC Pharmacy",
 
-  /* =========================
-        SAVE SETTINGS
-  ========================= */
+      phone:
+        "+252615189953",
 
+      email:
+        "info@anfac.so",
+
+      address:
+        "Mogadishu Somalia",
+
+      currency:
+        "USD",
+    });
+
+  // Input Change
+  const change =
+    (e) => {
+
+      setForm({
+        ...form,
+
+        [e.target.name]:
+          e.target.value,
+      });
+    };
+
+  // Save
   const saveSettings =
     () => {
 
       toast?.(
-        "Settings saved successfully",
+        "Settings saved",
         "success"
       );
     };
 
-  /* =========================
-        BACKUP
-  ========================= */
-
+  // Backup
   const backupDatabase =
     () => {
 
       toast?.(
-        "Database backup completed",
+        "Backup completed",
         "success"
       );
     };
 
   return (
 
-    <div style={{
-      ...styles.container,
+    <div className={`
+      min-h-screen p-4 md:p-6
+      ${ui.bg}
+    `}>
 
-      background:
-        darkMode
-          ? "#020617"
-          : "#f3f4f6",
+      {/* Header */}
+      <div className="
+        flex items-center gap-4
+        mb-8
+      ">
 
-      color:
-        darkMode
-          ? "#ffffff"
-          : "#111827",
-    }}>
+        <button
+          onClick={openSidebar}
+          className={`
+            md:hidden
+            w-12 h-12
+            rounded-2xl
+            text-xl
+            ${ui.card}
+          `}
+        >
+          ☰
+        </button>
 
-      {/* HEADER */}
+        <div>
 
-      <div style={styles.header}>
+          <h1 className="
+            text-3xl md:text-5xl
+            font-black
+          ">
+            Settings ⚙️
+          </h1>
 
-        <div style={styles.mobileTop}>
-
-          <button
-            onClick={openSidebar}
-
-            style={styles.menuButton}
-          >
-            ☰
-          </button>
-
-          <div>
-
-            <h1 style={{
-              ...styles.title,
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}>
-              Settings ⚙️
-            </h1>
-
-            <p style={{
-              ...styles.subtitle,
-
-              color:
-                darkMode
-                  ? "#d1d5db"
-                  : "#6b7280",
-            }}>
-              Manage pharmacy settings
-            </p>
-
-          </div>
+          <p className={ui.text}>
+            Manage pharmacy settings
+          </p>
 
         </div>
 
       </div>
 
-      {/* GRID */}
+      {/* Grid */}
+      <div className="
+        grid grid-cols-1
+        xl:grid-cols-2
+        gap-6
+      ">
 
-      <div style={styles.grid}>
+        {/* Pharmacy */}
+        <div className={`
+          p-6 rounded-3xl border
+          ${ui.card}
+        `}>
 
-        {/* PHARMACY INFO */}
-
-        <div style={card(darkMode)}>
-
-          <h2 style={title(darkMode)}>
+          <h2 className="
+            text-2xl font-black
+            mb-6
+          ">
             Pharmacy Info 🏥
           </h2>
 
-          <div style={styles.formWrapper}>
+          <div className="
+            space-y-4
+          ">
 
-            <input
-              type="text"
+            {[
+              [
+                "storeName",
+                "Store Name",
+              ],
 
-              value={
-                storeName
-              }
+              [
+                "phone",
+                "Phone",
+              ],
 
-              onChange={(e) =>
-                setStoreName(
-                  e.target.value
-                )
-              }
+              [
+                "email",
+                "Email",
+              ],
 
-              placeholder="Store Name"
+              [
+                "address",
+                "Address",
+              ],
+            ].map(
+              ([key, text]) => (
 
-              style={input(darkMode)}
-            />
+                <input
+                  key={key}
+                  name={key}
+                  placeholder={text}
+                  value={form[key]}
+                  onChange={change}
+                  className={`
+                    w-full h-14 px-5
+                    rounded-2xl border
+                    outline-none
+                    ${ui.input}
+                  `}
+                />
 
-            <input
-              type="text"
+              )
+            )}
 
-              value={phone}
-
-              onChange={(e) =>
-                setPhone(
-                  e.target.value
-                )
-              }
-
-              placeholder="Phone"
-
-              style={input(darkMode)}
-            />
-
-            <input
-              type="email"
-
-              value={email}
-
-              onChange={(e) =>
-                setEmail(
-                  e.target.value
-                )
-              }
-
-              placeholder="Email"
-
-              style={input(darkMode)}
-            />
-
-            <input
-              type="text"
-
-              value={
-                address
-              }
-
-              onChange={(e) =>
-                setAddress(
-                  e.target.value
-                )
-              }
-
-              placeholder="Address"
-
-              style={input(darkMode)}
-            />
-
+            {/* Currency */}
             <select
-              value={
-                currency
-              }
-
-              onChange={(e) =>
-                setCurrency(
-                  e.target.value
-                )
-              }
-
-              style={input(darkMode)}
+              name="currency"
+              value={form.currency}
+              onChange={change}
+              className={`
+                w-full h-14 px-5
+                rounded-2xl border
+                outline-none
+                ${ui.input}
+              `}
             >
 
               <option>
@@ -256,14 +220,18 @@ function Settings({
 
             </select>
 
+            {/* Save */}
             <button
               onClick={
                 saveSettings
               }
-
-              style={
-                saveBtn
-              }
+              className="
+                w-full h-14
+                rounded-2xl
+                bg-green-600
+                hover:bg-green-700
+                text-white font-bold
+              "
             >
               Save Settings
             </button>
@@ -272,50 +240,38 @@ function Settings({
 
         </div>
 
-        {/* SYSTEM SETTINGS */}
+        {/* System */}
+        <div className={`
+          p-6 rounded-3xl border
+          ${ui.card}
+        `}>
 
-        <div style={card(darkMode)}>
-
-          <h2 style={title(darkMode)}>
+          <h2 className="
+            text-2xl font-black
+            mb-6
+          ">
             System Settings 🛠️
           </h2>
 
-          {/* DARK MODE */}
-
-          <div style={{
-            ...styles.darkCard,
-
-            background:
-              darkMode
-                ? "#0f172a"
-                : "#f9fafb",
-          }}>
+          {/* Dark Mode */}
+          <div className="
+            flex items-center
+            justify-between
+            gap-4
+            rounded-3xl
+            p-5 mb-6
+            bg-slate-900/60
+          ">
 
             <div>
 
-              <h4 style={{
-                margin:
-                  "0 0 6px",
-
-                color:
-                  darkMode
-                    ? "#ffffff"
-                    : "#111827",
-              }}>
+              <h3 className="
+                font-bold mb-1
+              ">
                 Dark Mode
-              </h4>
+              </h3>
 
-              <p style={{
-                margin: 0,
-
-                fontSize:
-                  "14px",
-
-                color:
-                  darkMode
-                    ? "#d1d5db"
-                    : "#6b7280",
-              }}>
+              <p className={ui.text}>
                 Enable dark theme
               </p>
 
@@ -325,15 +281,16 @@ function Settings({
               onClick={
                 toggleTheme
               }
-
-              style={{
-                ...styles.toggleButton,
-
-                background:
+              className={`
+                w-20 h-10
+                rounded-full
+                text-white font-bold
+                ${
                   darkMode
-                    ? "#16a34a"
-                    : "#d1d5db",
-              }}
+                    ? "bg-green-600"
+                    : "bg-slate-500"
+                }
+              `}
             >
 
               {darkMode
@@ -344,39 +301,33 @@ function Settings({
 
           </div>
 
-          {/* USER */}
+          {/* User */}
+          <div className="
+            border-t border-slate-700
+            pt-6
+          ">
 
-          <div style={{
-            borderTop:
-              darkMode
-
-                ? "1px solid #1f2937"
-
-                : "1px solid #e5e7eb",
-
-            paddingTop:
-              "24px",
-          }}>
-
-            <h3 style={{
-              marginTop: 0,
-
-              marginBottom:
-                "18px",
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}>
+            <h3 className="
+              text-xl font-black
+              mb-5
+            ">
               Current User 👤
             </h3>
 
-            <div style={styles.userWrapper}>
+            <div className="
+              flex items-center gap-4
+            ">
 
-              {/* AVATAR */}
-
-              <div style={styles.avatar}>
+              {/* Avatar */}
+              <div className="
+                w-16 h-16
+                rounded-full
+                bg-green-600
+                flex items-center
+                justify-center
+                text-2xl font-black
+                text-white
+              ">
 
                 {
                   currentUser?.name
@@ -388,22 +339,12 @@ function Settings({
 
               </div>
 
-              {/* USER INFO */}
-
+              {/* Info */}
               <div>
 
-                <h3 style={{
-                  margin:
-                    "0 0 6px",
-
-                  color:
-                    darkMode
-                      ? "#ffffff"
-                      : "#111827",
-
-                  wordBreak:
-                    "break-word",
-                }}>
+                <h3 className="
+                  text-xl font-bold
+                ">
 
                   {
                     currentUser?.name ||
@@ -413,17 +354,7 @@ function Settings({
 
                 </h3>
 
-                <p style={{
-                  margin: 0,
-
-                  color:
-                    darkMode
-                      ? "#d1d5db"
-                      : "#6b7280",
-
-                  wordBreak:
-                    "break-word",
-                }}>
+                <p className={ui.text}>
 
                   {
                     currentUser?.role ||
@@ -439,26 +370,21 @@ function Settings({
 
           </div>
 
-          {/* BACKUP */}
-
-          <div style={{
-            marginTop:
-              "28px",
-          }}>
-
-            <button
-              onClick={
-                backupDatabase
-              }
-
-              style={
-                backupBtn
-              }
-            >
-              Backup Database
-            </button>
-
-          </div>
+          {/* Backup */}
+          <button
+            onClick={
+              backupDatabase
+            }
+            className="
+              w-full h-14 mt-8
+              rounded-2xl
+              bg-blue-600
+              hover:bg-blue-700
+              text-white font-bold
+            "
+          >
+            Backup Database
+          </button>
 
         </div>
 
@@ -467,329 +393,5 @@ function Settings({
     </div>
   );
 }
-
-/* =========================
-      STYLES
-========================= */
-
-const styles = {
-
-  container: {
-    width: "100%",
-    minHeight: "100vh",
-    padding: "14px",
-    overflowX: "hidden",
-    boxSizing: "border-box",
-  },
-
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "14px",
-    marginBottom: "24px",
-  },
-
-  mobileTop: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    flexWrap: "wrap",
-  },
-
-  menuButton: {
-    width: "46px",
-    height: "46px",
-    borderRadius: "12px",
-    border: "none",
-    background: "#2563eb",
-    color: "#ffffff",
-    cursor: "pointer",
-    fontSize: "20px",
-    flexShrink: 0,
-  },
-
-  title: {
-    margin: 0,
-    fontSize:
-      "clamp(30px,6vw,40px)",
-    fontWeight: "bold",
-    wordBreak: "break-word",
-  },
-
-  subtitle: {
-    marginTop: "10px",
-    fontSize: "15px",
-  },
-
-  grid: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(280px,1fr))",
-
-    gap: "24px",
-
-    alignItems:
-      "start",
-  },
-
-  formWrapper: {
-    display: "flex",
-
-    flexDirection:
-      "column",
-
-    gap: "16px",
-  },
-
-  darkCard: {
-    display: "flex",
-
-    justifyContent:
-      "space-between",
-
-    alignItems:
-      "center",
-
-    flexWrap:
-      "wrap",
-
-    gap: "16px",
-
-    padding:
-      "18px",
-
-    borderRadius:
-      "18px",
-
-    marginBottom:
-      "24px",
-  },
-
-  toggleButton: {
-    width: "80px",
-
-    height: "40px",
-
-    borderRadius:
-      "999px",
-
-    border:
-      "none",
-
-    cursor:
-      "pointer",
-
-    color:
-      "#ffffff",
-
-    fontWeight:
-      "bold",
-
-    transition:
-      "0.3s",
-
-    flexShrink: 0,
-  },
-
-  userWrapper: {
-    display: "flex",
-
-    alignItems:
-      "center",
-
-    gap: "16px",
-
-    flexWrap:
-      "wrap",
-  },
-
-  avatar: {
-    width: "64px",
-
-    height: "64px",
-
-    borderRadius:
-      "50%",
-
-    background:
-      "#16a34a",
-
-    display:
-      "flex",
-
-    justifyContent:
-      "center",
-
-    alignItems:
-      "center",
-
-    color:
-      "#ffffff",
-
-    fontWeight:
-      "bold",
-
-    fontSize:
-      "24px",
-
-    flexShrink: 0,
-  },
-};
-
-/* =========================
-      CARD
-========================= */
-
-const card = (
-  darkMode
-) => ({
-  background:
-    darkMode
-      ? "#111827"
-      : "#ffffff",
-
-  padding: "24px",
-
-  borderRadius:
-    "24px",
-
-  border:
-    darkMode
-      ? "1px solid #1f2937"
-      : "1px solid #e5e7eb",
-
-  width: "100%",
-
-  boxSizing:
-    "border-box",
-});
-
-/* =========================
-      TITLE
-========================= */
-
-const title = (
-  darkMode
-) => ({
-  marginTop: 0,
-
-  marginBottom:
-    "24px",
-
-  color:
-    darkMode
-      ? "#ffffff"
-      : "#111827",
-
-  fontSize:
-    "clamp(22px,5vw,28px)",
-});
-
-/* =========================
-      INPUT
-========================= */
-
-const input = (
-  darkMode
-) => ({
-  width: "100%",
-
-  padding:
-    "14px 16px",
-
-  borderRadius:
-    "14px",
-
-  border:
-    darkMode
-
-      ? "1px solid #374151"
-
-      : "1px solid #d1d5db",
-
-  background:
-    darkMode
-      ? "#0f172a"
-      : "#ffffff",
-
-  color:
-    darkMode
-      ? "#ffffff"
-      : "#111827",
-
-  outline:
-    "none",
-
-  fontSize:
-    "15px",
-
-  boxSizing:
-    "border-box",
-});
-
-/* =========================
-      BUTTONS
-========================= */
-
-const saveBtn = {
-
-  width: "100%",
-
-  background:
-    "#16a34a",
-
-  color:
-    "#ffffff",
-
-  border:
-    "none",
-
-  padding:
-    "15px",
-
-  borderRadius:
-    "14px",
-
-  cursor:
-    "pointer",
-
-  fontWeight:
-    "bold",
-
-  fontSize:
-    "15px",
-};
-
-const backupBtn = {
-
-  width: "100%",
-
-  background:
-    "#2563eb",
-
-  color:
-    "#ffffff",
-
-  border:
-    "none",
-
-  padding:
-    "15px",
-
-  borderRadius:
-    "14px",
-
-  cursor:
-    "pointer",
-
-  fontWeight:
-    "bold",
-
-  fontSize:
-    "15px",
-};
 
 export default Settings;

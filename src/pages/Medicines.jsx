@@ -1,320 +1,698 @@
-import React, { useState } from "react";
-import { useTheme } from "../context/ThemeContext";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+
+import { db } from "../firebase";
+
+import {
+  useTheme,
+} from "../context/ThemeContext";
 
 function Medicines() {
-  const { darkMode } = useTheme();
 
-  const [medicines, setMedicines] = useState([
-    {
-      id: 1,
-      name: "Paracetamol",
-      category: "Tablet",
-      price: 5,
-      stock: 100,
-    },
-  ]);
+  const { darkMode } =
+    useTheme();
 
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "",
-    price: "",
-    stock: "",
-  });
+  // Theme
+  const ui = {
+    bg: darkMode
+      ? "bg-[#050816] text-white"
+      : "bg-slate-100 text-black",
 
-  const [showModal, setShowModal] = useState(false);
+    card: darkMode
+      ? "bg-[#0f172a] border-[#1e293b]"
+      : "bg-white border-slate-200",
 
-  const styles = {
-    container: {
-      width: "100%",
-      minHeight: "100vh",
-      padding: "20px",
-      background: darkMode ? "#020617" : "#f3f4f6",
-      color: darkMode ? "#ffffff" : "#111827",
-      boxSizing: "border-box",
-    },
+    input: darkMode
+      ? "bg-[#091225] border-[#1e293b] text-white"
+      : "bg-white border-slate-300 text-black",
 
-    topBar: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: "20px",
-      flexWrap: "wrap",
-      gap: "10px",
-    },
-
-    title: {
-      fontSize: "32px",
-      fontWeight: "bold",
-      margin: 0,
-      color: darkMode ? "#ffffff" : "#111827",
-    },
-
-    addButton: {
-      background: "#16a34a",
-      color: "#ffffff",
-      border: "none",
-      padding: "12px 18px",
-      borderRadius: "10px",
-      cursor: "pointer",
-      fontWeight: "bold",
-    },
-
-    tableWrapper: {
-      overflowX: "auto",
-      borderRadius: "10px",
-    },
-
-    table: {
-      width: "100%",
-      borderCollapse: "collapse",
-      background: darkMode ? "#0f172a" : "#ffffff",
-    },
-
-    th: {
-      background: darkMode ? "#111827" : "#e5e7eb",
-      color: darkMode ? "#ffffff" : "#111827",
-      padding: "14px",
-      textAlign: "left",
-      fontWeight: "bold",
-    },
-
-    td: {
-      padding: "14px",
-      color: darkMode ? "#e5e7eb" : "#111827",
-      borderBottom: darkMode
-        ? "1px solid #1f2937"
-        : "1px solid #e5e7eb",
-    },
-
-    actionButtons: {
-      display: "flex",
-      gap: "10px",
-    },
-
-    editBtn: {
-      background: "#2563eb",
-      color: "#ffffff",
-      border: "none",
-      padding: "8px 12px",
-      borderRadius: "8px",
-      cursor: "pointer",
-    },
-
-    deleteBtn: {
-      background: "#dc2626",
-      color: "#ffffff",
-      border: "none",
-      padding: "8px 12px",
-      borderRadius: "8px",
-      cursor: "pointer",
-    },
-
-    modalOverlay: {
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.5)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: "20px",
-      zIndex: 1000,
-    },
-
-    modal: {
-      width: "100%",
-      maxWidth: "400px",
-      background: darkMode ? "#0f172a" : "#ffffff",
-      color: darkMode ? "#ffffff" : "#111827",
-      borderRadius: "14px",
-      padding: "20px",
-      boxSizing: "border-box",
-    },
-
-    input: {
-      width: "100%",
-      padding: "12px",
-      marginBottom: "14px",
-      borderRadius: "8px",
-      border: darkMode
-        ? "1px solid #374151"
-        : "1px solid #d1d5db",
-      background: darkMode ? "#111827" : "#ffffff",
-      color: darkMode ? "#ffffff" : "#111827",
-      boxSizing: "border-box",
-      outline: "none",
-    },
-
-    saveBtn: {
-      width: "100%",
-      background: "#16a34a",
-      color: "#ffffff",
-      border: "none",
-      padding: "12px",
-      borderRadius: "8px",
-      cursor: "pointer",
-      fontWeight: "bold",
-    },
+    text: darkMode
+      ? "text-slate-400"
+      : "text-slate-500",
   };
 
-  const handleAddMedicine = () => {
-    if (
-      !formData.name ||
-      !formData.category ||
-      !formData.price ||
-      !formData.stock
-    ) {
-      alert("Please fill all fields");
-      return;
-    }
+  // States
+  const [medicines, setMedicines] =
+    useState([]);
 
-    const newMedicine = {
-      id: medicines.length + 1,
-      ...formData,
-    };
+  const [show, setShow] =
+    useState(false);
 
-    setMedicines([...medicines, newMedicine]);
+  const [edit, setEdit] =
+    useState(false);
 
-    setFormData({
+  const [currentId, setCurrentId] =
+    useState(null);
+
+  // Form
+  const [form, setForm] =
+    useState({
       name: "",
       category: "",
-      price: "",
       stock: "",
+      minStock: "",
+      buyPrice: "",
+      sellPrice: "",
+      expiryDate: "",
     });
 
-    setShowModal(false);
-  };
-
-  const handleDelete = (id) => {
-    const filteredMedicines = medicines.filter(
-      (medicine) => medicine.id !== id
+  // Firebase
+  const medicinesRef =
+    collection(
+      db,
+      "medicines"
     );
 
-    setMedicines(filteredMedicines);
+  // Fetch
+  const fetchMedicines =
+    async () => {
+
+      const data =
+        await getDocs(
+          medicinesRef
+        );
+
+      setMedicines(
+
+        data.docs.map(
+          (d) => ({
+            id: d.id,
+            ...d.data(),
+          })
+        )
+      );
+    };
+
+  useEffect(() => {
+    fetchMedicines();
+  }, []);
+
+  // Reset
+  const reset = () => {
+
+    setForm({
+      name: "",
+      category: "",
+      stock: "",
+      minStock: "",
+      buyPrice: "",
+      sellPrice: "",
+      expiryDate: "",
+    });
+
+    setShow(false);
+
+    setEdit(false);
+
+    setCurrentId(null);
   };
 
+  // Save
+  const save =
+    async (e) => {
+
+      e.preventDefault();
+
+      try {
+
+        if (edit) {
+
+          await updateDoc(
+
+            doc(
+              db,
+              "medicines",
+              currentId
+            ),
+
+            form
+          );
+
+        } else {
+
+          await addDoc(
+            medicinesRef,
+            form
+          );
+        }
+
+        fetchMedicines();
+
+        reset();
+
+      } catch (err) {
+
+        console.log(err);
+      }
+    };
+
+  // Edit
+  const handleEdit =
+    (item) => {
+
+      setForm(item);
+
+      setCurrentId(
+        item.id
+      );
+
+      setEdit(true);
+
+      setShow(true);
+    };
+
+  // Delete
+  const remove =
+    async (id) => {
+
+      if (
+        window.confirm(
+          "Delete medicine?"
+        )
+      ) {
+
+        await deleteDoc(
+
+          doc(
+            db,
+            "medicines",
+            id
+          )
+        );
+
+        fetchMedicines();
+      }
+    };
+
   return (
-    <div style={styles.container}>
-      <div style={styles.topBar}>
-        <h1 style={styles.title}>Medicines</h1>
+
+    <div className={`
+      min-h-screen
+      p-4 md:p-6
+      ${ui.bg}
+    `}>
+
+      {/* Header */}
+      <div className="
+        flex items-center
+        justify-between
+        mb-6
+      ">
+
+        <div>
+
+          <h1 className="
+            text-3xl font-black
+          ">
+            Medicines 💊
+          </h1>
+
+          <p className={ui.text}>
+            Manage pharmacy medicines
+          </p>
+
+        </div>
 
         <button
-          style={styles.addButton}
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            reset();
+            setShow(true);
+          }}
+          className="
+            h-14 px-6
+            rounded-2xl
+            bg-green-600
+            hover:bg-green-700
+            text-white font-bold
+          "
         >
           + Add Medicine
         </button>
+
       </div>
 
-      <div style={styles.tableWrapper}>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>ID</th>
-              <th style={styles.th}>Name</th>
-              <th style={styles.th}>Category</th>
-              <th style={styles.th}>Price</th>
-              <th style={styles.th}>Stock</th>
-              <th style={styles.th}>Actions</th>
-            </tr>
-          </thead>
+      {/* Table */}
+      <div className={`
+        rounded-3xl border
+        overflow-hidden
+        ${ui.card}
+      `}>
 
-          <tbody>
-            {medicines.map((medicine) => (
-              <tr key={medicine.id}>
-                <td style={styles.td}>{medicine.id}</td>
-                <td style={styles.td}>{medicine.name}</td>
-                <td style={styles.td}>{medicine.category}</td>
-                <td style={styles.td}>${medicine.price}</td>
-                <td style={styles.td}>{medicine.stock}</td>
+        <div className="
+          overflow-x-auto
+        ">
 
-                <td style={styles.td}>
-                  <div style={styles.actionButtons}>
-                    <button style={styles.editBtn}>
-                      Edit
-                    </button>
+          <table className="
+            w-full min-w-[900px]
+          ">
 
-                    <button
-                      style={styles.deleteBtn}
-                      onClick={() =>
-                        handleDelete(medicine.id)
-                      }
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
+            <thead>
+
+              <tr className="
+                border-b border-[#1e293b]
+                text-slate-400 text-sm
+              ">
+
+                {[
+                  "Name",
+                  "Category",
+                  "Stock",
+                  "Buy",
+                  "Sell",
+                  "Expiry",
+                  "Actions",
+                ].map((h) => (
+
+                  <th
+                    key={h}
+                    className="
+                      p-4 text-left
+                    "
+                  >
+                    {h}
+                  </th>
+
+                ))}
+
               </tr>
-            ))}
-          </tbody>
-        </table>
+
+            </thead>
+
+            <tbody>
+
+              {!medicines.length ? (
+
+                <tr>
+
+                  <td
+                    colSpan="7"
+                    className="
+                      p-10 text-center
+                      text-slate-400
+                    "
+                  >
+                    No medicines found
+                  </td>
+
+                </tr>
+
+              ) : (
+
+                medicines.map(
+                  (item) => {
+
+                    // Expiry
+                    const expiry =
+                      new Date(
+                        item.expiryDate
+                      );
+
+                    const today =
+                      new Date();
+
+                    const sixtyDays =
+                      new Date(
+                        Date.now() +
+                        60 *
+                          24 *
+                          60 *
+                          60 *
+                          1000
+                      );
+
+                    const expired =
+                      expiry <
+                      today;
+
+                    const nearExpiry =
+                      expiry <=
+                      sixtyDays;
+
+                    return (
+
+                      <tr
+                        key={item.id}
+                        className="
+                          border-b border-[#1e293b]
+                          hover:bg-slate-500/5
+                        "
+                      >
+
+                        {/* Name */}
+                        <td className="
+                          p-4 font-bold
+                        ">
+                          {item.name}
+                        </td>
+
+                        {/* Category */}
+                        <td className="p-4">
+
+                          <span className="
+                            px-3 py-1
+                            rounded-xl
+                            text-xs
+                            bg-slate-500/10
+                          ">
+                            {item.category}
+                          </span>
+
+                        </td>
+
+                        {/* Stock */}
+                        <td className="p-4">
+
+                          <span className={`
+                            font-bold
+
+                            ${
+                              Number(
+                                item.stock
+                              ) <=
+                              Number(
+                                item.minStock
+                              )
+
+                                ? "text-red-400"
+
+                                : "text-green-400"
+                            }
+                          `}>
+
+                            {item.stock}
+
+                          </span>
+
+                        </td>
+
+                        {/* Buy */}
+                        <td className="
+                          p-4 font-bold
+                          text-orange-400
+                        ">
+                          $
+                          {item.buyPrice}
+                        </td>
+
+                        {/* Sell */}
+                        <td className="
+                          p-4 font-bold
+                          text-green-400
+                        ">
+                          $
+                          {item.sellPrice}
+                        </td>
+
+                        {/* Expiry */}
+                        <td className="p-4">
+
+                          <span className={`
+                            px-3 py-1
+                            rounded-xl
+                            text-xs font-bold
+
+                            ${
+                              expired
+
+                                ? "bg-red-500/20 text-red-400"
+
+                                : nearExpiry
+
+                                ? "bg-yellow-500/20 text-yellow-400"
+
+                                : "bg-green-500/20 text-green-400"
+                            }
+                          `}>
+
+                            {expired
+
+                              ? "Expired"
+
+                              : nearExpiry
+
+                              ? "60 Days Left"
+
+                              : item.expiryDate}
+
+                          </span>
+
+                        </td>
+
+                        {/* Actions */}
+                        <td className="p-4">
+
+                          <div className="
+                            flex gap-2
+                          ">
+
+                            <button
+                              onClick={() =>
+                                handleEdit(
+                                  item
+                                )
+                              }
+                              className="
+                                h-10 px-4
+                                rounded-xl
+                                bg-blue-600
+                                hover:bg-blue-700
+                                text-white text-sm
+                              "
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                remove(
+                                  item.id
+                                )
+                              }
+                              className="
+                                h-10 px-4
+                                rounded-xl
+                                bg-red-600
+                                hover:bg-red-700
+                                text-white text-sm
+                              "
+                            >
+                              Delete
+                            </button>
+
+                          </div>
+
+                        </td>
+
+                      </tr>
+                    );
+                  }
+                )
+              )}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
       </div>
 
-      {showModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h2>Add Medicine</h2>
+      {/* Modal */}
+      {show && (
 
-            <input
-              type="text"
-              placeholder="Medicine Name"
-              style={styles.input}
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  name: e.target.value,
-                })
-              }
-            />
+        <div className="
+          fixed inset-0 z-50
+          bg-black/70
+          backdrop-blur-sm
+          flex items-center
+          justify-center
+          p-4
+        ">
 
-            <input
-              type="text"
-              placeholder="Category"
-              style={styles.input}
-              value={formData.category}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  category: e.target.value,
-                })
-              }
-            />
+          <div className="
+            w-full max-w-2xl
+            rounded-[32px]
+            border border-[#1e293b]
+            bg-[#0f172a]
+            p-7 shadow-2xl
+          ">
 
-            <input
-              type="number"
-              placeholder="Price"
-              style={styles.input}
-              value={formData.price}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  price: e.target.value,
-                })
-              }
-            />
+            {/* Top */}
+            <div className="
+              flex items-center
+              justify-between
+              mb-6
+            ">
 
-            <input
-              type="number"
-              placeholder="Stock"
-              style={styles.input}
-              value={formData.stock}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  stock: e.target.value,
-                })
-              }
-            />
+              <h2 className="
+                text-2xl font-black
+              ">
 
-            <button
-              style={styles.saveBtn}
-              onClick={handleAddMedicine}
+                {edit
+                  ? "Edit Medicine"
+                  : "Add Medicine"}
+
+              </h2>
+
+              <button
+                onClick={reset}
+                className="
+                  w-11 h-11
+                  rounded-2xl
+                  bg-slate-500/10
+                  text-xl
+                "
+              >
+                ×
+              </button>
+
+            </div>
+
+            {/* Form */}
+            <form
+              onSubmit={save}
+              className="
+                grid md:grid-cols-2
+                gap-5
+              "
             >
-              Save Medicine
-            </button>
+
+              {[
+                {
+                  name: "name",
+                  type: "text",
+                  placeholder:
+                    "Medicine Name",
+                },
+
+                {
+                  name: "category",
+                  type: "text",
+                  placeholder:
+                    "Category",
+                },
+
+                {
+                  name: "stock",
+                  type: "number",
+                  placeholder:
+                    "Stock",
+                },
+
+                {
+                  name: "minStock",
+                  type: "number",
+                  placeholder:
+                    "Min Stock",
+                },
+
+                {
+                  name: "buyPrice",
+                  type: "number",
+                  placeholder:
+                    "Buy Price",
+                },
+
+                {
+                  name: "sellPrice",
+                  type: "number",
+                  placeholder:
+                    "Sell Price",
+                },
+
+                {
+                  name: "expiryDate",
+                  type: "date",
+                },
+              ].map((input) => (
+
+                <input
+                  key={input.name}
+                  type={input.type}
+                  placeholder={
+                    input.placeholder
+                  }
+
+                  value={
+                    form[
+                      input.name
+                    ]
+                  }
+
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+
+                      [input.name]:
+                        e.target.value,
+                    })
+                  }
+
+                  className={`
+                    w-full h-14 px-5
+                    rounded-2xl border
+                    outline-none
+                    ${ui.input}
+                  `}
+                />
+
+              ))}
+
+              {/* Buttons */}
+              <div className="
+                md:col-span-2
+                flex gap-4 pt-2
+              ">
+
+                <button
+                  type="button"
+                  onClick={reset}
+                  className="
+                    w-full h-14
+                    rounded-2xl
+                    bg-slate-500/10
+                  "
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="
+                    w-full h-14
+                    rounded-2xl
+                    bg-green-600
+                    hover:bg-green-700
+                    text-white font-bold
+                  "
+                >
+
+                  {edit
+                    ? "Update"
+                    : "Save"}
+
+                </button>
+
+              </div>
+
+            </form>
+
           </div>
+
         </div>
       )}
+
     </div>
   );
 }

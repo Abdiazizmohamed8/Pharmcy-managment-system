@@ -1,752 +1,429 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { signOut } from "firebase/auth";
 
-import {
-  signOut,
-} from "firebase/auth";
-
-import {
-  auth,
-} from "../firebase";
-
-/* =========================
-      THEME
-========================= */
-
-import {
-  useTheme,
-} from "../context/ThemeContext";
+import { auth } from "../firebase";
+import { useTheme } from "../context/ThemeContext";
 
 function Topbar({
-
   setAuthed,
   setCurrentUser,
   currentUser,
   medicines = [],
   sales = [],
-
 }) {
+  const { darkMode, toggleTheme } = useTheme();
 
-  const {
-    darkMode,
-    toggleTheme,
-  } = useTheme();
+  const [showNotifications, setShowNotifications] =
+    useState(false);
 
-  const [
-    showNotifications,
-    setShowNotifications,
-  ] = useState(false);
+  /* ======================================================
+     NOTIFICATIONS
+  ====================================================== */
 
-  /* =========================
-        NOTIFICATIONS
-  ========================= */
+  const notifications = useMemo(() => {
+    const alerts = [];
 
-  const notifications = [];
+    // Medicine alerts
+    medicines.forEach((medicine) => {
+      // Low stock
+      if (
+        Number(medicine.stock) <=
+        Number(medicine.minStock || 5)
+      ) {
+        alerts.push({
+          type: "danger",
+          message: `${medicine.name} stock is low`,
+        });
+      }
 
-  /* LOW STOCK + EXPIRY */
+      // Expiry alerts
+      const expiryDate =
+        medicine.expiryDate ||
+        medicine.expiry;
 
-  medicines.forEach((medicine) => {
+      if (expiryDate) {
+        const today = new Date();
 
-    if (
-      Number(medicine.stock) <=
-      Number(medicine.minStock || 5)
-    ) {
+        today.setHours(0, 0, 0, 0);
 
-      notifications.push({
-        type: "danger",
-
-        message:
-          `${medicine.name} stock is low`,
-      });
-    }
-
-    const expiryDate =
-      medicine.expiryDate ||
-      medicine.expiry;
-
-    if (expiryDate) {
-
-      const today =
-        new Date();
-
-      today.setHours(
-        0,
-        0,
-        0,
-        0
-      );
-
-      const expiry =
-        new Date(
+        const expiry = new Date(
           `${expiryDate}T00:00:00`
         );
 
-      const diff =
-        expiry - today;
+        const diff =
+          expiry.getTime() -
+          today.getTime();
 
-      const days =
-        Math.ceil(
-          diff /
-          (1000 * 60 * 60 * 24)
+        const days = Math.ceil(
+          diff / (1000 * 60 * 60 * 24)
         );
 
-      if (days < 0) {
+        if (days < 0) {
+          alerts.push({
+            type: "danger",
+            message: `${medicine.name} expired`,
+          });
+        } else if (days <= 60) {
+          alerts.push({
+            type: "warning",
+            message: `${medicine.name} expiring soon`,
+          });
+        }
+      }
+    });
 
-        notifications.push({
+    // Debt alerts
+    sales.forEach((sale) => {
+      const isDebt =
+        sale.method === "Debt";
+
+      const unpaid =
+        sale.status?.toLowerCase() !==
+        "paid";
+
+      if (isDebt && unpaid) {
+        alerts.push({
           type: "danger",
-
-          message:
-            `${medicine.name} expired`,
-        });
-
-      } else if (days <= 60) {
-
-        notifications.push({
-          type: "warning",
-
-          message:
-            `${medicine.name} expiring soon`,
+          message: `${sale.customer} unpaid debt`,
         });
       }
+    });
+
+    return alerts;
+  }, [medicines, sales]);
+
+  /* ======================================================
+     LOGOUT
+  ====================================================== */
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+
+      setAuthed(false);
+
+      setCurrentUser(null);
+    } catch (error) {
+      console.log(error);
     }
-  });
+  };
 
-  /* DEBTS */
+  /* ======================================================
+     UI COLORS
+  ====================================================== */
 
-  sales.forEach((sale) => {
+  const bg = darkMode
+    ? "bg-[#020617] border-[#1e293b]"
+    : "bg-white border-slate-200";
 
-    if (
-      sale.paymentMethod === "Debt" &&
-      sale.paymentStatus
-        ?.toLowerCase() !== "paid"
-    ) {
+  const card = darkMode
+    ? "bg-[#111827] border-[#1e293b]"
+    : "bg-slate-50 border-slate-200";
 
-      notifications.push({
-        type: "danger",
+  const input = darkMode
+    ? "bg-[#111827] text-white"
+    : "bg-white text-black";
 
-        message:
-          `${sale.customerName} unpaid debt`,
-      });
-    }
-  });
+  const text = darkMode
+    ? "text-slate-400"
+    : "text-slate-500";
 
-  /* =========================
-        LOGOUT
-  ========================= */
-
-  const handleLogout =
-    async () => {
-
-      try {
-
-        await signOut(auth);
-
-        setAuthed(false);
-
-        setCurrentUser(null);
-
-      } catch (error) {
-
-        console.log(error);
-      }
-    };
+  const title = darkMode
+    ? "text-white"
+    : "text-slate-900";
 
   return (
-
-    <>
-
-      {/* RESPONSIVE */}
-
-      <style>
-        {`
-
-          @media (max-width: 768px) {
-
-            .topbar-mobile {
-
-              flex-direction: column !important;
-
-              align-items: flex-start !important;
-            }
-
-            .topbar-right {
-
-              width: 100% !important;
-
-              justify-content: flex-start !important;
-            }
-
-            .topbar-dropdown {
-
-              right: auto !important;
-
-              left: 0 !important;
-
-              width: 100% !important;
-
-              max-width: calc(100vw - 30px) !important;
-            }
-
-            .topbar-user {
-
-              width: 100% !important;
-
-              max-width: 100% !important;
-            }
-
-            .topbar-logout {
-
-              width: 100% !important;
-            }
-          }
-
-        `}
-      </style>
-
+    <div
+      className={`
+        sticky top-0 z-50
+        w-full
+        border-b
+        backdrop-blur-xl
+        px-4 md:px-6
+        py-4
+        ${bg}
+      `}
+    >
       <div
-        className="topbar-mobile"
-
-        style={{
-          ...styles.container,
-
-          background:
-            darkMode
-              ? "#020617"
-              : "#ffffff",
-
-          borderBottom:
-            darkMode
-              ? "1px solid #1e293b"
-              : "1px solid #e5e7eb",
-        }}
+        className="
+          flex flex-col
+          lg:flex-row
+          lg:items-center
+          lg:justify-between
+          gap-4
+        "
       >
+        {/* ======================================================
+            LEFT
+        ====================================================== */}
 
-        {/* LEFT */}
-
-        <div style={styles.left}>
-
+        <div className="min-w-0">
           <h1
-            style={{
-              ...styles.title,
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}
+            className={`
+              text-2xl md:text-3xl
+              font-black
+              tracking-tight
+              ${title}
+            `}
           >
             Welcome 👋
           </h1>
 
           <p
-            style={{
-              ...styles.subtitle,
-
-              color:
-                darkMode
-                  ? "#94a3b8"
-                  : "#6b7280",
-            }}
+            className={`
+              text-sm mt-1
+              ${text}
+            `}
           >
             Pharmacy management system
           </p>
-
         </div>
 
-        {/* RIGHT */}
+        {/* ======================================================
+            RIGHT
+        ====================================================== */}
 
         <div
-          className="topbar-right"
-
-          style={styles.right}
+          className="
+            flex flex-wrap
+            items-center
+            gap-3
+            w-full lg:w-auto
+          "
         >
+          {/* ======================================================
+              NOTIFICATIONS
+          ====================================================== */}
 
-          {/* NOTIFICATION */}
-
-          <div style={styles.notificationWrapper}>
-
+          <div className="relative">
             <button
               onClick={() =>
                 setShowNotifications(
                   !showNotifications
                 )
               }
-
-              style={{
-                ...styles.iconButton,
-
-                border:
-                  darkMode
-                    ? "1px solid #1e293b"
-                    : "1px solid #e5e7eb",
-
-                background:
-                  darkMode
-                    ? "#111827"
-                    : "#f9fafb",
-
-                color:
-                  darkMode
-                    ? "#ffffff"
-                    : "#111827",
-              }}
+              className={`
+                relative
+                w-12 h-12
+                rounded-2xl
+                border
+                flex items-center justify-center
+                text-xl
+                transition-all
+                hover:scale-105
+                ${card}
+                ${title}
+              `}
             >
-
               🔔
 
               {notifications.length > 0 && (
-
-                <div style={styles.badge}>
+                <span
+                  className="
+                    absolute
+                    -top-1 -right-1
+                    w-5 h-5
+                    rounded-full
+                    bg-red-600
+                    text-white
+                    text-[10px]
+                    font-bold
+                    flex items-center justify-center
+                  "
+                >
                   {notifications.length}
-                </div>
-
+                </span>
               )}
-
             </button>
 
-            {/* DROPDOWN */}
+            {/* ======================================================
+                DROPDOWN
+            ====================================================== */}
 
             {showNotifications && (
-
               <div
-                className="topbar-dropdown"
-
-                style={{
-                  ...styles.dropdown,
-
-                  background:
-                    darkMode
-                      ? "#111827"
-                      : "#ffffff",
-
-                  border:
-                    darkMode
-                      ? "1px solid #1f2937"
-                      : "1px solid #e5e7eb",
-                }}
+                className={`
+                  absolute
+                  right-0 top-14
+                  w-[320px]
+                  max-w-[90vw]
+                  max-h-[400px]
+                  overflow-y-auto
+                  rounded-3xl
+                  border
+                  p-4
+                  shadow-2xl
+                  ${card}
+                `}
               >
-
-                <h3
-                  style={{
-                    ...styles.dropdownTitle,
-
-                    color:
-                      darkMode
-                        ? "#ffffff"
-                        : "#111827",
-                  }}
+                <h2
+                  className={`
+                    text-lg
+                    font-bold
+                    mb-4
+                    ${title}
+                  `}
                 >
                   Notifications
-                </h3>
+                </h2>
 
-                {notifications.length === 0 ? (
-
+                {notifications.length ===
+                0 ? (
                   <div
-                    style={{
-                      color:
-                        darkMode
-                          ? "#94a3b8"
-                          : "#6b7280",
-                    }}
+                    className={`
+                      text-sm
+                      ${text}
+                    `}
                   >
-                    No alerts
+                    No alerts found
                   </div>
-
                 ) : (
+                  <div className="space-y-3">
+                    {notifications.map(
+                      (
+                        notification,
+                        index
+                      ) => (
+                        <div
+                          key={index}
+                          className={`
+                            rounded-2xl
+                            p-4
+                            text-sm
+                            font-semibold
+                            text-white
 
-                  notifications.map(
-                    (
-                      notification,
-                      index
-                    ) => (
-
-                      <div
-                        key={index}
-
-                        style={{
-                          ...styles.notificationItem,
-
-                          background:
-                            notification.type ===
-                            "danger"
-
-                              ? "#7f1d1d"
-
-                              : "#92400e",
-                        }}
-                      >
-
-                        {
-                          notification.type ===
+                            ${
+                              notification.type ===
+                              "danger"
+                                ? "bg-red-700"
+                                : "bg-yellow-600"
+                            }
+                          `}
+                        >
+                          {notification.type ===
                           "danger"
-
                             ? "🔥 "
+                            : "⏰ "}
 
-                            : "⏰ "
-                        }
-
-                        {
-                          notification.message
-                        }
-
-                      </div>
-                    )
-                  )
+                          {
+                            notification.message
+                          }
+                        </div>
+                      )
+                    )}
+                  </div>
                 )}
-
               </div>
             )}
-
           </div>
 
-          {/* DARK MODE */}
+          {/* ======================================================
+              DARK MODE
+          ====================================================== */}
 
           <button
             onClick={toggleTheme}
-
-            style={{
-              ...styles.iconButton,
-
-              border:
-                darkMode
-                  ? "1px solid #1e293b"
-                  : "1px solid #e5e7eb",
-
-              background:
-                darkMode
-                  ? "#16a34a"
-                  : "#f9fafb",
-            }}
+            className={`
+              w-12 h-12
+              rounded-2xl
+              border
+              flex items-center justify-center
+              text-xl
+              transition-all
+              hover:scale-105
+              ${card}
+            `}
           >
-            {
-              darkMode
-                ? "🌙"
-                : "☀️"
-            }
+            {darkMode ? "🌙" : "☀️"}
           </button>
 
-          {/* USER */}
+          {/* ======================================================
+              USER CARD
+          ====================================================== */}
 
           <div
-            className="topbar-user"
-
-            style={{
-              ...styles.userCard,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#f9fafb",
-            }}
+            className={`
+              flex items-center
+              gap-3
+              min-w-0
+              flex-1 lg:flex-none
+              rounded-2xl
+              border
+              px-4 py-2
+              ${card}
+            `}
           >
+            {/* Avatar */}
 
-            <div style={styles.avatar}>
-
-              {
-                currentUser?.name
-                  ?.charAt(0)
-                  ?.toUpperCase()
-              }
-
+            <div
+              className="
+                w-12 h-12
+                rounded-full
+                bg-green-600
+                text-white
+                font-bold
+                flex items-center justify-center
+                flex-shrink-0
+              "
+            >
+              {currentUser?.name
+                ?.charAt(0)
+                ?.toUpperCase() || "U"}
             </div>
 
-            <div style={styles.userInfo}>
+            {/* User Info */}
 
-              <div
-                style={{
-                  ...styles.userName,
-
-                  color:
-                    darkMode
-                      ? "#ffffff"
-                      : "#111827",
-                }}
+            <div className="min-w-0">
+              <h3
+                className={`
+                  font-bold
+                  truncate
+                  ${title}
+                `}
               >
-                {currentUser?.name}
-              </div>
+                {currentUser?.name ||
+                  "Unknown User"}
+              </h3>
 
-              <div style={styles.userRole}>
-                {currentUser?.role}
-              </div>
-
+              <p
+                className={`
+                  text-xs
+                  truncate
+                  ${text}
+                `}
+              >
+                {currentUser?.role ||
+                  "Staff"}
+              </p>
             </div>
-
           </div>
 
-          {/* LOGOUT */}
+          {/* ======================================================
+              LOGOUT
+          ====================================================== */}
 
           <button
             onClick={handleLogout}
-
-            className="topbar-logout"
-
-            style={styles.logoutButton}
+            className="
+              h-12
+              px-5
+              rounded-2xl
+              bg-red-600
+              hover:bg-red-700
+              text-white
+              font-bold
+              transition-all
+              hover:scale-105
+              w-full sm:w-auto
+            "
           >
             Logout
           </button>
-
         </div>
-
       </div>
-
-    </>
+    </div>
   );
 }
-
-/* =========================
-      STYLES
-========================= */
-
-const styles = {
-
-  container: {
-    position: "sticky",
-
-    top: 0,
-
-    zIndex: 100,
-
-    padding: "16px 20px",
-
-    display: "flex",
-
-    justifyContent:
-      "space-between",
-
-    alignItems: "center",
-
-    flexWrap: "wrap",
-
-    gap: "16px",
-
-    width: "100%",
-
-    overflow: "visible",
-
-    boxSizing: "border-box",
-
-    backdropFilter:
-      "blur(10px)",
-  },
-
-  left: {
-    flex: "1 1 250px",
-
-    minWidth: 0,
-  },
-
-  title: {
-    margin: 0,
-
-    fontSize:
-      "clamp(22px,4vw,30px)",
-
-    fontWeight: "700",
-
-    wordBreak: "break-word",
-  },
-
-  subtitle: {
-    marginTop: "6px",
-
-    fontSize: "14px",
-
-    wordBreak: "break-word",
-  },
-
-  right: {
-    display: "flex",
-
-    alignItems: "center",
-
-    gap: "12px",
-
-    flexWrap: "wrap",
-
-    justifyContent:
-      "flex-end",
-
-    flex: "1 1 300px",
-  },
-
-  notificationWrapper: {
-    position: "relative",
-  },
-
-  iconButton: {
-    width: "52px",
-
-    height: "52px",
-
-    borderRadius: "16px",
-
-    fontSize: "20px",
-
-    cursor: "pointer",
-
-    position: "relative",
-
-    flexShrink: 0,
-  },
-
-  badge: {
-    position: "absolute",
-
-    top: "-5px",
-
-    right: "-5px",
-
-    width: "22px",
-
-    height: "22px",
-
-    borderRadius: "50%",
-
-    background: "#ef4444",
-
-    color: "#ffffff",
-
-    display: "flex",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    fontSize: "11px",
-
-    fontWeight: "bold",
-  },
-
-  dropdown: {
-    position: "absolute",
-
-    top: "65px",
-
-    right: 0,
-
-    width: "320px",
-
-    maxWidth:
-      "calc(100vw - 20px)",
-
-    maxHeight: "400px",
-
-    overflowY: "auto",
-
-    overflowX: "hidden",
-
-    borderRadius: "20px",
-
-    padding: "18px",
-
-    boxShadow:
-      "0 10px 35px rgba(0,0,0,0.3)",
-
-    zIndex: 999,
-
-    boxSizing: "border-box",
-  },
-
-  dropdownTitle: {
-    marginTop: 0,
-
-    marginBottom: "16px",
-  },
-
-  notificationItem: {
-    padding: "14px",
-
-    borderRadius: "14px",
-
-    marginBottom: "12px",
-
-    color: "#ffffff",
-
-    fontWeight: "600",
-
-    fontSize: "14px",
-
-    wordBreak: "break-word",
-  },
-
-  userCard: {
-    display: "flex",
-
-    alignItems: "center",
-
-    gap: "10px",
-
-    padding: "10px 14px",
-
-    borderRadius: "18px",
-
-    maxWidth: "220px",
-
-    minWidth: 0,
-
-    overflow: "hidden",
-
-    flex: "1 1 auto",
-  },
-
-  avatar: {
-    width: "48px",
-
-    height: "48px",
-
-    borderRadius: "50%",
-
-    background: "#16a34a",
-
-    color: "#ffffff",
-
-    display: "flex",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    fontWeight: "bold",
-
-    flexShrink: 0,
-  },
-
-  userInfo: {
-    overflow: "hidden",
-  },
-
-  userName: {
-    fontWeight: "700",
-
-    whiteSpace: "nowrap",
-
-    overflow: "hidden",
-
-    textOverflow: "ellipsis",
-  },
-
-  userRole: {
-    fontSize: "13px",
-
-    color: "#94a3b8",
-
-    marginTop: "3px",
-  },
-
-  logoutButton: {
-    background: "#dc2626",
-
-    color: "#ffffff",
-
-    padding: "12px 20px",
-
-    borderRadius: "14px",
-
-    fontWeight: "700",
-
-    cursor: "pointer",
-
-    whiteSpace: "nowrap",
-  },
-};
 
 export default Topbar;

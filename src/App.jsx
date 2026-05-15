@@ -3,10 +3,7 @@ import {
   useEffect,
 } from "react";
 
-/* =========================
-      FIREBASE
-========================= */
-
+/* Firebase */
 import {
   collection,
   onSnapshot,
@@ -21,19 +18,13 @@ import {
   auth,
 } from "./firebase";
 
-/* =========================
-      COMPONENTS
-========================= */
-
+/* Components */
 import Sidebar from "./components/Sidebar";
 import Topbar from "./components/Topbar";
 import Login from "./components/Login";
 import Toast from "./components/Toast";
 
-/* =========================
-      PAGES
-========================= */
-
+/* Pages */
 import Dashboard from "./pages/Dashboard";
 import POS from "./pages/POS";
 import Medicines from "./pages/Medicines";
@@ -47,38 +38,28 @@ import Reports from "./pages/Reports";
 import Users from "./pages/Users";
 import Settings from "./pages/Settings";
 
-/* =========================
-      CSS
-========================= */
-
 import "./App.css";
 
 function App() {
-
   /* =========================
-        AUTH
+      Authentication
   ========================= */
 
   const [authed, setAuthed] =
     useState(false);
 
-  const [
-    currentUser,
-    setCurrentUser,
-  ] = useState(null);
+  const [currentUser, setCurrentUser] =
+    useState(null);
 
-  const [
-    authLoading,
-    setAuthLoading,
-  ] = useState(true);
+  const [authLoading, setAuthLoading] =
+    useState(true);
 
   /* =========================
-        THEME
+      Theme
   ========================= */
 
   const [dark, setDark] =
     useState(() => {
-
       const savedTheme =
         localStorage.getItem(
           "darkMode"
@@ -90,23 +71,26 @@ function App() {
     });
 
   useEffect(() => {
-
     localStorage.setItem(
       "darkMode",
       JSON.stringify(dark)
     );
 
+    document.body.className =
+      dark
+        ? "bg-[#090d16]"
+        : "bg-gray-100";
   }, [dark]);
 
   /* =========================
-        PAGE
+      Current Page
   ========================= */
 
   const [page, setPage] =
     useState("dashboard");
 
   /* =========================
-        FIREBASE DATA
+      Firebase Data
   ========================= */
 
   const [users, setUsers] =
@@ -127,32 +111,21 @@ function App() {
     setSuppliers,
   ] = useState([]);
 
-  const [sales, setSales] =
-    useState([]);
-
-  const [
-    expenses,
-    setExpenses,
-  ] = useState([]);
-
   /* =========================
-        TOAST
+      Toast
   ========================= */
 
-  const [
-    toastData,
-    setToastData,
-  ] = useState({
-    show: false,
-    message: "",
-    type: "success",
-  });
+  const [toastData, setToastData] =
+    useState({
+      show: false,
+      message: "",
+      type: "success",
+    });
 
   const toast = (
     message,
     type = "success"
   ) => {
-
     setToastData({
       show: true,
       message,
@@ -160,74 +133,57 @@ function App() {
     });
 
     setTimeout(() => {
-
       setToastData({
         show: false,
         message: "",
         type: "success",
       });
-
     }, 2500);
   };
 
   /* =========================
-        USERS
+      Load Users
   ========================= */
 
   useEffect(() => {
-
     const unsubscribe =
       onSnapshot(
-
         collection(
           db,
           "users"
         ),
-
         (snapshot) => {
-
-          const data =
+          setUsers(
             snapshot.docs.map(
               (doc) => ({
                 id: doc.id,
                 ...doc.data(),
               })
-            );
-
-          setUsers(data);
+            )
+          );
         }
       );
 
     return () =>
       unsubscribe();
-
   }, []);
 
   /* =========================
-        AUTH SESSION
+      Authentication Session
   ========================= */
 
   useEffect(() => {
-
     const unsubscribe =
       onAuthStateChanged(
-
         auth,
-
         async (user) => {
-
           if (user) {
-
             const userDoc =
               users.find(
                 (u) =>
-
                   u.email
                     ?.trim()
-                    ?.toLowerCase()
-
-                  ===
-
+                    ?.toLowerCase() ===
                   user.email
                     ?.trim()
                     ?.toLowerCase()
@@ -239,11 +195,12 @@ function App() {
             });
 
             setAuthed(true);
-
           } else {
-
             setAuthed(false);
-            setCurrentUser(null);
+
+            setCurrentUser(
+              null
+            );
           }
 
           setAuthLoading(false);
@@ -252,25 +209,20 @@ function App() {
 
     return () =>
       unsubscribe();
-
   }, [users]);
 
   /* =========================
-        FIREBASE LOAD
+      Load Medicines
   ========================= */
 
   useEffect(() => {
-
-    const unsubMedicines =
+    const unsubscribe =
       onSnapshot(
-
         collection(
           db,
           "medicines"
         ),
-
         (snapshot) => {
-
           setMedicines(
             snapshot.docs.map(
               (doc) => ({
@@ -282,16 +234,22 @@ function App() {
         }
       );
 
-    const unsubCustomers =
-      onSnapshot(
+    return () =>
+      unsubscribe();
+  }, []);
 
+  /* =========================
+      Load Customers
+  ========================= */
+
+  useEffect(() => {
+    const unsubscribe =
+      onSnapshot(
         collection(
           db,
           "customers"
         ),
-
         (snapshot) => {
-
           setCustomers(
             snapshot.docs.map(
               (doc) => ({
@@ -303,16 +261,22 @@ function App() {
         }
       );
 
-    const unsubSuppliers =
-      onSnapshot(
+    return () =>
+      unsubscribe();
+  }, []);
 
+  /* =========================
+      Load Suppliers
+  ========================= */
+
+  useEffect(() => {
+    const unsubscribe =
+      onSnapshot(
         collection(
           db,
           "suppliers"
         ),
-
         (snapshot) => {
-
           setSuppliers(
             snapshot.docs.map(
               (doc) => ({
@@ -324,111 +288,50 @@ function App() {
         }
       );
 
-    const unsubSales =
-      onSnapshot(
-
-        collection(
-          db,
-          "sales"
-        ),
-
-        (snapshot) => {
-
-          setSales(
-            snapshot.docs.map(
-              (doc) => ({
-                id: doc.id,
-                ...doc.data(),
-              })
-            )
-          );
-        }
-      );
-
-    const unsubExpenses =
-      onSnapshot(
-
-        collection(
-          db,
-          "expenses"
-        ),
-
-        (snapshot) => {
-
-          setExpenses(
-            snapshot.docs.map(
-              (doc) => ({
-                id: doc.id,
-                ...doc.data(),
-              })
-            )
-          );
-        }
-      );
-
-    return () => {
-
-      unsubMedicines();
-      unsubCustomers();
-      unsubSuppliers();
-      unsubSales();
-      unsubExpenses();
-    };
-
+    return () =>
+      unsubscribe();
   }, []);
 
   /* =========================
-        LOADING
+      Remove Loading Screen
   ========================= */
 
   if (authLoading) {
-
-    return (
-
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          fontSize: "28px",
-          fontWeight: "bold",
-          background: dark
-            ? "#020617"
-            : "#f3f4f6",
-          color: dark
-            ? "#ffffff"
-            : "#111827",
-        }}
-      >
-        Loading...
-      </div>
-    );
+    return null;
   }
 
   /* =========================
-        LOGIN
+      Login Screen
   ========================= */
 
   if (!authed) {
-
     return (
       <>
         <Login
-          setAuthed={setAuthed}
-          setCurrentUser={setCurrentUser}
+          setAuthed={
+            setAuthed
+          }
+          setCurrentUser={
+            setCurrentUser
+          }
           toast={toast}
         />
 
         {toastData.show && (
-
-          <div style={styles.toastWrapper}>
-
+          <div
+            className="
+            fixed top-5 right-5
+            z-[9999]
+          "
+          >
             <Toast
-              message={toastData.message}
-              type={toastData.type}
+              message={
+                toastData.message
+              }
+              type={
+                toastData.type
+              }
             />
-
           </div>
         )}
       </>
@@ -436,138 +339,149 @@ function App() {
   }
 
   /* =========================
-        PAGE RENDER
+      Render Pages
   ========================= */
 
   const renderPage = () => {
-
     switch (page) {
-
       case "dashboard":
-
         return (
           <Dashboard
-            medicines={medicines}
-            customers={customers}
-            sales={sales}
-            dark={dark}
+            medicines={
+              medicines
+            }
+            customers={
+              customers
+            }
           />
         );
 
       case "pos":
-
         return (
           <POS
-            medicines={medicines}
-            setMedicines={setMedicines}
-            customers={customers}
-            setCustomers={setCustomers}
-            sales={sales}
-            setSales={setSales}
+            medicines={
+              medicines
+            }
+            setMedicines={
+              setMedicines
+            }
+            customers={
+              customers
+            }
+            setCustomers={
+              setCustomers
+            }
             toast={toast}
             dark={dark}
           />
         );
 
       case "medicines":
-
         return (
           <Medicines
-            medicines={medicines}
-            setMedicines={setMedicines}
+            medicines={
+              medicines
+            }
+            setMedicines={
+              setMedicines
+            }
             toast={toast}
             dark={dark}
           />
         );
 
       case "inventory":
-
         return (
           <Inventory
-            medicines={medicines}
+            medicines={
+              medicines
+            }
             darkMode={dark}
             toast={toast}
           />
         );
 
       case "customers":
-
         return (
           <Customers
-            customers={customers}
-            setCustomers={setCustomers}
+            customers={
+              customers
+            }
+            setCustomers={
+              setCustomers
+            }
             toast={toast}
             darkMode={dark}
           />
         );
 
       case "suppliers":
-
         return (
           <Suppliers
-            suppliers={suppliers}
-            setSuppliers={setSuppliers}
+            suppliers={
+              suppliers
+            }
+            setSuppliers={
+              setSuppliers
+            }
             toast={toast}
             darkMode={dark}
           />
         );
 
       case "sales":
-
         return (
           <SalesHistory
-            sales={sales}
-            setSales={setSales}
             toast={toast}
-            dark={dark}
           />
         );
 
       case "debts":
-
         return (
           <Debts
-            customers={customers}
-            setCustomers={setCustomers}
-            sales={sales}
-            setSales={setSales}
+            customers={
+              customers
+            }
+            setCustomers={
+              setCustomers
+            }
             toast={toast}
             dark={dark}
           />
         );
 
       case "expenses":
-
         return (
           <Expenses
-            expenses={expenses}
-            setExpenses={setExpenses}
             toast={toast}
             dark={dark}
           />
         );
 
       case "reports":
-
         return (
           <Reports
-            sales={sales}
-            medicines={medicines}
-            expenses={expenses}
+            medicines={
+              medicines
+            }
             dark={dark}
           />
         );
 
       case "users":
-
         if (
-          currentUser?.role
-            ?.toLowerCase() !==
+          currentUser?.role?.toLowerCase() !==
           "admin"
         ) {
-
           return (
-            <div style={styles.accessDenied}>
+            <div
+              className="
+              text-center
+              text-red-500
+              text-3xl font-bold
+              p-10
+            "
+            >
               Access Denied 🚫
             </div>
           );
@@ -575,161 +489,118 @@ function App() {
 
         return (
           <Users
-            currentUser={currentUser}
+            currentUser={
+              currentUser
+            }
             toast={toast}
             darkMode={dark}
           />
         );
 
       case "settings":
-
         return (
           <Settings
             dark={dark}
             setDark={setDark}
-            currentUser={currentUser}
+            currentUser={
+              currentUser
+            }
             toast={toast}
           />
         );
 
       default:
-
         return (
           <Dashboard
-            medicines={medicines}
-            customers={customers}
-            sales={sales}
-            dark={dark}
+            medicines={
+              medicines
+            }
+            customers={
+              customers
+            }
           />
         );
     }
   };
 
   return (
-
     <div
-      style={{
-        ...styles.app,
-
-        background: dark
-          ? "#020617"
-          : "#f3f4f6",
-
-        color: dark
-          ? "#ffffff"
-          : "#111827",
-      }}
+      className={`
+        flex min-h-screen
+        overflow-hidden
+        ${
+          dark
+            ? "bg-[#090d16] text-white"
+            : "bg-gray-100 text-gray-900"
+        }
+      `}
     >
+      {/* Sidebar */}
+      <Sidebar
+        page={page}
+        setPage={setPage}
+        currentUser={
+          currentUser
+        }
+        dark={dark}
+      />
 
-      {/* SIDEBAR */}
-
-      <div className="sidebar-wrapper">
-
-        <Sidebar
-          page={page}
-          setPage={setPage}
-          currentUser={currentUser}
-          dark={dark}
-        />
-
-      </div>
-
-      {/* MAIN */}
-
-      <div style={styles.main}>
-
+      {/* Main Content */}
+      <main
+        className="
+        flex-1 flex flex-col
+        h-screen overflow-hidden
+      "
+      >
+        {/* Topbar */}
         <Topbar
           dark={dark}
           setDark={setDark}
-          setAuthed={setAuthed}
-          setCurrentUser={setCurrentUser}
-          currentUser={currentUser}
-          medicines={medicines}
-          sales={sales}
+          setAuthed={
+            setAuthed
+          }
+          setCurrentUser={
+            setCurrentUser
+          }
+          currentUser={
+            currentUser
+          }
+          medicines={
+            medicines
+          }
         />
 
+        {/* Page Content */}
         <div
-          style={{
-            ...styles.content,
-
-            background: dark
-              ? "#020617"
-              : "#f3f4f6",
-
-            padding: dark
-              ? "0px"
-              : "clamp(14px,3vw,24px)",
-          }}
+          className="
+          flex-1 overflow-y-auto
+          overflow-x-hidden
+        "
         >
           {renderPage()}
         </div>
+      </main>
 
-      </div>
-
-      {/* TOAST */}
-
+      {/* Toast */}
       {toastData.show && (
-
-        <div style={styles.toastWrapper}>
-
+        <div
+          className="
+          fixed top-5 right-5
+          z-[9999]
+        "
+        >
           <Toast
-            message={toastData.message}
-            type={toastData.type}
+            message={
+              toastData.message
+            }
+            type={
+              toastData.type
+            }
           />
-
         </div>
       )}
-
     </div>
   );
 }
-
-/* =========================
-      STYLES
-========================= */
-
-const styles = {
-
-  app: {
-    display: "flex",
-    minHeight: "100dvh",
-    width: "100%",
-    overflow: "hidden",
-    flexDirection: "row",
-  },
-
-  main: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    minWidth: 0,
-    width: "100%",
-    height: "100dvh",
-    overflowY: "auto",
-  },
-
-  content: {
-    flex: 1,
-    overflowY: "auto",
-    overflowX: "hidden",
-    width: "100%",
-    boxSizing: "border-box",
-  },
-
-  toastWrapper: {
-    position: "fixed",
-    top: "20px",
-    right: "20px",
-    zIndex: 9999,
-  },
-
-  accessDenied: {
-    fontSize: "clamp(22px,5vw,28px)",
-    fontWeight: "bold",
-    padding: "30px",
-    textAlign: "center",
-    color: "#ef4444",
-  },
-};
 
 export default App;

@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useMemo,
   useState,
 } from "react";
@@ -7,65 +8,139 @@ import {
   ResponsiveContainer,
   AreaChart,
   Area,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
   PieChart,
   Pie,
   Cell,
   BarChart,
   Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
 } from "recharts";
+
+import {
+  collection,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+} from "firebase/firestore";
+
+import { db } from "../firebase";
 
 import {
   useTheme,
 } from "../context/ThemeContext";
 
+/* =========================
+    Filters
+========================= */
+
+const filters = [
+  "Today",
+  "Weekly",
+  "Monthly",
+  "Yearly",
+  "All",
+];
+
 function Dashboard({
   medicines = [],
   customers = [],
-  sales = [],
   openSidebar,
 }) {
-
-  const {
-    darkMode,
-  } = useTheme();
-
-  const [
-    period,
-    setPeriod,
-  ] = useState("All");
+  const { darkMode } =
+    useTheme();
 
   /* =========================
-        FILTER SALES
+      States
+  ========================= */
+
+  const [period, setPeriod] =
+    useState("All");
+
+  const [sales, setSales] =
+    useState([]);
+
+  /* =========================
+      Theme
+  ========================= */
+
+  const ui = {
+    page: darkMode
+      ? "bg-[#020617] text-white"
+      : "bg-slate-100 text-black",
+
+    card: darkMode
+      ? "bg-[#111827] border-[#1f2937]"
+      : "bg-white border-slate-200",
+
+    text: darkMode
+      ? "text-slate-400"
+      : "text-slate-500",
+  };
+
+  /* =========================
+      Load Sales
+  ========================= */
+
+  useEffect(() => {
+    const q = query(
+      collection(
+        db,
+        "sales"
+      ),
+      orderBy(
+        "date",
+        "desc"
+      ),
+      limit(20)
+    );
+
+    const unsubscribe =
+      onSnapshot(
+        q,
+        (snapshot) => {
+          setSales(
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            )
+          );
+        }
+      );
+
+    return () =>
+      unsubscribe();
+  }, []);
+
+  /* =========================
+      Filter Sales
   ========================= */
 
   const filteredSales =
     useMemo(() => {
-
       const now =
         new Date();
 
       return sales.filter(
-        (sale) => {
-
-          if (!sale.date)
+        (s) => {
+          if (!s.date)
             return false;
 
-          const saleDate =
+          const d =
             new Date(
-              sale.date
+              s.date
             );
 
           if (
             period ===
             "Today"
           ) {
-
             return (
-              saleDate.toDateString() ===
+              d.toDateString() ===
               now.toDateString()
             );
           }
@@ -74,30 +149,25 @@ function Dashboard({
             period ===
             "Weekly"
           ) {
-
-            const weekAgo =
+            const week =
               new Date();
 
-            weekAgo.setDate(
-              now.getDate() - 7
+            week.setDate(
+              now.getDate() -
+                7
             );
 
-            return (
-              saleDate >= weekAgo
-            );
+            return d >= week;
           }
 
           if (
             period ===
             "Monthly"
           ) {
-
             return (
-
-              saleDate.getMonth() ===
+              d.getMonth() ===
                 now.getMonth() &&
-
-              saleDate.getFullYear() ===
+              d.getFullYear() ===
                 now.getFullYear()
             );
           }
@@ -106,9 +176,8 @@ function Dashboard({
             period ===
             "Yearly"
           ) {
-
             return (
-              saleDate.getFullYear() ===
+              d.getFullYear() ===
               now.getFullYear()
             );
           }
@@ -116,469 +185,352 @@ function Dashboard({
           return true;
         }
       );
-
-    }, [
-      sales,
-      period,
-    ]);
+    }, [sales, period]);
 
   /* =========================
-        STATS
+      Revenue
   ========================= */
 
-  const totalRevenue =
-    filteredSales.reduce(
-      (
-        acc,
-        sale
-      ) =>
-
-        acc +
-        Number(
-          sale.total || 0
-        ),
-
-      0
-    );
-
-  const totalPaid =
-    filteredSales.reduce(
-      (
-        acc,
-        sale
-      ) =>
-
-        acc +
-        Number(
-          sale.paid || 0
-        ),
-
-      0
-    );
-
-  const totalDebt =
+  const revenue =
     filteredSales
 
       .filter(
-        (sale) =>
-
-          sale.status !==
-          "Paid"
+        (s) =>
+          Number(
+            s.total || 0
+          ) <=
+          Number(
+            s.paid || 0
+          )
       )
 
       .reduce(
-        (
-          acc,
-          sale
-        ) => {
-
-          const debt =
-
-            Number(
-              sale.total || 0
-            )
-
-            -
-
-            Number(
-              sale.paid || 0
-            );
-
-          return (
-            acc + debt
-          );
-
-        },
-
+        (a, b) =>
+          a +
+          Number(
+            b.total || 0
+          ),
         0
       );
 
-  const totalProfit =
-    filteredSales.reduce(
-      (
-        acc,
-        sale
-      ) =>
-
-        acc +
-
-        (
-          Number(
-            sale.total || 0
-          ) -
-
-          Number(
-            sale.cost || 0
-          )
-        ),
-
-      0
-    );
-
   /* =========================
-        LOW STOCK
+      Debt
   ========================= */
 
-  const lowStock =
-    medicines.filter(
-      (medicine) =>
+  const debt =
+    filteredSales
 
-        Number(
-          medicine.stock
-        ) <=
-        Number(
-          medicine.minStock || 5
-        )
-    );
+      .filter(
+        (s) =>
+          Number(
+            s.total || 0
+          ) >
+          Number(
+            s.paid || 0
+          )
+      )
+
+      .reduce(
+        (a, b) =>
+          a +
+          (Number(
+            b.total || 0
+          ) -
+            Number(
+              b.paid || 0
+            )),
+        0
+      );
 
   /* =========================
-        CHART DATA
+      Profit
+  ========================= */
+
+  const profit =
+    revenue - debt;
+
+  /* =========================
+      Charts
   ========================= */
 
   const salesChart =
-    filteredSales.map(
-      (sale) => ({
+    filteredSales
+      .slice(0, 10)
+      .map((s) => ({
         name:
-          sale.customer ||
+          s.customer ||
           "Sale",
 
         amount:
           Number(
-            sale.total || 0
+            s.total || 0
           ),
-      })
-    );
+      }));
 
-  const paymentData = [
-
+  const paymentChart = [
     {
       name: "Paid",
-      value: totalPaid,
+      value: revenue,
     },
 
     {
       name: "Debt",
-      value: totalDebt,
+      value: debt,
     },
   ];
 
-  const monthlyData = [
-
+  const profitChart = [
     {
       name: "Revenue",
-      value: totalRevenue,
+      value: revenue,
     },
 
     {
       name: "Profit",
-      value: totalProfit,
+      value: profit,
     },
   ];
 
   /* =========================
-        RECENT SALES
+      Low Stock
   ========================= */
 
-  const recentSales =
-    [...filteredSales]
-      .sort(
-        (a, b) =>
-          b.createdAt -
-          a.createdAt
+  const lowStock =
+    medicines
+      .filter(
+        (m) =>
+          Number(
+            m.stock
+          ) <=
+          Number(
+            m.minStock || 5
+          )
       )
-      .slice(0, 5);
+      .slice(0, 8);
 
   return (
-
     <div
-      style={{
-        ...styles.container,
-
-        background:
-          darkMode
-            ? "#020617"
-            : "#f8fafc",
-
-        color:
-          darkMode
-            ? "#ffffff"
-            : "#111827",
-      }}
+      className={`
+        min-h-screen
+        p-4 md:p-6
+        ${ui.page}
+      `}
     >
+      {/* Header */}
+      <div
+        className="
+        flex items-center
+        justify-between
+        mb-6
+      "
+      >
+        <div>
+          <h1
+            className="
+            text-3xl md:text-5xl
+            font-black
+          "
+          >
+            Dashboard 📊
+          </h1>
 
-      {/* MOBILE TOP */}
+          <p className={ui.text}>
+            Pharmacy analytics
+          </p>
+        </div>
 
-      <div style={styles.mobileTop}>
-
+        {/* Mobile Sidebar */}
         <button
-          onClick={openSidebar}
-
-          style={{
-            ...styles.menuButton,
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-          }}
+          onClick={
+            openSidebar
+          }
+          className={`
+            md:hidden
+            w-11 h-11
+            rounded-xl border
+            ${ui.card}
+          `}
         >
           ☰
         </button>
-
-        <h1
-          style={{
-            ...styles.mobileTitle,
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-          }}
-        >
-          Dashboard
-        </h1>
-
       </div>
 
-      {/* HEADER */}
-
-      <div style={styles.header}>
-
-        <h1
-          style={{
-            ...styles.mainTitle,
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-          }}
-        >
-          Dashboard 📊
-        </h1>
-
-        <p
-          style={{
-            ...styles.subtitle,
-
-            color:
-              darkMode
-                ? "#94a3b8"
-                : "#64748b",
-          }}
-        >
-          Pharmacy analytics overview
-        </p>
-
+      {/* Filters */}
+      <div
+        className="
+        flex flex-wrap
+        gap-3 mb-6
+      "
+      >
+        {filters.map(
+          (item) => (
+            <button
+              key={item}
+              onClick={() =>
+                setPeriod(
+                  item
+                )
+              }
+              className={`
+                px-4 py-2
+                rounded-xl
+                font-bold
+                transition
+                ${
+                  period ===
+                  item
+                    ? "bg-green-600 text-white"
+                    : ui.card
+                }
+              `}
+            >
+              {item}
+            </button>
+          )
+        )}
       </div>
 
-      {/* FILTERS */}
-
-      <div style={styles.filterWrapper}>
-
-        {[
-          "Today",
-          "Weekly",
-          "Monthly",
-          "Yearly",
-          "All",
-        ].map((item) => (
-
-          <button
-            key={item}
-
-            onClick={() =>
-              setPeriod(item)
-            }
-
-            style={{
-              ...styles.filterButton,
-
-              background:
-                period === item
-
-                  ? "#16a34a"
-
-                  : darkMode
-                  ? "#111827"
-                  : "#ffffff",
-
-              color:
-                period === item
-
-                  ? "#ffffff"
-
-                  : darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}
-          >
-            {item}
-          </button>
-        ))}
-
-      </div>
-
-      {/* STATS */}
-
-      <div style={styles.cardGrid}>
-
+      {/* Cards */}
+      <div
+        className="
+        grid grid-cols-2
+        lg:grid-cols-6
+        gap-4 mb-6
+      "
+      >
         <Card
           title="Revenue"
-          value={`$${totalRevenue.toFixed(2)}`}
-          color="#16a34a"
-          darkMode={darkMode}
+          value={`$${revenue.toFixed(
+            2
+          )}`}
+          color="text-green-400"
+          ui={ui}
         />
 
         <Card
           title="Profit"
-          value={`$${totalProfit.toFixed(2)}`}
-          color="#06b6d4"
-          darkMode={darkMode}
+          value={`$${profit.toFixed(
+            2
+          )}`}
+          color="text-cyan-400"
+          ui={ui}
         />
 
         <Card
           title="Debt"
-          value={`$${totalDebt.toFixed(2)}`}
-          color="#dc2626"
-          darkMode={darkMode}
+          value={`$${debt.toFixed(
+            2
+          )}`}
+          color="text-red-400"
+          ui={ui}
         />
 
         <Card
           title="Customers"
-          value={customers.length}
-          color="#2563eb"
-          darkMode={darkMode}
+          value={
+            customers.length
+          }
+          color="text-blue-400"
+          ui={ui}
         />
 
         <Card
           title="Medicines"
-          value={medicines.length}
-          color="#f59e0b"
-          darkMode={darkMode}
+          value={
+            medicines.length
+          }
+          color="text-yellow-400"
+          ui={ui}
         />
 
         <Card
           title="Sales"
-          value={filteredSales.length}
-          color="#8b5cf6"
-          darkMode={darkMode}
+          value={
+            filteredSales.length
+          }
+          color="text-purple-400"
+          ui={ui}
         />
-
       </div>
 
-      {/* CHARTS */}
-
-      <div style={styles.chartGrid}>
-
-        {/* SALES */}
-
-        <div style={box(darkMode)}>
-
-          <h2 style={title(darkMode)}>
-            Sales Overview 📈
-          </h2>
-
+      {/* Charts */}
+      <div
+        className="
+        grid lg:grid-cols-3
+        gap-5 mb-6
+      "
+      >
+        {/* Sales */}
+        <Chart
+          title="Sales 📈"
+          ui={ui}
+        >
           <ResponsiveContainer
             width="100%"
-            height={260}
+            height="100%"
           >
-
             <AreaChart
-              data={salesChart}
+              data={
+                salesChart
+              }
             >
-
-              <CartesianGrid
-                strokeDasharray="3 3"
-              />
-
-              <XAxis
-                dataKey="name"
-              />
+              <XAxis dataKey="name" />
 
               <YAxis />
 
               <Tooltip />
 
               <Area
-                type="monotone"
                 dataKey="amount"
-                stroke="#16a34a"
-                fill="#16a34a"
-                fillOpacity={0.2}
+                stroke="#22c55e"
+                fill="#22c55e33"
               />
-
             </AreaChart>
-
           </ResponsiveContainer>
+        </Chart>
 
-        </div>
-
-        {/* PAYMENT */}
-
-        <div style={box(darkMode)}>
-
-          <h2 style={title(darkMode)}>
-            Payment Report 💳
-          </h2>
-
+        {/* Payments */}
+        <Chart
+          title="Payments 💳"
+          ui={ui}
+        >
           <ResponsiveContainer
             width="100%"
-            height={260}
+            height="100%"
           >
-
             <PieChart>
-
               <Pie
-                data={paymentData}
+                data={
+                  paymentChart
+                }
                 dataKey="value"
-                outerRadius={90}
-                label
+                outerRadius={80}
               >
+                <Cell fill="#22c55e" />
 
-                <Cell fill="#16a34a" />
-
-                <Cell fill="#dc2626" />
-
+                <Cell fill="#ef4444" />
               </Pie>
 
               <Tooltip />
-
             </PieChart>
-
           </ResponsiveContainer>
+        </Chart>
 
-        </div>
-
-        {/* PROFIT */}
-
-        <div style={box(darkMode)}>
-
-          <h2 style={title(darkMode)}>
-            Profit Report 💰
-          </h2>
-
+        {/* Profit */}
+        <Chart
+          title="Profit 💰"
+          ui={ui}
+        >
           <ResponsiveContainer
             width="100%"
-            height={260}
+            height="100%"
           >
-
             <BarChart
-              data={monthlyData}
+              data={
+                profitChart
+              }
             >
-
-              <CartesianGrid
-                strokeDasharray="3 3"
-              />
-
-              <XAxis
-                dataKey="name"
-              />
+              <XAxis dataKey="name" />
 
               <YAxis />
 
@@ -586,524 +538,151 @@ function Dashboard({
 
               <Bar
                 dataKey="value"
-                fill="#2563eb"
+                fill="#3b82f6"
+                radius={[
+                  6,
+                  6,
+                  0,
+                  0,
+                ]}
               />
-
             </BarChart>
-
           </ResponsiveContainer>
-
-        </div>
-
+        </Chart>
       </div>
 
-      {/* LOW STOCK */}
-
-      <div style={box(darkMode)}>
-
-        <h2 style={title(darkMode)}>
+      {/* Low Stock */}
+      <div
+        className={`
+          p-5 rounded-3xl
+          border ${ui.card}
+        `}
+      >
+        <h2
+          className="
+          font-bold mb-4
+        "
+        >
           Low Stock ⚠️
         </h2>
 
-        {
-          lowStock.length === 0 ? (
-
-            <div style={styles.empty}>
-              No low stock medicines
-            </div>
-
-          ) : (
-
-            <div style={styles.lowGrid}>
-
-              {
-                lowStock.map(
-                  (medicine) => (
-
-                    <div
-                      key={medicine.id}
-
-                      style={{
-                        ...styles.lowCard,
-
-                        background:
-                          darkMode
-                            ? "#7f1d1d"
-                            : "#fee2e2",
-                      }}
-                    >
-
-                      <h3>
-                        {medicine.name}
-                      </h3>
-
-                      <p>
-                        Stock:
-                        {" "}
-                        {
-                          medicine.stock
-                        }
-                      </p>
-
-                    </div>
-                  )
-                )
-              }
-
-            </div>
-          )
-        }
-
-      </div>
-
-      {/* RECENT SALES */}
-
-      <div style={box(darkMode)}>
-
-        <h2 style={title(darkMode)}>
-          Recent Sales 🧾
-        </h2>
-
-        {
-          recentSales.length === 0 ? (
-
-            <div style={styles.empty}>
-              No recent sales
-            </div>
-
-          ) : (
-
-            <div
-              style={{
-                ...styles.tableWrapper,
-
-                background:
-                  darkMode
-                    ? "#0f172a"
-                    : "#ffffff",
-              }}
-            >
-
-              <table style={styles.table}>
-
-                <thead>
-
-                  <tr
-                    style={{
-                      background:
-                        darkMode
-                          ? "#111827"
-                          : "#f1f5f9",
-                    }}
+        {!lowStock.length ? (
+          <p className={ui.text}>
+            No low stock medicines
+          </p>
+        ) : (
+          <div
+            className="
+            grid sm:grid-cols-2
+            lg:grid-cols-4
+            gap-4
+          "
+          >
+            {lowStock.map(
+              (m) => (
+                <div
+                  key={m.id}
+                  className="
+                    p-4 rounded-2xl
+                    bg-red-500/10
+                    border border-red-500/20
+                  "
+                >
+                  <h3
+                    className="
+                    font-bold
+                  "
                   >
+                    {m.name}
+                  </h3>
 
-                    <th style={styles.th}>
-                      Customer
-                    </th>
-
-                    <th style={styles.th}>
-                      Amount
-                    </th>
-
-                    <th style={styles.th}>
-                      Payment
-                    </th>
-
-                    <th style={styles.th}>
-                      Status
-                    </th>
-
-                    <th style={styles.th}>
-                      Date
-                    </th>
-
-                  </tr>
-
-                </thead>
-
-                <tbody>
-
-                  {
-                    recentSales.map(
-                      (sale) => (
-
-                        <tr
-                          key={sale.id}
-
-                          style={{
-                            borderBottom:
-                              darkMode
-                                ? "1px solid #1e293b"
-                                : "1px solid #e2e8f0",
-                          }}
-                        >
-
-                          <td
-                            style={{
-                              ...styles.td,
-                              fontWeight: "700",
-                            }}
-                          >
-                            {sale.customer}
-                          </td>
-
-                          <td
-                            style={{
-                              ...styles.td,
-                              color: "#16a34a",
-                              fontWeight: "700",
-                            }}
-                          >
-
-                            $
-                            {
-                              Number(
-                                sale.total || 0
-                              ).toFixed(2)
-                            }
-
-                          </td>
-
-                          <td style={styles.td}>
-
-                            <span
-                              style={{
-                                ...styles.badge,
-
-                                background:
-                                  sale.method ===
-                                  "Debt"
-
-                                    ? "#fee2e2"
-
-                                    : "#dcfce7",
-
-                                color:
-                                  sale.method ===
-                                  "Debt"
-
-                                    ? "#dc2626"
-
-                                    : "#16a34a",
-                              }}
-                            >
-
-                              {sale.method}
-
-                            </span>
-
-                          </td>
-
-                          <td style={styles.td}>
-
-                            <span
-                              style={{
-                                ...styles.badge,
-
-                                background:
-
-                                  sale.status ===
-                                  "Paid"
-
-                                    ? "#dcfce7"
-
-                                    : sale.status ===
-                                      "Partial"
-
-                                    ? "#fef3c7"
-
-                                    : "#fee2e2",
-
-                                color:
-
-                                  sale.status ===
-                                  "Paid"
-
-                                    ? "#16a34a"
-
-                                    : sale.status ===
-                                      "Partial"
-
-                                    ? "#d97706"
-
-                                    : "#dc2626",
-                              }}
-                            >
-
-                              {sale.status}
-
-                            </span>
-
-                          </td>
-
-                          <td
-                            style={{
-                              ...styles.td,
-
-                              color:
-                                darkMode
-                                  ? "#94a3b8"
-                                  : "#64748b",
-                            }}
-                          >
-
-                            {
-                              sale.date?.slice(0, 10)
-                            }
-
-                          </td>
-
-                        </tr>
-                      )
-                    )
-                  }
-
-                </tbody>
-
-              </table>
-
-            </div>
-          )
-        }
-
+                  <p
+                    className="
+                    text-sm text-red-400
+                  "
+                  >
+                    Stock:
+                    {" "}
+                    {m.stock}
+                  </p>
+                </div>
+              )
+            )}
+          </div>
+        )}
       </div>
-
     </div>
   );
 }
 
 /* =========================
-      CARD
+    Card
 ========================= */
 
 function Card({
   title,
   value,
   color,
-  darkMode,
+  ui,
 }) {
-
   return (
-
     <div
-      style={{
-        ...styles.card,
-
-        background:
-          darkMode
-            ? "#111827"
-            : "#ffffff",
-
-        borderTop:
-          `5px solid ${color}`,
-      }}
+      className={`
+        p-5 rounded-3xl
+        border ${ui.card}
+      `}
     >
-
       <p
-        style={{
-          color:
-            darkMode
-              ? "#94a3b8"
-              : "#64748b",
-        }}
+        className={`
+        text-sm mb-2
+        ${ui.text}
+      `}
       >
         {title}
       </p>
 
       <h2
-        style={{
-          margin: 0,
-
-          color:
-            darkMode
-              ? "#ffffff"
-              : "#111827",
-        }}
+        className={`
+        text-3xl font-black
+        ${color}
+      `}
       >
         {value}
       </h2>
-
     </div>
   );
 }
 
 /* =========================
-      STYLES
+    Chart
 ========================= */
 
-const styles = {
+function Chart({
+  title,
+  children,
+  ui,
+}) {
+  return (
+    <div
+      className={`
+        p-5 rounded-3xl
+        border h-[340px]
+        ${ui.card}
+      `}
+    >
+      <h2
+        className="
+        font-bold mb-4
+      "
+      >
+        {title}
+      </h2>
 
-  container: {
-    width: "100%",
-    minHeight: "100vh",
-    padding: "16px",
-    boxSizing: "border-box",
-    overflowX: "hidden",
-  },
-
-  mobileTop: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    marginBottom: "20px",
-  },
-
-  menuButton: {
-    width: "46px",
-    height: "46px",
-    border: "none",
-    borderRadius: "12px",
-    fontSize: "20px",
-    cursor: "pointer",
-  },
-
-  mobileTitle: {
-    margin: 0,
-    fontSize: "24px",
-  },
-
-  header: {
-    marginBottom: "24px",
-  },
-
-  mainTitle: {
-    margin: 0,
-    fontSize:
-      "clamp(28px,6vw,38px)",
-  },
-
-  subtitle: {
-    marginTop: "8px",
-    fontSize: "15px",
-  },
-
-  filterWrapper: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(120px,1fr))",
-
-    gap: "12px",
-
-    marginBottom: "24px",
-  },
-
-  filterButton: {
-    padding: "14px",
-    border: "none",
-    borderRadius: "14px",
-    cursor: "pointer",
-    fontWeight: "700",
-    fontSize: "14px",
-  },
-
-  cardGrid: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
-
-    gap: "16px",
-
-    marginBottom: "24px",
-  },
-
-  card: {
-    padding: "20px",
-    borderRadius: "22px",
-    boxShadow:
-      "0 4px 15px rgba(0,0,0,0.05)",
-  },
-
-  chartGrid: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(320px,1fr))",
-
-    gap: "18px",
-
-    marginBottom: "24px",
-  },
-
-  lowGrid: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
-
-    gap: "14px",
-  },
-
-  lowCard: {
-    padding: "18px",
-    borderRadius: "16px",
-  },
-
-  tableWrapper: {
-    width: "100%",
-    overflowX: "auto",
-    borderRadius: "20px",
-  },
-
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    minWidth: "700px",
-  },
-
-  th: {
-    padding: "16px",
-    textAlign: "left",
-    fontSize: "14px",
-    fontWeight: "700",
-    whiteSpace: "nowrap",
-  },
-
-  td: {
-    padding: "16px",
-    fontSize: "14px",
-    whiteSpace: "nowrap",
-  },
-
-  badge: {
-    padding: "8px 14px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "700",
-    display: "inline-block",
-    whiteSpace: "nowrap",
-  },
-
-  empty: {
-    padding: "40px",
-    textAlign: "center",
-    color: "#94a3b8",
-  },
-};
-
-const box = (darkMode) => ({
-  background:
-    darkMode
-      ? "#111827"
-      : "#ffffff",
-
-  borderRadius: "24px",
-
-  padding: "20px",
-
-  boxShadow:
-    "0 4px 18px rgba(0,0,0,0.05)",
-});
-
-const title = (darkMode) => ({
-  marginTop: 0,
-  marginBottom: "20px",
-
-  color:
-    darkMode
-      ? "#ffffff"
-      : "#111827",
-});
+      <div className="h-[260px]">
+        {children}
+      </div>
+    </div>
+  );
+}
 
 export default Dashboard;

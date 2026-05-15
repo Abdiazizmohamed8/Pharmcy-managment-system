@@ -1,6 +1,6 @@
 import {
-  useState,
   useMemo,
+  useState,
 } from "react";
 
 import {
@@ -8,13 +8,9 @@ import {
   updateDoc,
 } from "firebase/firestore";
 
-import {
-  db,
-} from "../firebase";
+import { db } from "../firebase";
 
-import {
-  useTheme,
-} from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 
 function Debts({
   sales = [],
@@ -23,89 +19,71 @@ function Debts({
   openSidebar,
 }) {
 
-  const {
-    darkMode,
-  } = useTheme();
+  const { darkMode } =
+    useTheme();
 
-  const [
-    search,
-    setSearch,
-  ] = useState("");
+  // Theme
+  const ui = {
+    bg: darkMode
+      ? "bg-[#020617] text-white"
+      : "bg-slate-100 text-black",
 
-  /* =========================
-        FILTER DEBTS
-  ========================= */
+    card: darkMode
+      ? "bg-[#111827] border-[#1f2937]"
+      : "bg-white border-slate-200",
 
+    input: darkMode
+      ? "bg-[#111827] border-[#374151] text-white"
+      : "bg-white border-slate-300 text-black",
+
+    text: darkMode
+      ? "text-slate-400"
+      : "text-slate-500",
+  };
+
+  // Search
+  const [search, setSearch] =
+    useState("");
+
+  // Filter Debts
   const debtSales =
     useMemo(() => {
 
       return sales.filter(
         (sale) => {
 
-          const total =
-            Number(
-              sale.total || 0
-            );
-
-          const paid =
-            Number(
-              sale.paid || 0
-            );
-
           const debt =
-            total - paid;
+            Number(sale.total || 0) -
+            Number(sale.paid || 0);
 
-          const matchesSearch =
-
+          return (
+            debt > 0 &&
             sale.customer
               ?.toLowerCase()
               .includes(
                 search.toLowerCase()
-              );
-
-          return (
-            debt > 0 &&
-            matchesSearch
+              )
           );
         }
       );
 
-    }, [
-      sales,
-      search,
-    ]);
+    }, [sales, search]);
 
-  /* =========================
-        TOTAL DEBT
-  ========================= */
-
+  // Total Debt
   const totalDebt =
     debtSales.reduce(
-      (
-        total,
-        sale
-      ) => {
+      (sum, sale) =>
 
-        const debt =
-          Number(
-            sale.total || 0
-          ) -
-          Number(
-            sale.paid || 0
-          );
+        sum +
+        (
+          Number(sale.total || 0) -
+          Number(sale.paid || 0)
+        ),
 
-        return (
-          total + debt
-        );
-
-      },
       0
     );
 
-  /* =========================
-        MARK PAID
-  ========================= */
-
+  // Mark Paid
   const markPaid =
     async (sale) => {
 
@@ -116,8 +94,7 @@ function Debts({
             sale.total || 0
           );
 
-        /* SALES */
-
+        // Update Sale
         await updateDoc(
 
           doc(
@@ -132,55 +109,38 @@ function Debts({
           }
         );
 
-        /* CUSTOMERS */
+        // Update Customer
+        await updateDoc(
 
-      await updateDoc(
+          doc(
+            db,
+            "customers",
+            sale.phone ||
+            sale.customer
+          ),
 
-  doc(
+          {
+            debt: 0,
+            status: "Paid",
+          }
+        );
 
-    db,
+        // Local Update
+        setSales(
 
-    "customers",
+          sales.map((item) =>
 
-    sale.phone ||
-    sale.customer
-  ),
+            item.id === sale.id
 
-  {
-
-    debt: 0,
-
-    status: "Paid",
-  }
-);
-
-        /* LOCAL UPDATE */
-
-        const updated =
-          sales.map(
-            (item) => {
-
-              if (
-                item.id ===
-                sale.id
-              ) {
-
-                return {
-
+              ? {
                   ...item,
-
                   paid: total,
+                  status: "Paid",
+                }
 
-                  status:
-                    "Paid",
-                };
-              }
-
-              return item;
-            }
-          );
-
-        setSales(updated);
+              : item
+          )
+        );
 
         toast?.(
           "Debt paid successfully",
@@ -200,67 +160,37 @@ function Debts({
 
   return (
 
-    <div
-      style={{
-        ...styles.container,
+    <div className={`min-h-screen p-4 md:p-6 ${ui.bg}`}>
 
-        background:
-          darkMode
-            ? "#020617"
-            : "#f8fafc",
-
-        color:
-          darkMode
-            ? "#ffffff"
-            : "#111827",
-      }}
-    >
-
-      {/* HEADER */}
-
-      <div style={styles.mobileHeader}>
+      {/* Header */}
+      <div className="
+        flex items-center gap-4
+        mb-6
+      ">
 
         <button
           onClick={openSidebar}
-
-          style={{
-            ...styles.menuButton,
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-
-            border:
-              darkMode
-                ? "1px solid #1f2937"
-                : "1px solid #e5e7eb",
-          }}
+          className={`
+            md:hidden
+            w-12 h-12
+            rounded-2xl border
+            text-xl
+            ${ui.card}
+          `}
         >
           ☰
         </button>
 
         <div>
 
-          <h1
-            style={{
-              ...styles.title,
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}
-          >
+          <h1 className="
+            text-3xl md:text-5xl
+            font-black
+          ">
             Debts 💳
           </h1>
 
-          <p style={styles.subtitle}>
+          <p className={ui.text}>
             Customer debts management
           </p>
 
@@ -268,257 +198,324 @@ function Debts({
 
       </div>
 
-      {/* TOP BAR */}
+      {/* Top */}
+      <div className="
+        flex flex-col lg:flex-row
+        justify-between gap-5
+        mb-6
+      ">
 
-      <div style={styles.topBar}>
-
-        {/* SEARCH */}
-
+        {/* Search */}
         <input
           type="text"
-
           placeholder="Search customer..."
-
           value={search}
-
           onChange={(e) =>
             setSearch(
               e.target.value
             )
           }
-
-          style={{
-            ...styles.searchInput,
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-
-            border:
-              darkMode
-                ? "1px solid #374151"
-                : "1px solid #d1d5db",
-          }}
+          className={`
+            w-full lg:max-w-md
+            h-14 px-5
+            rounded-2xl border
+            outline-none
+            ${ui.input}
+          `}
         />
 
-        {/* TOTAL */}
+        {/* Total */}
+        <div className="
+          bg-red-600 text-white
+          rounded-3xl px-8 py-5
+          text-center min-w-[220px]
+        ">
 
-        <div style={styles.totalCard}>
-
-          <p style={styles.totalLabel}>
+          <p className="text-sm">
             Total Debt
           </p>
 
-          <h2 style={styles.totalAmount}>
-
+          <h2 className="
+            text-5xl font-black mt-2
+          ">
             $
             {totalDebt.toFixed(2)}
-
           </h2>
 
         </div>
 
       </div>
 
-      {/* TABLE */}
-
+      {/* Table */}
       <div
-        style={{
-          ...styles.tableWrapper,
-
-          background:
-            darkMode
-              ? "#111827"
-              : "#ffffff",
-
-          border:
-            darkMode
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}
+        className={`
+          rounded-3xl border
+          overflow-hidden
+          ${ui.card}
+        `}
       >
 
-        {/* HEADER */}
+        {!debtSales.length ? (
 
-        <div
-          style={{
-            ...styles.tableHeader,
+          <div className="
+            p-20 text-center
+            text-slate-400
+          ">
+            No debts found
+          </div>
 
-            background:
-              darkMode
-                ? "#0f172a"
-                : "#f1f5f9",
+        ) : (
 
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-          }}
-        >
+          <>
 
-          <div>Customer</div>
+            {/* Desktop */}
+            <div className="hidden lg:block">
 
-          <div>Invoice</div>
+              <table className="w-full">
 
-          <div>Total</div>
+                <thead>
 
-          <div>Paid</div>
+                  <tr className="
+                    border-b border-[#1f2937]
+                    text-slate-400 text-sm
+                  ">
 
-          <div>Debt</div>
+                    {[
+                      "Customer",
+                      "Invoice",
+                      "Total",
+                      "Paid",
+                      "Debt",
+                      "Status",
+                      "Action",
+                    ].map((item) => (
 
-          <div>Status</div>
+                      <th
+                        key={item}
+                        className="
+                          p-5 text-left
+                        "
+                      >
+                        {item}
+                      </th>
 
-          <div>Action</div>
+                    ))}
 
-        </div>
+                  </tr>
 
-        {/* BODY */}
+                </thead>
 
-        {
-          debtSales.length === 0 ? (
+                <tbody>
 
-            <div style={styles.empty}>
-              No debts found
+                  {debtSales.map(
+                    (sale) => {
+
+                      const total =
+                        Number(
+                          sale.total || 0
+                        );
+
+                      const paid =
+                        Number(
+                          sale.paid || 0
+                        );
+
+                      const debt =
+                        total - paid;
+
+                      return (
+
+                        <tr
+                          key={sale.id}
+                          className="
+                            border-b border-[#1f2937]
+                            hover:bg-slate-500/5
+                          "
+                        >
+
+                          <td className="
+                            p-5 font-bold
+                          ">
+                            {sale.customer}
+                          </td>
+
+                          <td className="
+                            p-5 text-blue-500
+                            font-bold
+                          ">
+                            #
+                            {
+                              sale.invoice || 1
+                            }
+                          </td>
+
+                          <td className="
+                            p-5 text-green-500
+                            font-bold
+                          ">
+                            $
+                            {total.toFixed(2)}
+                          </td>
+
+                          <td className="
+                            p-5 text-cyan-400
+                            font-bold
+                          ">
+                            $
+                            {paid.toFixed(2)}
+                          </td>
+
+                          <td className="
+                            p-5 text-red-500
+                            font-bold
+                          ">
+                            $
+                            {debt.toFixed(2)}
+                          </td>
+
+                          <td className="p-5">
+
+                            <span className="
+                              px-4 py-2
+                              rounded-full
+                              bg-yellow-600
+                              text-white text-xs
+                              font-bold
+                            ">
+                              Partial
+                            </span>
+
+                          </td>
+
+                          <td className="p-5">
+
+                            <button
+                              onClick={() =>
+                                markPaid(
+                                  sale
+                                )
+                              }
+                              className="
+                                h-11 px-5
+                                rounded-2xl
+                                bg-green-600
+                                hover:bg-green-700
+                                text-white font-bold
+                              "
+                            >
+                              Mark Paid
+                            </button>
+
+                          </td>
+
+                        </tr>
+                      );
+                    }
+                  )}
+
+                </tbody>
+
+              </table>
+
             </div>
 
-          ) : (
+            {/* Mobile */}
+            <div className="
+              lg:hidden
+              p-4 space-y-4
+            ">
 
-            debtSales.map(
-              (sale) => {
+              {debtSales.map(
+                (sale) => {
 
-                const total =
-                  Number(
-                    sale.total || 0
-                  );
+                  const total =
+                    Number(
+                      sale.total || 0
+                    );
 
-                const paid =
-                  Number(
-                    sale.paid || 0
-                  );
+                  const paid =
+                    Number(
+                      sale.paid || 0
+                    );
 
-                const debt =
-                  total - paid;
+                  const debt =
+                    total - paid;
 
-                let status =
-                  "Paid";
+                  return (
 
-                if (
-                  paid === 0
-                ) {
+                    <div
+                      key={sale.id}
+                      className="
+                        border border-[#1f2937]
+                        rounded-2xl p-5
+                      "
+                    >
 
-                  status =
-                    "Unpaid";
-                }
+                      <div className="
+                        flex items-center
+                        justify-between
+                        mb-4
+                      ">
 
-                else if (
-                  debt > 0
-                ) {
+                        <div>
 
-                  status =
-                    "Partial";
-                }
+                          <h2 className="
+                            font-black text-lg
+                          ">
+                            {sale.customer}
+                          </h2>
 
-                return (
+                          <p className="
+                            text-blue-500
+                            text-sm font-bold
+                          ">
+                            #
+                            {
+                              sale.invoice || 1
+                            }
+                          </p>
 
-                  <div
-                    key={sale.id}
+                        </div>
 
-                    style={{
-                      ...styles.tableRow,
+                        <span className="
+                          px-4 py-2
+                          rounded-full
+                          bg-yellow-600
+                          text-white text-xs
+                          font-bold
+                        ">
+                          Partial
+                        </span>
 
-                      borderTop:
-                        darkMode
-                          ? "1px solid #1f2937"
-                          : "1px solid #e5e7eb",
-                    }}
-                  >
+                      </div>
 
-                    {/* CUSTOMER */}
+                      <div className="
+                        grid grid-cols-3
+                        gap-4 mb-4
+                      ">
 
-                    <div style={styles.customerText}>
-                      {sale.customer}
-                    </div>
+                        <Box
+                          title="Total"
+                          value={total}
+                          color="text-green-500"
+                          ui={ui}
+                        />
 
-                    {/* INVOICE */}
+                        <Box
+                          title="Paid"
+                          value={paid}
+                          color="text-cyan-400"
+                          ui={ui}
+                        />
 
-                    <div style={styles.invoiceText}>
+                        <Box
+                          title="Debt"
+                          value={debt}
+                          color="text-red-500"
+                          ui={ui}
+                        />
 
-                      #
-                      {
-                        sale.id?.slice(
-                          0,
-                          8
-                        )
-                      }
-
-                    </div>
-
-                    {/* TOTAL */}
-
-                    <div style={styles.greenText}>
-
-                      $
-                      {total.toFixed(2)}
-
-                    </div>
-
-                    {/* PAID */}
-
-                    <div style={styles.blueText}>
-
-                      $
-                      {paid.toFixed(2)}
-
-                    </div>
-
-                    {/* DEBT */}
-
-                    <div style={styles.redText}>
-
-                      $
-                      {debt.toFixed(2)}
-
-                    </div>
-
-                    {/* STATUS */}
-
-                    <div>
-
-                      <span
-                        style={{
-                          ...styles.statusBadge,
-
-                          background:
-
-                            status ===
-                            "Paid"
-
-                              ? "#16a34a"
-
-                            : status ===
-                              "Partial"
-
-                              ? "#ca8a04"
-
-                            : "#dc2626",
-                        }}
-                      >
-
-                        {status}
-
-                      </span>
-
-                    </div>
-
-                    {/* ACTION */}
-
-                    <div>
+                      </div>
 
                       <button
                         onClick={() =>
@@ -526,20 +523,26 @@ function Debts({
                             sale
                           )
                         }
-
-                        style={styles.payButton}
+                        className="
+                          w-full h-12
+                          rounded-2xl
+                          bg-green-600
+                          hover:bg-green-700
+                          text-white font-bold
+                        "
                       >
                         Mark Paid
                       </button>
 
                     </div>
+                  );
+                }
+              )}
 
-                  </div>
-                );
-              }
-            )
-          )
-        }
+            </div>
+
+          </>
+        )}
 
       </div>
 
@@ -547,177 +550,32 @@ function Debts({
   );
 }
 
-/* =========================
-      STYLES
-========================= */
+/* Mobile Box */
+function Box({
+  title,
+  value,
+  color,
+  ui,
+}) {
 
-const styles = {
+  return (
 
-  container: {
-    width: "100%",
-    minHeight: "100vh",
-    padding: "16px",
-    boxSizing: "border-box",
-    overflowX: "hidden",
-  },
+    <div>
 
-  mobileHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    flexWrap: "wrap",
-    marginBottom: "24px",
-  },
+      <p className={ui.text}>
+        {title}
+      </p>
 
-  menuButton: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "14px",
-    border: "none",
-    fontSize: "20px",
-    cursor: "pointer",
-  },
+      <h3 className={`
+        font-black text-lg
+        ${color}
+      `}>
+        $
+        {value.toFixed(2)}
+      </h3>
 
-  title: {
-    margin: 0,
-    fontSize:
-      "clamp(28px,5vw,38px)",
-    fontWeight: "700",
-  },
-
-  subtitle: {
-    marginTop: "6px",
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-
-  topBar: {
-    display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems: "center",
-    gap: "14px",
-    flexWrap: "wrap",
-    marginBottom: "24px",
-  },
-
-  searchInput: {
-    width: "100%",
-    maxWidth: "340px",
-    padding: "14px",
-    borderRadius: "14px",
-    outline: "none",
-    fontSize: "14px",
-    boxSizing: "border-box",
-  },
-
-  totalCard: {
-    background: "#dc2626",
-    color: "#ffffff",
-    padding: "14px 20px",
-    borderRadius: "18px",
-    minWidth: "180px",
-    textAlign: "center",
-  },
-
-  totalLabel: {
-    margin: 0,
-    fontSize: "13px",
-  },
-
-  totalAmount: {
-    margin: "8px 0 0",
-    fontSize:
-      "clamp(24px,5vw,32px)",
-    fontWeight: "700",
-  },
-
-  tableWrapper: {
-    width: "100%",
-    borderRadius: "24px",
-    overflowX: "auto",
-  },
-
-  tableHeader: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "1.5fr 1fr 1fr 1fr 1fr 1fr 1fr",
-
-    gap: "14px",
-
-    padding: "18px",
-
-    fontWeight: "700",
-
-    minWidth: "900px",
-  },
-
-  tableRow: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "1.5fr 1fr 1fr 1fr 1fr 1fr 1fr",
-
-    gap: "14px",
-
-    padding: "18px",
-
-    alignItems: "center",
-
-    minWidth: "900px",
-  },
-
-  customerText: {
-    fontWeight: "700",
-    wordBreak: "break-word",
-  },
-
-  invoiceText: {
-    color: "#3b82f6",
-    fontWeight: "700",
-  },
-
-  greenText: {
-    color: "#22c55e",
-    fontWeight: "700",
-  },
-
-  blueText: {
-    color: "#06b6d4",
-    fontWeight: "700",
-  },
-
-  redText: {
-    color: "#ef4444",
-    fontWeight: "700",
-  },
-
-  statusBadge: {
-    color: "#ffffff",
-    padding: "8px 14px",
-    borderRadius: "999px",
-    fontWeight: "700",
-    fontSize: "12px",
-    display: "inline-block",
-  },
-
-  payButton: {
-    background: "#16a34a",
-    color: "#ffffff",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "700",
-    width: "100%",
-  },
-
-  empty: {
-    padding: "60px",
-    textAlign: "center",
-    color: "#94a3b8",
-  },
-};
+    </div>
+  );
+}
 
 export default Debts;

@@ -1,8 +1,4 @@
-import {
-  useState,
-  useEffect,
-  useMemo,
-} from "react";
+import { useEffect, useState } from "react";
 
 import {
   collection,
@@ -11,219 +7,122 @@ import {
 
 import { db } from "../firebase";
 
-import {
-  useTheme,
-} from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 
-function Inventory({
-  openSidebar,
-}) {
-
+function Inventory({ openSidebar }) {
   const { darkMode } = useTheme();
 
-  /* =========================================
-        STATES
-  ========================================= */
+  // Theme
+  const ui = {
+    bg: darkMode
+      ? "bg-[#050816] text-white"
+      : "bg-slate-100 text-black",
 
-  const [
-    medicines,
-    setMedicines,
-  ] = useState([]);
+    card: darkMode
+      ? "bg-[#0f172a] border-[#1e293b]"
+      : "bg-white border-slate-200",
 
-  const [
-    search,
-    setSearch,
-  ] = useState("");
+    input: darkMode
+      ? "bg-[#091225] border-[#1e293b] text-white"
+      : "bg-white border-slate-300 text-black",
 
-  /* =========================================
-        FIRESTORE
-  ========================================= */
+    text: darkMode
+      ? "text-slate-400"
+      : "text-slate-500",
+  };
 
+  // States
+  const [medicines, setMedicines] =
+    useState([]);
+
+  const [search, setSearch] =
+    useState("");
+
+  // Fetch Medicines
   useEffect(() => {
 
     const unsubscribe =
       onSnapshot(
 
-        collection(
-          db,
-          "medicines"
-        ),
+        collection(db, "medicines"),
 
         (snapshot) => {
 
-          const data =
-            snapshot.docs.map(
-              (doc) => ({
-                id: doc.id,
-                ...doc.data(),
-              })
-            );
-
-          setMedicines(data);
+          setMedicines(
+            snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }))
+          );
         }
       );
 
-    return () =>
-      unsubscribe();
+    return () => unsubscribe();
 
   }, []);
 
-  /* =========================================
-        FILTERED MEDICINES
-  ========================================= */
-
+  // Search
   const filteredMedicines =
+    medicines.filter((m) =>
+      m.name
+        ?.toLowerCase()
+        .includes(
+          search.toLowerCase()
+        )
+    );
+
+  // Analytics
+  const total =
+    medicines.length;
+
+  const lowStock =
     medicines.filter(
-      (medicine) =>
+      (m) =>
+        Number(m.stock || 0) <=
+        Number(m.minStock || 5)
+    ).length;
 
-        medicine.name
-          ?.toLowerCase()
-          .includes(
-            search.toLowerCase()
-          )
-    );
+  const outStock =
+    medicines.filter(
+      (m) =>
+        Number(m.stock || 0) <= 0
+    ).length;
 
-  /* =========================================
-        INVENTORY ANALYTICS
-  ========================================= */
-
-  const mostSoldMedicine = useMemo(() => {
-
-    const grouped = {};
-
-    medicines.forEach((medicine) => {
-
-      grouped[medicine.name] =
-        Number(medicine.sold || 0);
-
-    });
-
-    const sorted =
-      Object.entries(grouped).sort(
-        (a, b) => b[1] - a[1]
-      );
-
-    return sorted[0];
-
-  }, [medicines]);
-
-  const leastSoldMedicine = useMemo(() => {
-
-    const grouped = {};
-
-    medicines.forEach((medicine) => {
-
-      grouped[medicine.name] =
-        Number(medicine.sold || 0);
-
-    });
-
-    const sorted =
-      Object.entries(grouped).sort(
-        (a, b) => a[1] - b[1]
-      );
-
-    return sorted[0];
-
-  }, [medicines]);
-
-  const fastMovingStock = useMemo(() => {
-
-    return medicines
-      .filter(
-        (medicine) =>
-          Number(medicine.sold || 0) >= 50
-      )
-      .sort(
-        (a, b) =>
-          Number(b.sold || 0) -
-          Number(a.sold || 0)
-      )
-      .slice(0, 5);
-
-  }, [medicines]);
-
-  const deadStock = useMemo(() => {
-
-    return medicines.filter(
-      (medicine) =>
-        Number(medicine.sold || 0) === 0
-    );
-
-  }, [medicines]);
+  const available =
+    medicines.filter(
+      (m) =>
+        Number(m.stock || 0) >
+        Number(m.minStock || 5)
+    ).length;
 
   return (
+    <div className={`min-h-screen p-4 md:p-6 ${ui.bg}`}>
 
-    <div
-      style={{
-        ...styles.container,
-
-        background:
-          darkMode
-            ? "#020617"
-            : "#f3f4f6",
-
-        color:
-          darkMode
-            ? "#ffffff"
-            : "#111827",
-      }}
-    >
-
-      {/* HEADER */}
-
-      <div style={styles.mobileTop}>
+      {/* Header */}
+      <div className="
+        flex items-center gap-4
+        mb-6
+      ">
 
         <button
           onClick={openSidebar}
-
-          style={{
-            ...styles.menuButton,
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-
-            border:
-              darkMode
-                ? "1px solid #1f2937"
-                : "1px solid #e5e7eb",
-          }}
+          className={`
+            md:hidden w-12 h-12
+            rounded-2xl border
+            text-xl
+            ${ui.card}
+          `}
         >
           ☰
         </button>
 
         <div>
 
-          <h1
-            style={{
-              ...styles.title,
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}
-          >
+          <h1 className="text-3xl md:text-5xl font-black">
             Inventory 📦
           </h1>
 
-          <p
-            style={{
-              ...styles.subtitle,
-
-              color:
-                darkMode
-                  ? "#94a3b8"
-                  : "#6b7280",
-            }}
-          >
+          <p className={ui.text}>
             Manage medicine inventory
           </p>
 
@@ -231,483 +130,269 @@ function Inventory({
 
       </div>
 
-      {/* SEARCH */}
-
+      {/* Search */}
       <input
         type="text"
-
         placeholder="Search medicine..."
-
         value={search}
-
         onChange={(e) =>
-          setSearch(
-            e.target.value
-          )
+          setSearch(e.target.value)
         }
-
-        style={{
-          ...styles.searchInput,
-
-          border:
-            darkMode
-              ? "1px solid #334155"
-              : "1px solid #d1d5db",
-
-          background:
-            darkMode
-              ? "#111827"
-              : "#ffffff",
-
-          color:
-            darkMode
-              ? "#ffffff"
-              : "#111827",
-        }}
+        className={`
+          w-full h-14 px-5 mb-6
+          rounded-2xl border outline-none
+          ${ui.input}
+        `}
       />
 
-      {/* ANALYTICS */}
+      {/* Analytics */}
+      <div className="
+        grid sm:grid-cols-2
+        xl:grid-cols-4 gap-5
+        mb-6
+      ">
 
-      <div style={styles.analyticsGrid}>
+        <Card
+          title="Total Medicines"
+          value={total}
+          color="text-white"
+          ui={ui}
+        />
 
-        <div
-          style={{
-            ...styles.analyticsCard,
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-          }}
-        >
-          <p style={styles.analyticsTitle}>
-            Most Sold Medicine
-          </p>
+        <Card
+          title="Available"
+          value={available}
+          color="text-green-500"
+          ui={ui}
+        />
 
-          <h2 style={styles.analyticsValue}>
-            {mostSoldMedicine?.[0] || "N/A"}
-          </h2>
+        <Card
+          title="Low Stock"
+          value={lowStock}
+          color="text-yellow-500"
+          ui={ui}
+        />
 
-          <span style={styles.analyticsSmall}>
-            {mostSoldMedicine?.[1] || 0} sold
-          </span>
-        </div>
-
-        <div
-          style={{
-            ...styles.analyticsCard,
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-          }}
-        >
-          <p style={styles.analyticsTitle}>
-            Least Sold Medicine
-          </p>
-
-          <h2 style={styles.analyticsValue}>
-            {leastSoldMedicine?.[0] || "N/A"}
-          </h2>
-
-          <span style={styles.analyticsSmall}>
-            {leastSoldMedicine?.[1] || 0} sold
-          </span>
-        </div>
-
-        <div
-          style={{
-            ...styles.analyticsCard,
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-          }}
-        >
-          <p style={styles.analyticsTitle}>
-            Fast Moving Stock
-          </p>
-
-          <h2 style={styles.analyticsValue}>
-            {fastMovingStock.length}
-          </h2>
-
-          <span style={styles.analyticsSmall}>
-            High demand medicines
-          </span>
-        </div>
-
-        <div
-          style={{
-            ...styles.analyticsCard,
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-          }}
-        >
-          <p style={styles.analyticsTitle}>
-            Dead Stock
-          </p>
-
-          <h2
-            style={{
-              ...styles.analyticsValue,
-              color: "#dc2626",
-            }}
-          >
-            {deadStock.length}
-          </h2>
-
-          <span style={styles.analyticsSmall}>
-            Not selling medicines
-          </span>
-        </div>
+        <Card
+          title="Out Of Stock"
+          value={outStock}
+          color="text-red-500"
+          ui={ui}
+        />
 
       </div>
 
-      {/* TABLE */}
+      {/* Table */}
+      <div
+        className={`
+          rounded-3xl border overflow-hidden
+          ${ui.card}
+        `}
+      >
 
-      {filteredMedicines.length === 0 ? (
+        {!filteredMedicines.length ? (
 
-        <div
-          style={{
-            ...styles.emptyBox,
+          <div className="
+            p-20 text-center
+            text-slate-400
+          ">
+            No medicines available
+          </div>
 
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-          }}
-        >
-          No medicines available
-        </div>
+        ) : (
 
-      ) : (
+          <div className="overflow-x-auto">
 
-        <div
-          style={{
-            ...styles.tableWrapper,
+            <table className="w-full min-w-[900px]">
 
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
+              <thead>
 
-            border:
-              darkMode
-                ? "1px solid #1f2937"
-                : "1px solid #e5e7eb",
-          }}
-        >
+                <tr className="
+                  border-b border-[#1e293b]
+                  text-slate-400 text-sm
+                ">
 
-          {/* HEADER */}
+                  {[
+                    "Medicine",
+                    "Category",
+                    "Stock",
+                    "Min Stock",
+                    "Expiry",
+                    "Status",
+                  ].map((head) => (
+                    <th
+                      key={head}
+                      className="p-5 text-left"
+                    >
+                      {head}
+                    </th>
+                  ))}
 
-          <div
-            style={{
-              ...styles.tableHeader,
+                </tr>
 
-              background:
-                darkMode
-                  ? "#0f172a"
-                  : "#f9fafb",
-            }}
-          >
+              </thead>
 
-            <div>Medicine</div>
-            <div>Category</div>
-            <div>Stock</div>
-            <div>Sold</div>
-            <div>Expiry</div>
-            <div>Status</div>
+              <tbody>
+
+                {filteredMedicines.map(
+                  (medicine) => {
+
+                    const stock =
+                      Number(
+                        medicine.stock || 0
+                      );
+
+                    const min =
+                      Number(
+                        medicine.minStock || 5
+                      );
+
+                    const low =
+                      stock <= min;
+
+                    const out =
+                      stock <= 0;
+
+                    return (
+
+                      <tr
+                        key={medicine.id}
+                        className="
+                          border-b border-[#1e293b]
+                          hover:bg-slate-500/5
+                        "
+                      >
+
+                        {/* Name */}
+                        <td className="
+                          p-5 font-bold
+                        ">
+                          {medicine.name}
+                        </td>
+
+                        {/* Category */}
+                        <td className="p-5">
+
+                          <span className="
+                            px-4 py-2 rounded-full
+                            text-xs font-bold
+                            bg-green-500/10
+                            text-green-400
+                          ">
+
+                            {medicine.category}
+
+                          </span>
+
+                        </td>
+
+                        {/* Stock */}
+                        <td
+                          className={`
+                            p-5 font-bold
+
+                            ${
+                              out
+                                ? "text-red-500"
+                                : low
+                                ? "text-yellow-500"
+                                : "text-green-500"
+                            }
+                          `}
+                        >
+                          {stock}
+                        </td>
+
+                        {/* Min */}
+                        <td className="p-5">
+                          {min}
+                        </td>
+
+                        {/* Expiry */}
+                        <td className="
+                          p-5 text-sm text-slate-300
+                        ">
+                          {medicine.expiryDate}
+                        </td>
+
+                        {/* Status */}
+                        <td className="p-5">
+
+                          <span
+                            className={`
+                              px-4 py-2 rounded-full
+                              text-xs font-bold
+
+                              ${
+                                out
+                                  ? "bg-red-500/10 text-red-400"
+                                  : low
+                                  ? "bg-yellow-500/10 text-yellow-400"
+                                  : "bg-green-500/10 text-green-400"
+                              }
+                            `}
+                          >
+
+                            {out
+                              ? "Out Of Stock"
+                              : low
+                              ? "Low Stock"
+                              : "Available"}
+
+                          </span>
+
+                        </td>
+
+                      </tr>
+                    );
+                  }
+                )}
+
+              </tbody>
+
+            </table>
 
           </div>
 
-          {/* ROWS */}
+        )}
 
-          {filteredMedicines.map(
-            (medicine) => {
-
-              const lowStock =
-                Number(medicine.stock) <=
-                Number(medicine.minStock || 5);
-
-              const outOfStock =
-                Number(medicine.stock) <= 0;
-
-              return (
-
-                <div
-                  key={medicine.id}
-
-                  style={{
-                    ...styles.row,
-
-                    borderTop:
-                      darkMode
-                        ? "1px solid #1f2937"
-                        : "1px solid #e5e7eb",
-                  }}
-                >
-
-                  <div
-                    style={{
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {medicine.name}
-                  </div>
-
-                  <div>
-
-                    <span
-                      style={{
-                        ...styles.categoryBadge,
-
-                        background:
-                          darkMode
-                            ? "#14532d"
-                            : "#dcfce7",
-
-                        color:
-                          darkMode
-                            ? "#bbf7d0"
-                            : "#16a34a",
-                      }}
-                    >
-                      {medicine.category}
-                    </span>
-
-                  </div>
-
-                  <div
-                    style={{
-                      color:
-                        outOfStock
-                          ? "#dc2626"
-                          : lowStock
-                          ? "#f59e0b"
-                          : "#16a34a",
-
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {medicine.stock}
-                  </div>
-
-                  <div>
-                    {medicine.sold || 0}
-                  </div>
-
-                  <div>
-                    {medicine.expiryDate || "N/A"}
-                  </div>
-
-                  <div>
-
-                    <span
-                      style={{
-                        padding: "8px 14px",
-
-                        borderRadius: "999px",
-
-                        fontSize: "12px",
-
-                        fontWeight: "bold",
-
-                        background:
-                          outOfStock
-                            ? "#7f1d1d"
-                            : lowStock
-                            ? "#78350f"
-                            : "#14532d",
-
-                        color:
-                          outOfStock
-                            ? "#fecaca"
-                            : lowStock
-                            ? "#fde68a"
-                            : "#bbf7d0",
-                      }}
-                    >
-
-                      {
-                        outOfStock
-                          ? "Out"
-                          : lowStock
-                          ? "Low"
-                          : "Good"
-                      }
-
-                    </span>
-
-                  </div>
-
-                </div>
-              );
-            }
-          )}
-
-        </div>
-      )}
+      </div>
 
     </div>
   );
 }
 
-/* =========================================
-      STYLES
-========================================= */
+/* Card */
+function Card({
+  title,
+  value,
+  color,
+  ui,
+}) {
+  return (
+    <div
+      className={`
+        p-6 rounded-3xl border
+        ${ui.card}
+      `}
+    >
 
-const styles = {
+      <p className={`
+        text-sm mb-4
+        ${ui.text}
+      `}>
+        {title}
+      </p>
 
-  container: {
-    width: "100%",
-    minHeight: "100vh",
-    padding: "14px",
-    boxSizing: "border-box",
-    overflowX: "hidden",
-  },
+      <h2 className={`
+        text-4xl font-black
+        ${color}
+      `}>
+        {value}
+      </h2>
 
-  mobileTop: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    marginBottom: "24px",
-    flexWrap: "wrap",
-  },
-
-  menuButton: {
-    width: "46px",
-    height: "46px",
-    borderRadius: "12px",
-    border: "none",
-    fontSize: "20px",
-    cursor: "pointer",
-  },
-
-  title: {
-    margin: 0,
-    fontSize:
-      "clamp(28px,5vw,36px)",
-  },
-
-  subtitle: {
-    marginTop: "8px",
-    fontSize: "14px",
-  },
-
-  searchInput: {
-    width: "100%",
-    padding: "14px 16px",
-    borderRadius: "14px",
-    outline: "none",
-    fontSize: "14px",
-    marginBottom: "20px",
-    boxSizing: "border-box",
-  },
-
-  analyticsGrid: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(220px,1fr))",
-
-    gap: "16px",
-
-    marginBottom: "24px",
-  },
-
-  analyticsCard: {
-    padding: "20px",
-
-    borderRadius: "20px",
-
-    boxShadow:
-      "0 4px 12px rgba(0,0,0,0.05)",
-  },
-
-  analyticsTitle: {
-    fontSize: "14px",
-
-    marginBottom: "12px",
-
-    color: "#64748b",
-
-    fontWeight: "600",
-  },
-
-  analyticsValue: {
-    margin: 0,
-
-    fontSize: "28px",
-
-    fontWeight: "bold",
-  },
-
-  analyticsSmall: {
-    display: "block",
-
-    marginTop: "10px",
-
-    fontSize: "13px",
-
-    color: "#94a3b8",
-  },
-
-  emptyBox: {
-    borderRadius: "24px",
-    padding: "80px 20px",
-    textAlign: "center",
-    fontSize: "18px",
-  },
-
-  tableWrapper: {
-    width: "100%",
-    borderRadius: "24px",
-    overflowX: "auto",
-  },
-
-  tableHeader: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "1.5fr 1fr .8fr .8fr 1fr .8fr",
-
-    padding: "16px",
-
-    fontWeight: "bold",
-
-    gap: "10px",
-
-    minWidth: "750px",
-
-    fontSize: "13px",
-  },
-
-  row: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "1.5fr 1fr .8fr .8fr 1fr .8fr",
-
-    alignItems: "center",
-
-    padding: "16px",
-
-    gap: "10px",
-
-    minWidth: "750px",
-
-    fontSize: "14px",
-  },
-
-  categoryBadge: {
-    padding: "8px 14px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: "bold",
-    display: "inline-block",
-  },
-};
+    </div>
+  );
+}
 
 export default Inventory;

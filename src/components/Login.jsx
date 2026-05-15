@@ -1,309 +1,365 @@
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { auth, db } from "../firebase";
 
-function Login({ setAuthed, setCurrentUser, toast }) {
+import {
+  signInWithEmailAndPassword,
+  setPersistence,
+  browserSessionPersistence,
+} from "firebase/auth";
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 
-  const [loading, setLoading] = useState(false);
+import {
+  auth,
+  db,
+} from "../firebase";
 
-  const handleLogin = async () => {
+function Login({
+  setAuthed,
+  setCurrentUser,
+  toast,
+}) {
 
-    if (!form.email || !form.password) {
-      toast("Please fill all fields", "error");
-      return;
-    }
+  // Form
+  const [form, setForm] =
+    useState({
+      email: "",
+      password: "",
+    });
 
-    try {
+  // Loading
+  const [loading, setLoading] =
+    useState(false);
 
-      setLoading(true);
+  // Show Password
+  const [showPass, setShowPass] =
+    useState(false);
 
-      const userCredential =
-        await signInWithEmailAndPassword(
-          auth,
-          form.email.trim(),
-          form.password
-        );
+  // Input Change
+  const change =
+    (e) => {
 
-      const firebaseUser =
-        userCredential.user;
+      setForm({
+        ...form,
 
-      const q = query(
-        collection(db, "users"),
-        where(
-          "email",
-          "==",
-          firebaseUser.email
-        )
-      );
+        [e.target.name]:
+          e.target.value,
+      });
+    };
 
-      const querySnapshot =
-        await getDocs(q);
-
-      if (querySnapshot.empty) {
-
-        toast(
-          "Your username or password is invalid",
-          "error"
-        );
-
-        setLoading(false);
-        return;
-      }
-
-      const userData =
-        querySnapshot.docs[0].data();
+  // Login
+  const handleLogin =
+    async () => {
 
       if (
-        userData.status ===
-        "disabled"
+        !form.email ||
+        !form.password
       ) {
 
         toast(
-          "Account disabled",
+          "Please fill all fields",
           "error"
         );
 
-        setLoading(false);
         return;
       }
 
-      setCurrentUser({
-        uid: firebaseUser.uid,
-        ...userData,
-      });
+      try {
 
-      setAuthed(true);
+        setLoading(true);
+          // Session only until browser closes
+        await setPersistence(
+      auth,
+      browserSessionPersistence
+         );
 
-      toast(
-        "Login successful",
-        "success"
-      );
+        // Firebase Login
+        const res =
+          await signInWithEmailAndPassword(
+            auth,
+            form.email.trim(),
+            form.password
+          );
 
-    } catch (error) {
+        const firebaseUser =
+          res.user;
 
-      console.log(error);
+        // Get User
+        const q = query(
 
-      toast(
-        "Your username or password is invalid",
-        "error"
-      );
+          collection(
+            db,
+            "users"
+          ),
 
-    } finally {
+          where(
+            "email",
+            "==",
+            firebaseUser.email
+          )
+        );
 
-      setLoading(false);
-    }
-  };
+        const snap =
+          await getDocs(q);
 
-  const handleKeyDown = (e) => {
+        // Invalid
+        if (snap.empty) {
 
-    if (e.key === "Enter") {
-      handleLogin();
-    }
-  };
+          toast(
+            "Invalid login",
+            "error"
+          );
+
+          return;
+        }
+
+        const user =
+          snap.docs[0].data();
+
+        // Disabled
+        if (
+          user.status ===
+          "disabled"
+        ) {
+
+          toast(
+            "Account disabled",
+            "error"
+          );
+
+          return;
+        }
+
+        // Save User
+        setCurrentUser({
+          uid:
+            firebaseUser.uid,
+
+          ...user,
+        });
+
+        setAuthed(true);
+
+        toast(
+          "Login successful",
+          "success"
+        );
+
+      } catch {
+
+        toast(
+          "Invalid login",
+          "error"
+        );
+
+      } finally {
+
+        setLoading(false);
+      }
+    };
+
+  // Enter Key
+  const enter =
+    (e) => {
+
+      if (
+        e.key === "Enter"
+      ) {
+
+        handleLogin();
+      }
+    };
 
   return (
 
-    <div style={styles.container}>
+    <div className="
+      min-h-screen
+      flex items-center
+      justify-center
+      p-4
+      bg-gradient-to-br
+      from-[#020617]
+      via-[#052e16]
+      to-[#16a34a]
+    ">
 
-      <div style={styles.card}>
+      {/* Card */}
+      <div className="
+        w-full max-w-md
+        bg-white
+        rounded-[30px]
+        p-6 md:p-10
+        shadow-2xl
+      ">
 
-        {/* LOGO */}
+        {/* Logo */}
+        <div className="
+          text-center mb-8
+        ">
 
-        <div style={styles.logoSection}>
-
-          <div style={styles.logo}>
+          <div className="
+            w-24 h-24 mx-auto mb-4
+            rounded-[28px]
+            bg-green-600
+            flex items-center
+            justify-center
+            text-5xl
+          ">
             💊
           </div>
 
-          <h1 style={styles.title}>
+          <h1 className="
+            text-5xl font-black
+            text-slate-900
+          ">
             ANFAC
           </h1>
 
-          <p style={styles.subtitle}>
+          <p className="
+            text-slate-500 mt-3
+          ">
             Pharmacy Management System
           </p>
 
         </div>
 
-        {/* EMAIL */}
+        {/* Inputs */}
+        <div className="
+          space-y-5
+        ">
 
-        <div style={styles.inputGroup}>
+          {/* Email */}
+          <div>
 
-          <label style={styles.label}>
-            Email
-          </label>
+            <label className="
+              block mb-2
+              text-sm font-bold
+              text-slate-700
+            ">
+              Email
+            </label>
 
-          <input
-            type="email"
-            placeholder="Enter email"
-            value={form.email}
-            onKeyDown={handleKeyDown}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                email: e.target.value,
-              })
+            <input
+              type="email"
+              name="email"
+              placeholder="Enter email"
+              value={form.email}
+              onChange={change}
+              onKeyDown={enter}
+              className="
+                w-full h-14 px-5
+                rounded-2xl
+                border border-slate-200
+                bg-slate-50
+                outline-none
+                focus:border-green-500
+              "
+            />
+
+          </div>
+
+          {/* Password */}
+          <div>
+
+            <label className="
+              block mb-2
+              text-sm font-bold
+              text-slate-700
+            ">
+              Password
+            </label>
+
+            <div className="
+              relative
+            ">
+
+              <input
+                type={
+                  showPass
+                    ? "text"
+                    : "password"
+                }
+                name="password"
+                placeholder="Enter password"
+                value={form.password}
+                onChange={change}
+                onKeyDown={enter}
+                className="
+                  w-full h-14 px-5 pr-16
+                  rounded-2xl
+                  border border-slate-200
+                  bg-slate-50
+                  outline-none
+                  focus:border-green-500
+                "
+              />
+
+              {/* Show Button */}
+              <button
+                type="button"
+                onClick={() =>
+
+                  setShowPass(
+                    !showPass
+                  )
+                }
+                className="
+                  absolute top-1/2 right-4
+                  -translate-y-1/2
+                  text-sm font-bold
+                  text-green-600
+                "
+              >
+
+                {
+                  showPass
+                    ? "Hide"
+                    : "Show"
+                }
+
+              </button>
+
+            </div>
+
+          </div>
+
+          {/* Button */}
+          <button
+            onClick={handleLogin}
+            disabled={loading}
+            className={`
+              w-full h-14
+              rounded-2xl
+              text-white font-bold
+              transition
+              ${
+                loading
+
+                  ? "bg-green-300 cursor-not-allowed"
+
+                  : "bg-green-600 hover:bg-green-700"
+              }
+            `}
+          >
+
+            {
+              loading
+                ? "Loading..."
+                : "Login"
             }
-            style={styles.input}
-          />
+
+          </button>
 
         </div>
-
-        {/* PASSWORD */}
-
-        <div style={styles.inputGroup}>
-
-          <label style={styles.label}>
-            Password
-          </label>
-
-          <input
-            type="password"
-            placeholder="Enter password"
-            value={form.password}
-            onKeyDown={handleKeyDown}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                password: e.target.value,
-              })
-            }
-            style={styles.input}
-          />
-
-        </div>
-
-        {/* BUTTON */}
-
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          style={{
-            ...styles.button,
-            background: loading
-              ? "#86efac"
-              : "#16a34a",
-            cursor: loading
-              ? "not-allowed"
-              : "pointer",
-          }}
-        >
-          {loading
-            ? "Loading..."
-            : "Login"}
-        </button>
 
       </div>
 
     </div>
   );
 }
-
-const styles = {
-
-  container: {
-    minHeight: "100dvh",
-    width: "100%",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: "16px",
-    background:
-      "linear-gradient(135deg,#020617,#052e16,#16a34a)",
-    boxSizing: "border-box",
-    overflowX: "hidden",
-  },
-
-  card: {
-    width: "100%",
-    maxWidth: "420px",
-    background: "#ffffff",
-    borderRadius: "24px",
-    padding: "clamp(22px,5vw,40px)",
-    boxShadow:
-      "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)",
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-    boxSizing: "border-box",
-  },
-
-  logoSection: {
-    textAlign: "center",
-    marginBottom: "10px",
-  },
-
-  logo: {
-    width: "80px",
-    height: "80px",
-    margin: "0 auto",
-    borderRadius: "20px",
-    background: "#16a34a",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    fontSize: "40px",
-    marginBottom: "12px",
-  },
-
-  title: {
-    margin: 0,
-    fontSize: "clamp(28px,6vw,34px)",
-    color: "#111827",
-    fontWeight: "800",
-    letterSpacing: "-0.5px",
-  },
-
-  subtitle: {
-    color: "#6b7280",
-    marginTop: "8px",
-    fontSize: "14px",
-  },
-
-  inputGroup: {
-    width: "100%",
-    textAlign: "left",
-  },
-
-  label: {
-    fontWeight: "600",
-    marginBottom: "6px",
-    display: "block",
-    color: "#374151",
-    fontSize: "14px",
-  },
-
-  input: {
-    width: "100%",
-    padding: "14px",
-    border: "1.5px solid #e5e7eb",
-    borderRadius: "12px",
-    background: "#f9fafb",
-    color: "#111827",
-    boxSizing: "border-box",
-    outline: "none",
-    fontSize: "16px",
-  },
-
-  button: {
-    width: "100%",
-    padding: "16px",
-    border: "none",
-    borderRadius: "12px",
-    color: "#ffffff",
-    fontSize: "16px",
-    fontWeight: "600",
-    transition: "0.2s",
-    marginTop: "10px",
-    boxShadow:
-      "0 4px 6px -1px rgba(22,163,74,0.2)",
-  },
-};
 
 export default Login;

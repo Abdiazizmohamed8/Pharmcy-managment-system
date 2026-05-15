@@ -8,9 +8,7 @@ import {
   deleteDoc,
 } from "firebase/firestore";
 
-import {
-  db,
-} from "../firebase";
+import { db } from "../firebase";
 
 import {
   useTheme,
@@ -23,49 +21,57 @@ function Customers({
   toast,
 }) {
 
-  const {
-    darkMode,
-  } = useTheme();
+  const { darkMode } =
+    useTheme();
 
-  const [
-    search,
-    setSearch,
-  ] = useState("");
+  // Theme
+  const ui = {
+    bg: darkMode
+      ? "bg-[#050816] text-white"
+      : "bg-slate-100",
 
-  /* =========================
-        FILTER CUSTOMERS
-  ========================= */
+    card: darkMode
+      ? "bg-[#0f172a] border-[#1e293b]"
+      : "bg-white border-slate-200",
 
-  const filteredCustomers =
-    useMemo(() => {
+    input: darkMode
+      ? "bg-[#091225] border-[#1e293b]"
+      : "bg-white border-slate-300",
 
-      return customers.filter(
-        (customer) =>
+    text: darkMode
+      ? "text-slate-400"
+      : "text-slate-500",
+  };
 
-          customer.name
+  // Search
+  const [search, setSearch] =
+    useState("");
+
+  // Filter
+  const filtered =
+    useMemo(() =>
+
+      customers.filter(
+        (c) =>
+
+          c.name
             ?.toLowerCase()
 
             .includes(
               search.toLowerCase()
             )
-      );
+      ),
 
-    }, [
-      customers,
-      search,
-    ]);
+    [customers, search]
+    );
 
-  /* =========================
-        DELETE CUSTOMER
-  ========================= */
-
-  const deleteCustomer =
+  // Delete
+  const remove =
     async (id) => {
 
       try {
 
         await deleteDoc(
-
           doc(
             db,
             "customers",
@@ -73,18 +79,11 @@ function Customers({
           )
         );
 
-        const updated =
-          customers.filter(
-            (
-              customer
-            ) =>
-
-              customer.id !==
-              id
-          );
-
         setCustomers(
-          updated
+
+          customers.filter(
+            (c) => c.id !== id
+          )
         );
 
         toast?.(
@@ -92,9 +91,7 @@ function Customers({
           "success"
         );
 
-      } catch (error) {
-
-        console.log(error);
+      } catch {
 
         toast?.(
           "Delete failed",
@@ -105,593 +102,314 @@ function Customers({
 
   return (
 
-    <div
-      style={{
-        ...styles.container,
+    <div className={`
+      min-h-screen
+      p-4 md:p-6
+      ${ui.bg}
+    `}>
 
-        background:
-          darkMode
-            ? "#020617"
-            : "#f8fafc",
-
-        color:
-          darkMode
-            ? "#ffffff"
-            : "#111827",
-      }}
-    >
-
-      {/* HEADER */}
-
-      <div
-        style={
-          styles.mobileHeader
-        }
-      >
+      {/* Header */}
+      <div className="
+        flex items-center gap-4
+        mb-6
+      ">
 
         <button
-          onClick={
-            openSidebar
-          }
-
-          style={{
-            ...styles.menuButton,
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-
-            border:
-              darkMode
-                ? "1px solid #1f2937"
-                : "1px solid #e5e7eb",
-          }}
+          onClick={openSidebar}
+          className={`
+            md:hidden
+            w-11 h-11
+            rounded-2xl border
+            ${ui.card}
+          `}
         >
           ☰
         </button>
 
         <div>
 
-          <h1
-            style={{
-              ...styles.title,
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}
-          >
+          <h1 className="
+            text-3xl font-black
+          ">
             Customers 👥
           </h1>
 
-          <p
-            style={
-              styles.subtitle
-            }
-          >
-            Pharmacy customer
-            management
+          <p className={ui.text}>
+            Customer management
           </p>
 
         </div>
 
       </div>
 
-      {/* TOP BAR */}
+      {/* Top */}
+      <div className="
+        flex flex-col lg:flex-row
+        justify-between gap-4
+        mb-6
+      ">
 
-      <div
-        style={
-          styles.topBar
-        }
-      >
-
-        {/* SEARCH */}
-
+        {/* Search */}
         <input
           type="text"
-
           placeholder="Search customer..."
-
           value={search}
-
           onChange={(e) =>
             setSearch(
               e.target.value
             )
           }
-
-          style={{
-            ...styles.searchInput,
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-
-            border:
-              darkMode
-                ? "1px solid #374151"
-                : "1px solid #d1d5db",
-          }}
+          className={`
+            w-full lg:max-w-md
+            h-14 px-5
+            rounded-2xl border
+            outline-none
+            ${ui.input}
+          `}
         />
 
-        {/* TOTAL */}
+        {/* Total */}
+        <div className="
+          min-w-[180px]
+          rounded-3xl
+          bg-blue-600
+          text-white
+          p-5 text-center
+        ">
 
-        <div
-          style={
-            styles.totalCard
-          }
-        >
-
-          <p
-            style={
-              styles.totalLabel
-            }
-          >
-            Total Customers
+          <p className="
+            text-sm
+          ">
+            Customers
           </p>
 
-          <h2
-            style={
-              styles.totalAmount
-            }
-          >
-            {
-              customers.length
-            }
+          <h2 className="
+            text-4xl font-black
+          ">
+            {customers.length}
           </h2>
 
         </div>
 
       </div>
 
-      {/* TABLE */}
+      {/* Table */}
+      <div className={`
+        rounded-3xl border
+        overflow-hidden
+        ${ui.card}
+      `}>
 
-      <div
-        style={{
-          ...styles.tableWrapper,
+        {!filtered.length ? (
 
-          background:
-            darkMode
-              ? "#111827"
-              : "#ffffff",
+          <div className="
+            p-20 text-center
+            text-slate-400
+          ">
+            No customers found
+          </div>
 
-          border:
-            darkMode
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}
-      >
+        ) : (
 
-        {/* TABLE HEADER */}
+          <div className="
+            overflow-x-auto
+          ">
 
-        <div
-          style={{
-            ...styles.tableHeader,
+            <table className="
+              w-full min-w-[900px]
+            ">
 
-            background:
-              darkMode
-                ? "#0f172a"
-                : "#f1f5f9",
+              <thead>
 
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-          }}
-        >
+                <tr className="
+                  border-b border-[#1e293b]
+                  text-left text-sm
+                  text-slate-400
+                ">
 
-          <div>Customer</div>
+                  {[
+                    "Customer",
+                    "Phone",
+                    "Address",
+                    "Debt",
+                    "Status",
+                    "Action",
+                  ].map((h) => (
 
-          <div>Phone</div>
-
-          <div>Address</div>
-
-          <div>Debt</div>
-
-          <div>Status</div>
-
-          <div>Action</div>
-
-        </div>
-
-        {/* TABLE BODY */}
-
-        {
-          filteredCustomers.length ===
-          0 ? (
-
-            <div
-              style={
-                styles.empty
-              }
-            >
-              No customers found
-            </div>
-
-          ) : (
-
-            filteredCustomers.map(
-              (
-                customer
-              ) => {
-
-                const debt =
-                  Number(
-                    customer.debt ||
-                    0
-                  );
-
-                const status =
-                  debt > 0
-                    ? "Debt"
-                    : "No Debt";
-
-                return (
-
-                  <div
-                    key={
-                      customer.id
-                    }
-
-                    style={{
-                      ...styles.tableRow,
-
-                      borderTop:
-                        darkMode
-                          ? "1px solid #1f2937"
-                          : "1px solid #e5e7eb",
-                    }}
-                  >
-
-                    {/* CUSTOMER */}
-
-                    <div
-                      style={
-                        styles.customerBox
-                      }
+                    <th
+                      key={h}
+                      className="p-5"
                     >
+                      {h}
+                    </th>
 
-                      <div
-                        style={
-                          styles.avatar
-                        }
+                  ))}
+
+                </tr>
+
+              </thead>
+
+              <tbody>
+
+                {filtered.map(
+                  (c) => {
+
+                    const debt =
+                      Number(
+                        c.debt || 0
+                      );
+
+                    const hasDebt =
+                      debt > 0;
+
+                    return (
+
+                      <tr
+                        key={c.id}
+                        className="
+                          border-b border-[#1e293b]
+                        "
                       >
 
-                        {
-                          customer.name?.charAt(
-                            0
-                          )
-                        }
+                        {/* Customer */}
+                        <td className="p-5">
 
-                      </div>
+                          <div className="
+                            flex items-center gap-3
+                          ">
 
-                      <div>
+                            <div className="
+                              w-12 h-12
+                              rounded-full
+                              bg-green-600
+                              flex items-center
+                              justify-center
+                              text-base font-semibold
+                              text-white
+                            ">
 
-                        <div
-                          style={
-                            styles.customerName
-                          }
-                        >
-                          {
-                            customer.name
-                          }
-                        </div>
+                              {c.name?.charAt(0)}
 
-                        <div
-                          style={
-                            styles.customerRole
-                          }
-                        >
-                          Customer
-                        </div>
+                            </div>
 
-                      </div>
+                            <div>
 
-                    </div>
+                              <h2 className="
+                                text-[17px]
+                                font-semibold
+                              ">
+                                {c.name}
+                              </h2>
 
-                    {/* PHONE */}
+                              <p className="
+                                text-sm text-slate-400
+                              ">
+                                {c.date || "2026-05-15"}
+                              </p>
 
-                    <div>
-                      {
-                        customer.phone ||
-                        "-"
-                      }
-                    </div>
+                            </div>
 
-                    {/* ADDRESS */}
+                          </div>
 
-                    <div>
-                      {
-                        customer.address ||
-                        "-"
-                      }
-                    </div>
+                        </td>
 
-                    {/* DEBT */}
+                        {/* Phone */}
+                        <td className="p-5">
+                          {c.phone || "-"}
+                        </td>
 
-                    <div>
+                        {/* Address */}
+                        <td className="p-5">
+                          {c.address || "-"}
+                        </td>
 
-                      <span
-                        style={{
-                          ...styles.debtBadge,
+                        {/* Debt */}
+                        <td className="p-5">
 
-                          background:
-                            debt > 0
-                              ? "#fee2e2"
-                              : "#dcfce7",
+                          <span className={`
+                            px-4 py-2
+                            rounded-full
+                            text-sm font-semibold
 
-                          color:
-                            debt > 0
-                              ? "#dc2626"
-                              : "#16a34a",
-                        }}
-                      >
+                            ${
+                              hasDebt
 
-                        $
-                        {
-                          debt.toFixed(
-                            2
-                          )
-                        }
+                                ? "bg-red-500/10 text-red-400"
 
-                      </span>
+                                : "bg-green-500/10 text-green-400"
+                            }
+                          `}>
 
-                    </div>
+                            $
+                            {debt.toFixed(2)}
 
-                    {/* STATUS */}
+                          </span>
 
-                    <div>
+                        </td>
 
-                      <span
-                        style={{
-                          ...styles.statusBadge,
+                        {/* Status */}
+                        <td className="p-5">
 
-                          background:
-                            debt > 0
-                              ? "#fee2e2"
-                              : "#dcfce7",
+                          <span className={`
+                            px-4 py-2
+                            rounded-full
+                            text-sm font-semibold
 
-                          color:
-                            debt > 0
-                              ? "#dc2626"
-                              : "#16a34a",
-                        }}
-                      >
+                            ${
+                              hasDebt
 
-                        {status}
+                                ? "bg-red-500/10 text-red-400"
 
-                      </span>
+                                : "bg-green-500/10 text-green-400"
+                            }
+                          `}>
 
-                    </div>
+                            {hasDebt
+                              ? "Debt"
+                              : "No Debt"}
 
-                    {/* ACTION */}
+                          </span>
 
-                    <div>
+                        </td>
 
-                      <button
-                        onClick={() =>
-                          deleteCustomer(
-                            customer.id
-                          )
-                        }
+                        {/* Action */}
+                        <td className="p-5">
 
-                        style={
-                          styles.deleteButton
-                        }
-                      >
-                        Delete
-                      </button>
+                          <button
+                            onClick={() =>
+                              remove(c.id)
+                            }
+                            className="
+                              h-11 px-5
+                              rounded-2xl
+                              bg-red-600
+                              hover:bg-red-700
+                              text-white
+                              text-sm font-semibold
+                            "
+                          >
+                            Delete
+                          </button>
 
-                    </div>
+                        </td>
 
-                  </div>
-                );
-              }
-            )
-          )
-        }
+                      </tr>
+                    );
+                  }
+                )}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        )}
 
       </div>
 
     </div>
   );
 }
-
-/* =========================
-      STYLES
-========================= */
-
-const styles = {
-
-  container: {
-    width: "100%",
-    minHeight: "100vh",
-    padding: "16px",
-    boxSizing: "border-box",
-    overflowX: "hidden",
-  },
-
-  mobileHeader: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    flexWrap: "wrap",
-    marginBottom: "24px",
-  },
-
-  menuButton: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "14px",
-    border: "none",
-    fontSize: "20px",
-    cursor: "pointer",
-  },
-
-  title: {
-    margin: 0,
-    fontSize:
-      "clamp(28px,5vw,38px)",
-    fontWeight: "700",
-  },
-
-  subtitle: {
-    marginTop: "6px",
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-
-  topBar: {
-    display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems: "center",
-    gap: "14px",
-    flexWrap: "wrap",
-    marginBottom: "24px",
-  },
-
-  searchInput: {
-    width: "100%",
-    maxWidth: "340px",
-    padding: "14px",
-    borderRadius: "14px",
-    outline: "none",
-    fontSize: "14px",
-    boxSizing: "border-box",
-  },
-
-  totalCard: {
-    background: "#2563eb",
-    color: "#ffffff",
-    padding: "14px 20px",
-    borderRadius: "18px",
-    minWidth: "180px",
-    textAlign: "center",
-  },
-
-  totalLabel: {
-    margin: 0,
-    fontSize: "13px",
-  },
-
-  totalAmount: {
-    margin: "8px 0 0",
-    fontSize:
-      "clamp(24px,5vw,32px)",
-    fontWeight: "700",
-  },
-
-  tableWrapper: {
-    width: "100%",
-    borderRadius: "24px",
-    overflowX: "auto",
-  },
-
-  tableHeader: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "2fr 1fr 1fr 1fr 1fr 1fr",
-
-    gap: "14px",
-
-    padding: "18px",
-
-    fontWeight: "700",
-
-    minWidth: "900px",
-  },
-
-  tableRow: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "2fr 1fr 1fr 1fr 1fr 1fr",
-
-    gap: "14px",
-
-    padding: "18px",
-
-    alignItems: "center",
-
-    minWidth: "900px",
-  },
-
-  customerBox: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-  },
-
-  avatar: {
-    width: "60px",
-    height: "60px",
-    borderRadius: "50%",
-    background: "#16a34a",
-    color: "#ffffff",
-    display: "flex",
-    alignItems: "center",
-    justifyContent:
-      "center",
-    fontSize: "28px",
-    fontWeight: "700",
-  },
-
-  customerName: {
-    fontWeight: "700",
-    fontSize: "18px",
-  },
-
-  customerRole: {
-    color: "#94a3b8",
-    marginTop: "4px",
-    fontSize: "14px",
-  },
-
-  debtBadge: {
-    padding: "10px 16px",
-    borderRadius: "999px",
-    fontWeight: "700",
-    display: "inline-block",
-  },
-
-  statusBadge: {
-    padding: "10px 16px",
-    borderRadius: "999px",
-    fontWeight: "700",
-    display: "inline-block",
-  },
-
-  deleteButton: {
-    background: "#dc2626",
-    color: "#ffffff",
-    border: "none",
-    padding: "12px 18px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontWeight: "700",
-    width: "100%",
-  },
-
-  empty: {
-    padding: "60px",
-    textAlign: "center",
-    color: "#94a3b8",
-  },
-};
 
 export default Customers;

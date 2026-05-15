@@ -1,9 +1,4 @@
-import {
-  useState,
-  useEffect,
-  useRef,
-} from "react";
-
+import { useState, useEffect, useRef } from "react";
 import {
   collection,
   doc,
@@ -14,1360 +9,616 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../firebase";
+import { useTheme } from "../context/ThemeContext";
+import { useReactToPrint } from "react-to-print";
+import Invoice from "../components/Invoice";
 
-import {
-  useTheme,
-} from "../context/ThemeContext";
+function POS({ sales = [], setSales, toast, openSidebar }) {
+  const { darkMode } = useTheme();
+  const invoiceRef = useRef(null);
 
-import {
-  useReactToPrint,
-} from "react-to-print";
+  /* ==========================================================================
+     STATE
+     ========================================================================== */
+  const [medicines, setMedicines] = useState([]);
+  const [search, setSearch] = useState("");
+  const [cart, setCart] = useState([]);
 
-import Invoice
-from "../components/Invoice";
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
 
-function POS({
-  sales = [],
-  setSales,
-  toast,
-  openSidebar,
-}) {
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [paidAmount, setPaidAmount] = useState("");
 
-  const { darkMode } =
-    useTheme();
+  const [loading, setLoading] = useState(false);
 
-  /* =========================================
-        REFS
-  ========================================= */
+  const [discountType, setDiscountType] = useState("percent");
+  const [discountValue, setDiscountValue] = useState("");
 
-  const invoiceRef =
-    useRef(null);
+  const [tax, setTax] = useState("");
 
-  /* =========================================
-        STATES
-  ========================================= */
-
-  const [
-    medicines,
-    setMedicines,
-  ] = useState([]);
-
-  const [
-    search,
-    setSearch,
-  ] = useState("");
-
-  const [
-    cart,
-    setCart,
-  ] = useState([]);
-
-  const [
-    customerName,
-    setCustomerName,
-  ] = useState("");
-
-  const [
-    customerPhone,
-    setCustomerPhone,
-  ] = useState("");
-
-  const [
-    customerAddress,
-    setCustomerAddress,
-  ] = useState("");
-
-  const [
-    paymentMethod,
-    setPaymentMethod,
-  ] = useState("Cash");
-
-  const [
-    paidAmount,
-    setPaidAmount,
-  ] = useState("");
-
-  const [
-    loading,
-    setLoading,
-  ] = useState(false);
-
-  const [
-    discountType,
-    setDiscountType,
-  ] = useState("percent");
-
-  const [
-    discountValue,
-    setDiscountValue,
-  ] = useState("");
-
-  const [
-    tax,
-    setTax,
-  ] = useState("");
-
-  /* =========================================
-        FIRESTORE
-  ========================================= */
-
+  /* ==========================================================================
+     FIRESTORE REALTIME
+     ========================================================================== */
   useEffect(() => {
+    const unsubscribe = onSnapshot(
+      collection(db, "medicines"),
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
-    const unsubscribe =
-      onSnapshot(
-
-        collection(
-          db,
-          "medicines"
-        ),
-
-        (snapshot) => {
-
-          const data =
-            snapshot.docs.map(
-              (doc) => ({
-                id: doc.id,
-                ...doc.data(),
-              })
-            );
-
-          setMedicines(data);
-        }
-      );
-
-    return () =>
-      unsubscribe();
-
-  }, []);
-
-  /* =========================================
-        PRINT INVOICE
-  ========================================= */
-
-  const handlePrintInvoice =
-    useReactToPrint({
-
-      contentRef:
-        invoiceRef,
-    });
-
-  /* =========================================
-        SEARCH
-  ========================================= */
-
-  const filteredMedicines =
-    medicines.filter(
-      (medicine) => {
-
-        const text =
-          search
-            .toLowerCase()
-            .trim();
-
-        return (
-
-          medicine.name
-            ?.toLowerCase()
-            .includes(text) ||
-
-          medicine.category
-            ?.toLowerCase()
-            .includes(text)
-        );
+        setMedicines(data);
       }
     );
 
-  /* =========================================
-        ADD TO CART
-  ========================================= */
+    return () => unsubscribe();
+  }, []);
 
-  const addToCart =
-    (medicine) => {
+  /* ==========================================================================
+     PRINT
+     ========================================================================== */
+  const handlePrintInvoice = useReactToPrint({
+    contentRef: invoiceRef,
+  });
 
-      if (
-        medicine.stock <= 0
-      ) {
+  /* ==========================================================================
+     SEARCH
+     ========================================================================== */
+  const filteredMedicines = medicines.filter((medicine) => {
+    const text = search.toLowerCase().trim();
 
-        toast?.(
-          "Out of stock",
-          "error"
-        );
+    return (
+      medicine.name?.toLowerCase().includes(text) ||
+      medicine.category?.toLowerCase().includes(text)
+    );
+  });
 
+  /* ==========================================================================
+     CART
+     ========================================================================== */
+  const addToCart = (medicine) => {
+    if (medicine.stock <= 0) {
+      toast?.("Out of stock", "error");
+      return;
+    }
+
+    const exists = cart.find((item) => item.id === medicine.id);
+
+    if (exists) {
+      if (exists.qty >= medicine.stock) {
+        toast?.("Stock limit reached", "error");
         return;
       }
 
-      const exists =
-        cart.find(
-          (item) =>
-            item.id ===
-            medicine.id
-        );
+      setCart(
+        cart.map((item) =>
+          item.id === medicine.id
+            ? { ...item, qty: item.qty + 1 }
+            : item
+        )
+      );
+    } else {
+      setCart([...cart, { ...medicine, qty: 1 }]);
+    }
 
-      if (exists) {
+    toast?.(`${medicine.name} added`);
+  };
 
-        if (
-          exists.qty >=
-          medicine.stock
-        ) {
+  const increaseQty = (id) => {
+    setCart(
+      cart.map((item) => {
+        if (item.id === id) {
+          if (item.qty >= item.stock) return item;
 
-          toast?.(
-            "Stock limit reached",
-            "error"
-          );
-
-          return;
+          return {
+            ...item,
+            qty: item.qty + 1,
+          };
         }
 
-        setCart(
-          cart.map((item) =>
-
-            item.id ===
-            medicine.id
-
-              ? {
-                  ...item,
-                  qty:
-                    item.qty + 1,
-                }
-
-              : item
-          )
-        );
-
-      } else {
-
-        setCart([
-          ...cart,
-
-          {
-            ...medicine,
-            qty: 1,
-          },
-        ]);
-      }
-
-      toast?.(
-        `${medicine.name} added`
-      );
-    };
-
-  /* =========================================
-        QUANTITY
-  ========================================= */
-
-  const increaseQty =
-    (id) => {
-
-      setCart(
-        cart.map((item) => {
-
-          if (
-            item.id === id
-          ) {
-
-            if (
-              item.qty >=
-              item.stock
-            ) {
-
-              return item;
-            }
-
-            return {
-              ...item,
-              qty:
-                item.qty + 1,
-            };
-          }
-
-          return item;
-        })
-      );
-    };
-
-  const decreaseQty =
-    (id) => {
-
-      setCart(
-
-        cart
-          .map((item) =>
-
-            item.id === id
-
-              ? {
-                  ...item,
-                  qty:
-                    item.qty - 1,
-                }
-
-              : item
-          )
-
-          .filter(
-            (item) =>
-              item.qty > 0
-          )
-      );
-    };
-
-  /* =========================================
-        TOTALS
-  ========================================= */
-
-  const subtotal =
-    cart.reduce(
-      (acc, item) =>
-
-        acc +
-        item.sellPrice *
-          item.qty,
-
-      0
+        return item;
+      })
     );
+  };
+
+  const decreaseQty = (id) => {
+    setCart(
+      cart
+        .map((item) =>
+          item.id === id
+            ? { ...item, qty: item.qty - 1 }
+            : item
+        )
+        .filter((item) => item.qty > 0)
+    );
+  };
+
+  /* ==========================================================================
+     CALCULATIONS
+     ========================================================================== */
+  const subtotal = cart.reduce(
+    (acc, item) => acc + item.sellPrice * item.qty,
+    0
+  );
 
   const discount =
     discountType === "percent"
+      ? subtotal * (Number(discountValue || 0) / 100)
+      : Number(discountValue || 0);
 
-      ? subtotal *
-        (
-          Number(
-            discountValue || 0
-          ) / 100
-        )
+  const taxAmount = subtotal * (Number(tax || 0) / 100);
 
-      : Number(
-          discountValue || 0
-        );
+  const total = subtotal - discount + taxAmount;
 
-  const taxAmount =
-    subtotal *
-    (
-      Number(tax || 0) / 100
-    );
+  const paid = Number(paidAmount || 0);
 
-  const total =
-    subtotal -
-    discount +
-    taxAmount;
-
-  const paid =
-    Number(
-      paidAmount || 0
-    );
-
-  const debt =
-    total - paid;
+  const debt = total - paid;
 
   const saleStatus =
-
     debt <= 0
-
       ? "Paid"
-
       : paid > 0
-
       ? "Partial"
-
       : "Unpaid";
 
-  /* =========================================
-        COMPLETE SALE
-  ========================================= */
+  /* ==========================================================================
+     COMPLETE SALE
+     ========================================================================== */
+  const completeSale = async () => {
+    if (cart.length === 0) {
+      toast?.("Cart empty", "error");
+      return;
+    }
 
-  const completeSale =
-    async () => {
+    if (!customerName) {
+      toast?.("Customer required", "error");
+      return;
+    }
 
-      if (
-        cart.length === 0
-      ) {
+    setLoading(true);
 
-        toast?.(
-          "Cart empty",
-          "error"
-        );
+    try {
+      // GET SALES
+      const snapshot = await getDocs(collection(db, "sales"));
 
-        return;
-      }
+      // FIND LAST INVOICE NUMBER
+      let lastInvoice = 0;
 
-      if (
-        !customerName
-      ) {
+      snapshot.forEach((saleDoc) => {
+        const data = saleDoc.data();
 
-        toast?.(
-          "Customer required",
-          "error"
-        );
-
-        return;
-      }
-
-      const snapshot =
-        await getDocs(
-          collection(
-            db,
-            "sales"
-          )
-        );
-
-      const invoiceId =
-        snapshot.size + 1;
-
-      try {
-
-        setLoading(true);
-
-        const saleData = {
-
-          customer:
-            customerName,
-
-          phone:
-            customerPhone,
-
-          address:
-            customerAddress,
-
-          items: cart,
-
-          subtotal,
-
-          discount,
-
-          taxAmount,
-
-          total,
-
-          paid,
-
-          debt,
-
-          method:
-            paymentMethod,
-
-          status:
-            saleStatus,
-
-          createdAt:
-            Date.now(),
-
-          date:
-            new Date()
-              .toISOString(),
-        };
-
-        await setDoc(
-
-          doc(
-            db,
-            "sales",
-            String(invoiceId)
-          ),
-
-          saleData
-        );
-
-        for (
-          const item of cart
-        ) {
-
-          await updateDoc(
-
-            doc(
-              db,
-              "medicines",
-              item.id
-            ),
-
-            {
-              stock:
-                item.stock -
-                item.qty,
-
-              sold:
-                Number(
-                  item.sold || 0
-                ) + item.qty,
-            }
-          );
-        }
-
-        await setDoc(
-
-          doc(
-            db,
-            "customers",
-
-            customerPhone ||
-            customerName
-          ),
-
-          {
-
-            name:
-              customerName,
-
-            phone:
-              customerPhone,
-
-            address:
-              customerAddress,
-
-            debt,
-
-            status:
-              debt > 0
-                ? "Debt"
-                : "Paid",
-
-            updatedAt:
-              Date.now(),
-          },
-
-          {
-            merge: true,
+        if (data.invoiceNumber) {
+          if (data.invoiceNumber > lastInvoice) {
+            lastInvoice = data.invoiceNumber;
           }
-        );
+        }
+      });
 
-        setSales?.([
-          {
-            id: invoiceId,
-            ...saleData,
-          },
+      // NEW NUMBER
+      const newInvoiceNumber = lastInvoice + 1;
 
-          ...sales,
-        ]);
+      // SALE DATA
+      const saleData = {
+        invoiceNumber: newInvoiceNumber,
 
-        toast?.(
-          "Sale completed",
-          "success"
-        );
+        customer: customerName,
+        phone: customerPhone,
+        address: customerAddress,
 
-        setCart([]);
+        items: cart,
 
-        setCustomerName("");
+        subtotal,
+        discount,
+        taxAmount,
+        total,
+        paid,
+        debt,
 
-        setCustomerPhone("");
+        method: paymentMethod,
+        status: saleStatus,
 
-        setCustomerAddress("");
+        createdAt: Date.now(),
+        date: new Date().toISOString(),
+      };
 
-        setPaidAmount("");
+      // SAVE SALE
+      await setDoc(
+        doc(db, "sales", String(newInvoiceNumber)),
+        saleData
+      );
 
-        setDiscountValue("");
-
-        setTax("");
-
-        setPaymentMethod(
-          "Cash"
-        );
-
-      } catch (error) {
-
-        console.log(error);
-
-        toast?.(
-          "Sale failed",
-          "error"
-        );
-
-      } finally {
-
-        setLoading(false);
+      // UPDATE STOCK
+      for (const item of cart) {
+        await updateDoc(doc(db, "medicines", item.id), {
+          stock: item.stock - item.qty,
+          sold: Number(item.sold || 0) + item.qty,
+        });
       }
-    };
 
+      // SAVE CUSTOMER
+      await setDoc(
+        doc(db, "customers", customerPhone || customerName),
+        {
+          name: customerName,
+          phone: customerPhone,
+          address: customerAddress,
+          debt,
+          status: debt > 0 ? "Debt" : "Paid",
+          updatedAt: Date.now(),
+        },
+        { merge: true }
+      );
+
+      // UPDATE LOCAL SALES
+         setSales?.([
+         ...sales,
+        {
+            id: newInvoiceNumber,
+              ...saleData,
+       },
+    ]);
+
+      toast?.("Sale completed", "success");
+
+      // RESET
+      setCart([]);
+      setCustomerName("");
+      setCustomerPhone("");
+      setCustomerAddress("");
+
+      setPaidAmount("");
+      setDiscountValue("");
+      setTax("");
+
+      setPaymentMethod("Cash");
+    } catch (error) {
+      console.error(error);
+      toast?.("Sale failed", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ==========================================================================
+     THEME
+     ========================================================================== */
+  const themeBg = darkMode
+    ? "bg-[#090d16] text-white"
+    : "bg-slate-50 text-gray-950";
+
+  const cardBg = darkMode
+    ? "bg-[#131926] border-[#1e293b]"
+    : "bg-white border-slate-200";
+
+  const inputBg = darkMode
+    ? "bg-[#0f172a] border-[#374151] text-white focus:border-green-600"
+    : "bg-white border-gray-300 text-gray-950 focus:border-green-600";
+
+  const subText = darkMode
+    ? "text-slate-400"
+    : "text-gray-500";
+
+  /* ==========================================================================
+     UI
+     ========================================================================== */
   return (
-
     <div
-      style={{
-        ...styles.container,
-
-        background:
-          darkMode
-            ? "#020617"
-            : "#f8fafc",
-
-        gridTemplateColumns:
-          window.innerWidth <= 992
-
-            ? "1fr"
-
-            : "1.4fr 0.8fr",
-      }}
+      className={`w-full min-h-screen p-4 md:p-5 lg:p-6 grid grid-cols-1 lg:grid-cols-[1.3fr_0.9fr] xl:grid-cols-[1.4fr_0.8fr] gap-6 overflow-x-hidden box-border ${themeBg}`}
     >
-
       {/* LEFT */}
-
-      <div>
-
-        {/* HEADER */}
-
-        <div style={styles.mobileTop}>
-
+      <div className="flex flex-col w-full">
+        <div className="flex items-center gap-4 flex-wrap mb-6">
           <button
-            onClick={
-              openSidebar
-            }
-
-            style={{
-              ...styles.menuButton,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}
+            onClick={openSidebar}
+            className={`w-12 h-12 rounded-xl border flex items-center justify-center text-xl font-bold cursor-pointer shadow-sm lg:hidden ${cardBg}`}
           >
             ☰
           </button>
 
           <div>
-
-            <h1
-              style={{
-                ...styles.title,
-
-                color:
-                  darkMode
-                    ? "#ffffff"
-                    : "#111827",
-              }}
-            >
+            <h1 className="m-0 text-2xl md:text-3xl lg:text-4xl font-extrabold tracking-tight">
               POS 🛒
             </h1>
 
-            <p
-              style={{
-                ...styles.subtitle,
-
-                color:
-                  darkMode
-                    ? "#94a3b8"
-                    : "#6b7280",
-              }}
-            >
+            <p className={`mt-1 text-sm font-medium ${subText}`}>
               Pharmacy sales system
             </p>
-
           </div>
-
         </div>
 
         {/* SEARCH */}
-
         <input
           type="text"
-
           placeholder="Search medicine..."
-
           value={search}
-
-          onChange={(e) =>
-            setSearch(
-              e.target.value
-            )
-          }
-
-          style={input(darkMode)}
+          onChange={(e) => setSearch(e.target.value)}
+          className={`w-full p-4 rounded-xl border outline-none text-sm mb-6 transition-all ${inputBg}`}
         />
 
-        {/* MEDICINES */}
+        {/* PRODUCTS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          {filteredMedicines.map((medicine) => (
+            <div
+              key={medicine.id}
+              className={`p-5 rounded-2xl border flex flex-col justify-between gap-5 transition-all shadow-sm ${cardBg}`}
+            >
+              <div className="space-y-1">
+                <h3 className="text-base font-bold tracking-wide">
+                  {medicine.name}
+                </h3>
 
-        <div style={styles.medicineGrid}>
+                <p className={`text-xs ${subText}`}>
+                  {medicine.category}
+                </p>
 
-          {
-            filteredMedicines.map(
-              (medicine) => (
+                <p className="text-xs text-green-500 font-bold">
+                  Stock: {medicine.stock}
+                </p>
 
-                <div
-                  key={medicine.id}
+                <h2 className="text-xl font-extrabold text-green-500">
+                  $
+                  {Number(medicine.sellPrice || 0).toFixed(2)}
+                </h2>
+              </div>
 
-                  style={{
-                    ...styles.card,
-
-                    background:
-                      darkMode
-                        ? "#111827"
-                        : "#ffffff",
-                  }}
-                >
-
-                  <div>
-
-                    <h3>
-                      {medicine.name}
-                    </h3>
-
-                    <p style={styles.gray}>
-                      {
-                        medicine.category
-                      }
-                    </p>
-
-                    <p style={styles.stock}>
-                      Stock:
-                      {" "}
-                      {
-                        medicine.stock
-                      }
-                    </p>
-
-                    <h2 style={styles.price}>
-                      $
-                      {
-                        medicine.sellPrice
-                      }
-                    </h2>
-
-                  </div>
-
-                  <button
-                    onClick={() =>
-                      addToCart(
-                        medicine
-                      )
-                    }
-
-                    style={
-                      styles.addButton
-                    }
-                  >
-                    Add Cart
-                  </button>
-
-                </div>
-              )
-            )
-          }
-
+              <button
+                onClick={() => addToCart(medicine)}
+                className="w-full bg-[#16a34a] text-white border-none py-3 rounded-xl font-bold text-sm cursor-pointer hover:bg-green-700 transition-colors"
+              >
+                Add Cart
+              </button>
+            </div>
+          ))}
         </div>
-
       </div>
 
       {/* RIGHT */}
-
       <div
-        style={{
-          ...styles.cartSection,
-
-          background:
-            darkMode
-              ? "#111827"
-              : "#ffffff",
-        }}
+        className={`p-4 sm:p-5 lg:p-6 rounded-2xl border h-fit lg:sticky lg:top-6 shadow-md ${cardBg}`}
       >
-
-        <h2>
+        <h2 className="text-lg font-extrabold tracking-wide mb-5">
           Cart 🛒
         </h2>
 
-        <input
-          type="text"
-          placeholder="Customer Name"
-          value={customerName}
-          onChange={(e) =>
-            setCustomerName(
-              e.target.value
-            )
-          }
-          style={input(darkMode)}
-        />
+        {/* FORM */}
+        <div className="space-y-3">
+          <input
+            type="text"
+            placeholder="Customer Name"
+            value={customerName}
+            onChange={(e) =>
+              setCustomerName(e.target.value)
+            }
+            className={`w-full p-3.5 rounded-xl border outline-none text-sm transition-all ${inputBg}`}
+          />
 
-        <input
-          type="text"
-          placeholder="Phone Number"
-          value={customerPhone}
-          onChange={(e) =>
-            setCustomerPhone(
-              e.target.value
-            )
-          }
-          style={input(darkMode)}
-        />
+          <input
+            type="text"
+            placeholder="Phone Number"
+            value={customerPhone}
+            onChange={(e) =>
+              setCustomerPhone(e.target.value)
+            }
+            className={`w-full p-3.5 rounded-xl border outline-none text-sm transition-all ${inputBg}`}
+          />
 
-        <input
-          type="text"
-          placeholder="Address"
-          value={customerAddress}
-          onChange={(e) =>
-            setCustomerAddress(
-              e.target.value
-            )
-          }
-          style={input(darkMode)}
-        />
+          <input
+            type="text"
+            placeholder="Address"
+            value={customerAddress}
+            onChange={(e) =>
+              setCustomerAddress(e.target.value)
+            }
+            className={`w-full p-3.5 rounded-xl border outline-none text-sm transition-all ${inputBg}`}
+          />
 
-        <select
-          value={paymentMethod}
-          onChange={(e) =>
-            setPaymentMethod(
-              e.target.value
-            )
-          }
-          style={input(darkMode)}
-        >
+          <select
+            value={paymentMethod}
+            onChange={(e) =>
+              setPaymentMethod(e.target.value)
+            }
+            className={`w-full p-3.5 rounded-xl border outline-none text-sm transition-all ${inputBg}`}
+          >
+            <option>Cash</option>
+            <option>EVC PLUS</option>
+            <option>E-DAHAB</option>
+            <option>Debt</option>
+          </select>
 
-          <option>
-            Cash
-          </option>
+          <input
+            type="number"
+            placeholder="Paid Amount"
+            value={paidAmount}
+            onChange={(e) =>
+              setPaidAmount(e.target.value)
+            }
+            className={`w-full p-3.5 rounded-xl border outline-none text-sm transition-all ${inputBg}`}
+          />
 
-          <option>
-            EVC PLUS
-          </option>
+          <select
+            value={discountType}
+            onChange={(e) =>
+              setDiscountType(e.target.value)
+            }
+            className={`w-full p-3.5 rounded-xl border outline-none text-sm transition-all ${inputBg}`}
+          >
+            <option value="percent">
+              Percentage %
+            </option>
 
-          <option>
-            E-DAHAB
-          </option>
+            <option value="fixed">
+              Fixed Amount
+            </option>
+          </select>
 
-          <option>
-            Debt
-          </option>
+          <input
+            type="number"
+            placeholder="Discount"
+            value={discountValue}
+            onChange={(e) =>
+              setDiscountValue(e.target.value)
+            }
+            className={`w-full p-3.5 rounded-xl border outline-none text-sm transition-all ${inputBg}`}
+          />
 
-        </select>
+          <input
+            type="number"
+            placeholder="Tax / VAT %"
+            value={tax}
+            onChange={(e) => setTax(e.target.value)}
+            className={`w-full p-3.5 rounded-xl border outline-none text-sm transition-all ${inputBg}`}
+          />
+        </div>
 
-        <input
-          type="number"
-          placeholder="Paid Amount"
-          value={paidAmount}
-          onChange={(e) =>
-            setPaidAmount(
-              e.target.value
-            )
-          }
-          style={input(darkMode)}
-        />
+        {/* CART */}
+        <div className="mt-5 max-h-[280px] overflow-y-auto overflow-x-hidden pr-1 space-y-1 divide-y divide-slate-700/20">
+          {cart.length === 0 ? (
+            <div
+              className={`text-center py-8 text-sm ${subText}`}
+            >
+              Cart empty
+            </div>
+          ) : (
+            cart.map((item) => (
+              <div
+                key={item.id}
+                className="flex justify-between items-center gap-3 flex-wrap py-3 first:pt-0"
+              >
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-bold truncate">
+                    {item.name}
+                  </h4>
 
-        {/* DISCOUNT */}
-
-        <select
-          value={discountType}
-          onChange={(e) =>
-            setDiscountType(
-              e.target.value
-            )
-          }
-          style={input(darkMode)}
-        >
-
-          <option value="percent">
-            Percentage %
-          </option>
-
-          <option value="fixed">
-            Fixed Amount
-          </option>
-
-        </select>
-
-        <input
-          type="number"
-          placeholder="Discount"
-          value={discountValue}
-          onChange={(e) =>
-            setDiscountValue(
-              e.target.value
-            )
-          }
-          style={input(darkMode)}
-        />
-
-        <input
-          type="number"
-          placeholder="Tax / VAT %"
-          value={tax}
-          onChange={(e) =>
-            setTax(
-              e.target.value
-            )
-          }
-          style={input(darkMode)}
-        />
-
-        {/* CART ITEMS */}
-
-        <div style={styles.cartItems}>
-
-          {
-            cart.length === 0
-
-              ? (
-                <div style={styles.empty}>
-                  Cart empty
+                  <p className="text-xs text-green-500 font-semibold">
+                    $
+                    {Number(
+                      item.sellPrice || 0
+                    ).toFixed(2)}
+                  </p>
                 </div>
-              )
 
-              : (
+                <div className="flex items-center gap-2.5 flex-shrink-0">
+                  <button
+                    onClick={() =>
+                      decreaseQty(item.id)
+                    }
+                    className="w-8 h-8 bg-[#16a34a] text-white border-none rounded-lg cursor-pointer font-bold flex items-center justify-center hover:bg-green-700 transition-colors"
+                  >
+                    -
+                  </button>
 
-                cart.map(
-                  (item) => (
+                  <strong className="text-sm min-w-[15px] text-center">
+                    {item.qty}
+                  </strong>
 
-                    <div
-                      key={item.id}
-
-                      style={
-                        styles.cartItem
-                      }
-                    >
-
-                      <div>
-
-                        <h4>
-                          {item.name}
-                        </h4>
-
-                        <p style={styles.price}>
-                          $
-                          {
-                            item.sellPrice
-                          }
-                        </p>
-
-                      </div>
-
-                      <div style={styles.qtyWrapper}>
-
-                        <button
-                          onClick={() =>
-                            decreaseQty(
-                              item.id
-                            )
-                          }
-                          style={qtyBtn}
-                        >
-                          -
-                        </button>
-
-                        <strong>
-                          {item.qty}
-                        </strong>
-
-                        <button
-                          onClick={() =>
-                            increaseQty(
-                              item.id
-                            )
-                          }
-                          style={qtyBtn}
-                        >
-                          +
-                        </button>
-
-                      </div>
-
-                    </div>
-                  )
-                )
-              )
-          }
-
+                  <button
+                    onClick={() =>
+                      increaseQty(item.id)
+                    }
+                    className="w-8 h-8 bg-[#16a34a] text-white border-none rounded-lg cursor-pointer font-bold flex items-center justify-center hover:bg-green-700 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
-        {/* TOTALS */}
+        {/* SUMMARY */}
+        <div className="mt-6 border-t border-slate-700/20 pt-4 space-y-2">
+          <div
+            className={`flex justify-between text-xs font-semibold ${subText}`}
+          >
+            <span>Subtotal:</span>
+            <span>${subtotal.toFixed(2)}</span>
+          </div>
 
-        <div style={styles.totalBox}>
+          <div
+            className={`flex justify-between text-xs font-semibold ${subText}`}
+          >
+            <span>Discount:</span>
+            <span>- ${discount.toFixed(2)}</span>
+          </div>
 
-          <p style={styles.gray}>
-            Subtotal:
-            $
-            {
-              subtotal.toFixed(2)
-            }
-          </p>
+          <div
+            className={`flex justify-between text-xs font-semibold ${subText}`}
+          >
+            <span>Tax:</span>
+            <span>+ ${taxAmount.toFixed(2)}</span>
+          </div>
 
-          <p style={styles.gray}>
-            Discount:
-            -$
-            {
-              discount.toFixed(2)
-            }
-          </p>
+          <div className="flex justify-between text-lg font-black tracking-tight border-y border-dashed border-slate-700/20 py-2.5">
+            <span>Total:</span>
 
-          <p style={styles.gray}>
-            Tax:
-            +$
-            {
-              taxAmount.toFixed(2)
-            }
-          </p>
+            <span className="text-green-500">
+              ${total.toFixed(2)}
+            </span>
+          </div>
 
-          <h2>
-            Total:
-            $
-            {
-              total.toFixed(2)
-            }
-          </h2>
+          <div
+            className={`flex justify-between text-xs font-semibold ${subText}`}
+          >
+            <span>Paid:</span>
+            <span>${paid.toFixed(2)}</span>
+          </div>
 
-          <p style={styles.gray}>
-            Paid:
-            $
-            {
-              paid.toFixed(2)
-            }
-          </p>
+          <div className="flex justify-between text-sm font-bold">
+            <span>Debt:</span>
 
-          <p
-            style={{
-              color:
+            <span
+              className={
                 debt > 0
-                  ? "#dc2626"
-                  : "#16a34a",
+                  ? "text-red-500"
+                  : "text-green-500"
+              }
+            >
+              ${debt.toFixed(2)}
+            </span>
+          </div>
 
-              fontWeight:
-                "bold",
-            }}
-          >
-            Debt:
-            $
-            {
-              debt.toFixed(2)
-            }
-          </p>
+          {/* BUTTONS */}
+          <div className="pt-3 space-y-2">
+            <button
+              onClick={handlePrintInvoice}
+              className="w-full bg-[#0ea5e9] text-white border-none py-3.5 rounded-xl font-bold text-sm cursor-pointer hover:bg-sky-600 transition-colors shadow-sm"
+            >
+              Print Invoice
+            </button>
 
-          <button
-            onClick={
-              handlePrintInvoice
-            }
-
-            style={
-              styles.invoiceButton
-            }
-          >
-            Print Invoice
-          </button>
-
-          <button
-            onClick={
-              completeSale
-            }
-
-            disabled={
-              loading
-            }
-
-            style={{
-              ...styles.completeButton,
-
-              opacity:
-                loading
-                  ? 0.7
-                  : 1,
-            }}
-          >
-
-            {
-              loading
+            <button
+              onClick={completeSale}
+              disabled={loading}
+              className="w-full bg-[#16a34a] text-white border-none py-3.5 rounded-xl font-bold text-sm cursor-pointer disabled:opacity-60 hover:bg-green-700 transition-colors shadow-sm"
+            >
+              {loading
                 ? "Processing..."
-                : "Complete Sale"
-            }
-
-          </button>
-
+                : "Complete Sale"}
+            </button>
+          </div>
         </div>
-
       </div>
 
-      {/* HIDDEN INVOICE */}
-
-      <div
-        style={{
-          position:
-            "absolute",
-
-          left: "-9999px",
-
-          top: 0,
-        }}
-      >
-
+      {/* PRINT */}
+      <div className="absolute left-[-9999px] top-0">
         <Invoice
           ref={invoiceRef}
-
           cart={cart}
-
-          customerName={
-            customerName
-          }
-
-          customerPhone={
-            customerPhone
-          }
-
+          customerName={customerName}
+          customerPhone={customerPhone}
           total={total}
-
-          subtotal={
-            subtotal
-          }
-
-          taxAmount={
-            taxAmount
-          }
-
-          discount={
-            discount
-          }
-
+          subtotal={subtotal}
+          taxAmount={taxAmount}
+          discount={discount}
           paid={paid}
-
           debt={debt}
         />
-
       </div>
-
     </div>
   );
 }
-
-const styles = {
-
-  container: {
-    width: "100%",
-    minHeight: "100vh",
-    padding: "14px",
-
-    display: "grid",
-
-    gap: "20px",
-
-    overflowX: "hidden",
-
-    boxSizing: "border-box",
-  },
-
-  mobileTop: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    flexWrap: "wrap",
-    marginBottom: "20px",
-  },
-
-  menuButton: {
-    width: "46px",
-    height: "46px",
-    borderRadius: "12px",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "20px",
-    flexShrink: 0,
-  },
-
-  title: {
-    margin: 0,
-    fontSize:
-      "clamp(26px,5vw,34px)",
-    lineHeight: 1.2,
-  },
-
-  subtitle: {
-    marginTop: "8px",
-    fontSize: "14px",
-  },
-
-  medicineGrid: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(160px,1fr))",
-
-    gap: "14px",
-  },
-
-  card: {
-    padding: "16px",
-    borderRadius: "20px",
-
-    display: "flex",
-    flexDirection: "column",
-
-    justifyContent:
-      "space-between",
-
-    gap: "16px",
-
-    overflow: "hidden",
-
-    wordBreak: "break-word",
-
-    boxShadow:
-      "0 4px 14px rgba(0,0,0,0.05)",
-  },
-
-  addButton: {
-    width: "100%",
-    background: "#16a34a",
-    color: "#ffffff",
-    border: "none",
-    padding: "12px",
-    borderRadius: "12px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    fontSize: "14px",
-  },
-
-  cartSection: {
-    borderRadius: "20px",
-    padding: "18px",
-
-    position: "sticky",
-    top: "10px",
-
-    height: "fit-content",
-
-    overflow: "hidden",
-  },
-
-  cartItems: {
-    marginTop: "18px",
-
-    maxHeight: "350px",
-
-    overflowY: "auto",
-
-    overflowX: "hidden",
-
-    paddingRight: "4px",
-  },
-
-  cartItem: {
-    display: "flex",
-
-    justifyContent:
-      "space-between",
-
-    alignItems: "center",
-
-    gap: "12px",
-
-    flexWrap: "wrap",
-
-    padding: "14px 0",
-
-    borderBottom:
-      "1px solid rgba(148,163,184,0.15)",
-  },
-
-  qtyWrapper: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-
-    flexShrink: 0,
-  },
-
-  totalBox: {
-    marginTop: "20px",
-  },
-
-  completeButton: {
-    width: "100%",
-    background: "#16a34a",
-    color: "#ffffff",
-    border: "none",
-    padding: "15px",
-    borderRadius: "14px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    marginTop: "10px",
-    fontSize: "15px",
-  },
-
-  invoiceButton: {
-    width: "100%",
-    background: "#0ea5e9",
-    color: "#ffffff",
-    border: "none",
-    padding: "14px",
-    borderRadius: "14px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    marginTop: "10px",
-    fontSize: "15px",
-  },
-
-  gray: {
-    color: "#94a3b8",
-    fontSize: "14px",
-    wordBreak: "break-word",
-  },
-
-  stock: {
-    color: "#22c55e",
-    fontWeight: "bold",
-    fontSize: "14px",
-  },
-
-  price: {
-    color: "#22c55e",
-    fontWeight: "bold",
-  },
-
-  empty: {
-    textAlign: "center",
-    padding: "30px 0",
-    color: "#94a3b8",
-  },
-};
-
-const input =
-  (darkMode) => ({
-
-    width: "100%",
-
-    padding: "14px",
-
-    borderRadius: "14px",
-
-    border:
-      darkMode
-        ? "1px solid #374151"
-        : "1px solid #d1d5db",
-
-    background:
-      darkMode
-        ? "#0f172a"
-        : "#ffffff",
-
-    color:
-      darkMode
-        ? "#ffffff"
-        : "#111827",
-
-    outline: "none",
-
-    boxSizing: "border-box",
-
-    fontSize: "14px",
-
-    marginBottom: "14px",
-
-    minWidth: 0,
-  });
-
-const qtyBtn = {
-
-  width: "34px",
-
-  height: "34px",
-
-  border: "none",
-
-  borderRadius: "10px",
-
-  background: "#16a34a",
-
-  color: "#ffffff",
-
-  cursor: "pointer",
-
-  fontWeight: "bold",
-
-  flexShrink: 0,
-};
 
 export default POS;

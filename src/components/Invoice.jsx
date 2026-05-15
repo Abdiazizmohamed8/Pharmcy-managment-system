@@ -1,10 +1,8 @@
-import React,
-{
+import React, {
   forwardRef,
 } from "react";
 
 const Invoice = forwardRef(
-
   (
     {
       cart,
@@ -17,826 +15,319 @@ const Invoice = forwardRef(
       paid,
       debt,
     },
-
     ref
   ) => {
-
     return (
-
       <div
         ref={ref}
-
-        style={{
-          width: "100%",
-
-          maxWidth: "900px",
-
-          margin: "0 auto",
-
-          background: "#ffffff",
-
-          color: "#000",
-
-          fontFamily:
-            "Arial",
-
-          border:
-            "1px solid #ddd",
-        }}
+        className="w-full max-w-5xl mx-auto bg-white text-black border border-gray-300"
       >
-
-        {/* HEADER */}
-
-        <table
-          style={{
-            width: "100%",
-
-            borderCollapse:
-              "collapse",
-
-            background:
-              "#155e75",
-
-            color: "#ffffff",
-          }}
-        >
-
-          <tbody>
-
-            <tr>
-
-              <td
-                style={{
-                  padding:
-                    "40px",
-
-                  width: "60%",
-                }}
-              >
-
-                <h1
-                  style={{
-                    margin: 0,
-
-                    fontSize:
-                      "60px",
-
-                    fontWeight:
-                      "300",
-
-                    letterSpacing:
-                      "2px",
-                  }}
-                >
-                  INVOICE
-                </h1>
-
-              </td>
-
-              <td
-                style={{
-                  padding:
-                    "40px",
-
-                  textAlign:
-                    "right",
-
-                  fontSize:
-                    "14px",
-
-                  lineHeight:
-                    "26px",
-                }}
-              >
-
-                <strong>
-                  ANFAC
-                  PHARMACY
-                </strong>
-
-                <br />
-
-                Mogadishu
-                Somalia
-
-                <br />
-
-                +252615189953
-
-                <br />
-
-                anfac@gmail.com
-
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-        {/* CLIENT + INVOICE INFO */}
-
-        <table
-          style={{
-            width: "100%",
-
-            borderCollapse:
-              "collapse",
-
-            marginTop: "40px",
-          }}
-        >
-
-          <tbody>
-
-            <tr>
-
-              {/* LEFT */}
-
-              <td
-                style={{
-                  width: "50%",
-
-                  padding:
-                    "0 40px",
-
-                  verticalAlign:
-                    "top",
-                }}
-              >
-
-                <table
-                  style={{
-                    width: "100%",
-                  }}
-                >
-
-                  <tbody>
-
-                    <tr>
-
-                      <td
-                        style={
-                          infoLabel
-                        }
-                      >
-                        Invoice No.
-                      </td>
-
-                      <td>
-                        #
-                        {
-                          Math.floor(
-                            Math.random() *
-                            100000
-                          )
-                        }
-                      </td>
-
-                    </tr>
-
-                    <tr>
-
-                      <td
-                        style={
-                          infoLabel
-                        }
-                      >
-                        Date
-                      </td>
-
-                      <td>
-                        {
-                          new Date()
-                            .toLocaleDateString()
-                        }
-                      </td>
-
-                    </tr>
-
-                    <tr>
-
-                      <td
-                        style={
-                          infoLabel
-                        }
-                      >
-                        Status
-                      </td>
-
-                      <td>
-                        {
-                          debt > 0
-                            ? "Debt"
-                            : "Paid"
-                        }
-                      </td>
-
-                    </tr>
-
-                  </tbody>
-
-                </table>
-
-              </td>
-
-              {/* RIGHT */}
-
-              <td
-                style={{
-                  width: "50%",
-
-                  padding:
-                    "0 40px",
-
-                  verticalAlign:
-                    "top",
-
-                  textAlign:
-                    "right",
-                }}
-              >
-
-                <h3
-                  style={{
-                    marginBottom:
-                      "14px",
-
-                    fontSize:
-                      "24px",
-                  }}
-                >
-                  Bill To
-                </h3>
-
-                <table
-                  style={{
-                    width: "100%",
-                  }}
-                >
-
-                  <tbody>
-
-                    <tr>
-
-                      <td
-                        style={{
-                          fontWeight:
-                            "bold",
-
-                          paddingBottom:
-                            "10px",
-                        }}
-                      >
-                        Customer Name:
-                      </td>
-
-                    </tr>
-
-                    <tr>
-
-                      <td
-                        style={{
-                          paddingBottom:
-                            "14px",
-
-                          fontSize:
-                            "20px",
-
-                          color:
-                            "#155e75",
-
-                          fontWeight:
-                            "bold",
-                        }}
-                      >
-                        {
-                          customerName ||
-                          "Customer Name"
-                        }
-                      </td>
-
-                    </tr>
-
-                    <tr>
-
-                      <td
-                        style={{
-                          fontWeight:
-                            "bold",
-
-                          paddingBottom:
-                            "10px",
-                        }}
-                      >
-                        Phone:
-                      </td>
-
-                    </tr>
-
-                    <tr>
-
-                      <td>
-                        {
-                          customerPhone ||
-                          "No Phone"
-                        }
-                      </td>
-
-                    </tr>
-
-                  </tbody>
-
-                </table>
-
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
-        {/* ITEMS */}
-
+        {/* Header */}
         <div
-          style={{
-            padding:
-              "40px",
-          }}
+          className="bg-cyan-800 text-white
+          px-5 sm:px-10 py-8
+          flex flex-col md:flex-row
+          justify-between gap-6"
         >
+          {/* Invoice Title */}
+          <div>
+            <h1
+              className="text-4xl sm:text-6xl
+              font-light tracking-widest"
+            >
+              INVOICE
+            </h1>
+          </div>
 
-          <table
-            style={{
-              width: "100%",
-
-              borderCollapse:
-                "collapse",
-            }}
+          {/* Company Info */}
+          <div
+            className="text-sm leading-7
+            md:text-right"
           >
+            <strong>
+              ANFAC PHARMACY
+            </strong>
 
+            <br />
+
+            Mogadishu Somalia
+
+            <br />
+
+            +252615189953
+
+            <br />
+
+            anfac@gmail.com
+          </div>
+        </div>
+
+        {/* Invoice Info */}
+        <div
+          className="grid grid-cols-1 md:grid-cols-2
+          gap-10 px-5 sm:px-10 py-10"
+        >
+          {/* Left Info */}
+          <div>
+            <table className="w-full">
+              <tbody>
+                <tr>
+                  <td className="font-bold pb-4 w-[140px]">
+                    Invoice No.
+                  </td>
+
+                  <td>
+                    #
+                    {Math.floor(
+                      Math.random() *
+                        100000
+                    )}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td className="font-bold pb-4">
+                    Date
+                  </td>
+
+                  <td>
+                    {new Date().toLocaleDateString()}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td className="font-bold pb-4">
+                    Status
+                  </td>
+
+                  <td>
+                    {debt > 0
+                      ? "Debt"
+                      : "Paid"}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Customer Info */}
+          <div className="md:text-right">
+            <h3 className="text-2xl font-bold mb-4">
+              Bill To
+            </h3>
+
+            <p className="font-bold mb-2">
+              Customer Name:
+            </p>
+
+            <h2
+              className="text-xl sm:text-2xl
+              text-cyan-800 font-bold mb-5"
+            >
+              {customerName ||
+                "Customer Name"}
+            </h2>
+
+            <p className="font-bold mb-2">
+              Phone:
+            </p>
+
+            <p>
+              {customerPhone ||
+                "No Phone"}
+            </p>
+          </div>
+        </div>
+
+        {/* Items Table */}
+        <div className="px-3 sm:px-10 overflow-x-auto">
+          <table className="w-full border-collapse min-w-[700px]">
             <thead>
-
               <tr
-                style={{
-                  borderTop:
-                    "2px solid #555",
-
-                  borderBottom:
-                    "2px solid #555",
-
-                  background:
-                    "#f8fafc",
-                }}
+                className="border-y-2 border-gray-600
+                bg-slate-50"
               >
-
-                <th
-                  style={
-                    tableHead
-                  }
-                >
+                <th className={tableHead}>
                   Item
                 </th>
 
-                <th
-                  style={
-                    tableHead
-                  }
-                >
+                <th className={tableHead}>
                   Medicine
                 </th>
 
-                <th
-                  style={
-                    tableHead
-                  }
-                >
+                <th className={tableHead}>
                   Qty
                 </th>
 
-                <th
-                  style={
-                    tableHead
-                  }
-                >
+                <th className={tableHead}>
                   Rate
                 </th>
 
-                <th
-                  style={
-                    tableHead
-                  }
-                >
+                <th className={tableHead}>
                   Amount
                 </th>
-
               </tr>
-
             </thead>
 
             <tbody>
+              {cart.map(
+                (item, index) => (
+                  <tr
+                    key={index}
+                    className="border-b border-gray-300"
+                  >
+                    <td className={tableCell}>
+                      {index + 1}
+                    </td>
 
-              {
-                cart.map(
-                  (
-                    item,
-                    index
-                  ) => (
+                    <td className={tableCell}>
+                      {item.name}
+                    </td>
 
-                    <tr
-                      key={index}
+                    <td className={tableCell}>
+                      {item.qty}
+                    </td>
 
-                      style={{
-                        borderBottom:
-                          "1px solid #ddd",
-                      }}
-                    >
-
-                      <td
-                        style={
-                          tableCell
-                        }
-                      >
-                        {
-                          index + 1
-                        }
-                      </td>
-
-                      <td
-                        style={
-                          tableCell
-                        }
-                      >
-                        {item.name}
-                      </td>
-
-                      <td
-                        style={
-                          tableCell
-                        }
-                      >
-                        {item.qty}
-                      </td>
-
-                      <td
-                        style={
-                          tableCell
-                        }
-                      >
-                        $
-                        {
-                          item.sellPrice
-                        }
-                      </td>
-
-                      <td
-                        style={
-                          tableCell
-                        }
-                      >
-                        $
-                        {
-                          (
-                            item.sellPrice *
-                            item.qty
-                          ).toFixed(
-                            2
-                          )
-                        }
-                      </td>
-
-                    </tr>
-                  )
-                )
-              }
-
-              {/* EMPTY ROWS */}
-
-              {
-                Array.from({
-                  length:
-                    Math.max(
-                      0,
-                      5 -
-                      cart.length
-                    ),
-                }).map(
-                  (
-                    _,
-                    index
-                  ) => (
-
-                    <tr
-                      key={
-                        "empty-" +
-                        index
+                    <td className={tableCell}>
+                      $
+                      {
+                        item.sellPrice
                       }
+                    </td>
 
-                      style={{
-                        height:
-                          "50px",
-
-                        borderBottom:
-                          "1px solid #ddd",
-                      }}
-                    >
-
-                      <td
-                        style={
-                          tableCell
-                        }
-                      ></td>
-
-                      <td
-                        style={
-                          tableCell
-                        }
-                      ></td>
-
-                      <td
-                        style={
-                          tableCell
-                        }
-                      ></td>
-
-                      <td
-                        style={
-                          tableCell
-                        }
-                      ></td>
-
-                      <td
-                        style={
-                          tableCell
-                        }
-                      ></td>
-
-                    </tr>
-                  )
+                    <td className={tableCell}>
+                      $
+                      {(
+                        item.sellPrice *
+                        item.qty
+                      ).toFixed(2)}
+                    </td>
+                  </tr>
                 )
-              }
+              )}
 
+              {/* Empty Rows */}
+              {Array.from({
+                length: Math.max(
+                  0,
+                  5 - cart.length
+                ),
+              }).map((_, index) => (
+                <tr
+                  key={`empty-${index}`}
+                  className="h-[50px] border-b border-gray-300"
+                >
+                  <td className={tableCell}></td>
+                  <td className={tableCell}></td>
+                  <td className={tableCell}></td>
+                  <td className={tableCell}></td>
+                  <td className={tableCell}></td>
+                </tr>
+              ))}
             </tbody>
-
           </table>
 
-          {/* TOTALS */}
+          {/* Totals */}
+          <div className="flex justify-end mt-8">
+            <table className="w-full max-w-sm">
+              <tbody>
+                <tr>
+                  <td className={totalLabel}>
+                    Subtotal
+                  </td>
 
-          <table
-            style={{
-              width: "320px",
-
-              marginLeft:
-                "auto",
-
-              marginTop: "30px",
-
-              borderCollapse:
-                "collapse",
-            }}
-          >
-
-            <tbody>
-
-              <tr>
-
-                <td
-                  style={
-                    totalLabel
-                  }
-                >
-                  Subtotal
-                </td>
-
-                <td
-                  style={
-                    totalValue
-                  }
-                >
-                  $
-                  {
-                    subtotal.toFixed(
+                  <td className={totalValue}>
+                    $
+                    {subtotal.toFixed(
                       2
-                    )
-                  }
-                </td>
+                    )}
+                  </td>
+                </tr>
 
-              </tr>
+                <tr>
+                  <td className={totalLabel}>
+                    Discount
+                  </td>
 
-              <tr>
-
-                <td
-                  style={
-                    totalLabel
-                  }
-                >
-                  Discount
-                </td>
-
-                <td
-                  style={
-                    totalValue
-                  }
-                >
-                  $
-                  {
-                    discount.toFixed(
+                  <td className={totalValue}>
+                    $
+                    {discount.toFixed(
                       2
-                    )
-                  }
-                </td>
+                    )}
+                  </td>
+                </tr>
 
-              </tr>
+                <tr>
+                  <td className={totalLabel}>
+                    Tax
+                  </td>
 
-              <tr>
-
-                <td
-                  style={
-                    totalLabel
-                  }
-                >
-                  Tax
-                </td>
-
-                <td
-                  style={
-                    totalValue
-                  }
-                >
-                  $
-                  {
-                    taxAmount.toFixed(
+                  <td className={totalValue}>
+                    $
+                    {taxAmount.toFixed(
                       2
-                    )
-                  }
-                </td>
+                    )}
+                  </td>
+                </tr>
 
-              </tr>
+                <tr>
+                  <td className={totalLabel}>
+                    Paid
+                  </td>
 
-              <tr>
+                  <td className={totalValue}>
+                    $
+                    {paid.toFixed(2)}
+                  </td>
+                </tr>
 
-                <td
-                  style={
-                    totalLabel
-                  }
-                >
-                  Paid
-                </td>
+                <tr className="border-t-2 border-gray-600">
+                  <td
+                    className={`${totalLabel}
+                    text-lg font-bold`}
+                  >
+                    Total
+                  </td>
 
-                <td
-                  style={
-                    totalValue
-                  }
-                >
-                  $
-                  {
-                    paid.toFixed(
-                      2
-                    )
-                  }
-                </td>
-
-              </tr>
-
-              <tr
-                style={{
-                  borderTop:
-                    "2px solid #555",
-                }}
-              >
-
-                <td
-                  style={{
-                    ...totalLabel,
-
-                    fontWeight:
-                      "bold",
-
-                    fontSize:
-                      "18px",
-                  }}
-                >
-                  Total
-                </td>
-
-                <td
-                  style={{
-                    ...totalValue,
-
-                    background:
-                      "#e0f2fe",
-
-                    fontWeight:
-                      "bold",
-
-                    fontSize:
-                      "18px",
-                  }}
-                >
-                  $
-                  {
-                    total.toFixed(
-                      2
-                    )
-                  }
-                </td>
-
-              </tr>
-
-            </tbody>
-
-          </table>
-
+                  <td
+                    className={`${totalValue}
+                    text-lg font-bold
+                    bg-sky-100`}
+                  >
+                    $
+                    {total.toFixed(2)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        {/* FOOTER */}
-
-        <table
-          style={{
-            width: "100%",
-
-            background:
-              "#155e75",
-
-            color: "#ffffff",
-
-            marginTop: "40px",
-          }}
+        {/* Footer */}
+        <div
+          className="bg-cyan-800 text-white
+          text-center font-bold
+          py-5 mt-10"
         >
-
-          <tbody>
-
-            <tr>
-
-              <td
-                style={{
-                  textAlign:
-                    "center",
-
-                  padding:
-                    "20px",
-
-                  fontWeight:
-                    "bold",
-                }}
-              >
-
-                Thank you
-                for your
-                business!
-
-              </td>
-
-            </tr>
-
-          </tbody>
-
-        </table>
-
+          Thank you for your business!
+        </div>
       </div>
     );
   }
 );
 
-const infoLabel = {
+/* Table Styles */
 
-  fontWeight: "bold",
+const tableHead =
+  "text-left p-4 text-sm font-bold";
 
-  paddingBottom:
-    "14px",
+const tableCell =
+  "p-4 text-sm";
 
-  width: "140px",
-};
+const totalLabel =
+  "p-3 font-bold";
 
-const tableHead = {
-
-  padding: "14px",
-
-  textAlign: "left",
-
-  fontSize: "15px",
-};
-
-const tableCell = {
-
-  padding: "14px",
-
-  fontSize: "14px",
-};
-
-const totalLabel = {
-
-  padding: "12px",
-
-  fontWeight: "bold",
-};
-
-const totalValue = {
-
-  padding: "12px",
-
-  textAlign: "right",
-};
+const totalValue =
+  "p-3 text-right";
 
 export default Invoice;

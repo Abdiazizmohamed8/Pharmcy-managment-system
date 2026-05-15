@@ -1,14 +1,8 @@
-import {
-  useState,
-} from "react";
+import { useState } from "react";
 
-import {
-  fmt,
-} from "../utils/helpers";
+import { fmt } from "../utils/helpers";
 
-import {
-  useTheme,
-} from "../context/ThemeContext";
+import { useTheme } from "../context/ThemeContext";
 
 function Expenses({
   expenses = [],
@@ -17,78 +11,73 @@ function Expenses({
   openSidebar,
 }) {
 
-  const {
-    darkMode,
-  } = useTheme();
+  const { darkMode } =
+    useTheme();
 
-  /* =========================
-        STATES
-  ========================= */
+  // Theme
+  const ui = {
+    bg: darkMode
+      ? "bg-[#020617] text-white"
+      : "bg-slate-100 text-black",
 
-  const [
-    showModal,
-    setShowModal,
-  ] = useState(false);
+    card: darkMode
+      ? "bg-[#111827] border-[#1f2937]"
+      : "bg-white border-slate-200",
 
-  const [
-    search,
-    setSearch,
-  ] = useState("");
+    input: darkMode
+      ? "bg-[#0f172a] border-[#374151] text-white"
+      : "bg-white border-slate-300 text-black",
 
-  const [
-    form,
-    setForm,
-  ] = useState({
-    category: "",
-    description: "",
-    amount: "",
-  });
+    text: darkMode
+      ? "text-slate-400"
+      : "text-slate-500",
+  };
 
-  /* =========================
-        FILTER
-  ========================= */
+  // States
+  const [show, setShow] =
+    useState(false);
 
-  const filteredExpenses =
+  const [search, setSearch] =
+    useState("");
+
+  const [form, setForm] =
+    useState({
+      category: "",
+      description: "",
+      amount: "",
+    });
+
+  // Filter
+  const data =
     expenses.filter(
-      (expense) =>
+      (e) =>
 
-        expense.category
+        e.category
           ?.toLowerCase()
           .includes(
             search.toLowerCase()
           ) ||
 
-        expense.description
+        e.description
           ?.toLowerCase()
           .includes(
             search.toLowerCase()
           )
     );
 
-  /* =========================
-        TOTAL
-  ========================= */
-
-  const totalExpenses =
+  // Total
+  const total =
     expenses.reduce(
-      (
-        acc,
-        expense
-      ) =>
-
-        acc +
+      (a, b) =>
+        a +
         Number(
-          expense.amount || 0
+          b.amount || 0
         ),
-
       0
     );
 
-  /* =========================
-        SAVE
-  ========================= */
-
-  const handleSave = () => {
+  // Save
+  const save = () => {
 
     if (
       !form.category ||
@@ -96,39 +85,31 @@ function Expenses({
     ) {
 
       toast?.(
-        "Please fill all fields",
+        "Fill all fields",
         "error"
       );
 
       return;
     }
 
-    const newExpense = {
-
-      id:
-        Date.now(),
-
-      category:
-        form.category,
-
-      description:
-        form.description,
-
-      amount:
-        Number(
-          form.amount
-        ),
-
-      date:
-        new Date()
-          .toISOString()
-          .split("T")[0],
-    };
-
     setExpenses(
-      (prev) => [
-        newExpense,
-        ...prev,
+      (p) => [
+        {
+          id: Date.now(),
+
+          ...form,
+
+          amount:
+            Number(
+              form.amount
+            ),
+
+          date:
+            new Date()
+              .toISOString()
+              .split("T")[0],
+        },
+        ...p,
       ]
     );
 
@@ -143,97 +124,58 @@ function Expenses({
       amount: "",
     });
 
-    setShowModal(false);
+    setShow(false);
   };
 
-  /* =========================
-        DELETE
-  ========================= */
+  // Delete
+  const remove = (id) => {
 
-  const deleteExpense =
-    (id) => {
+    setExpenses(
+      expenses.filter(
+        (e) =>
+          e.id !== id
+      )
+    );
 
-      setExpenses(
-        (prev) =>
-
-          prev.filter(
-            (expense) =>
-              expense.id !== id
-          )
-      );
-
-      toast?.(
-        "Expense deleted",
-        "error"
-      );
-    };
+    toast?.(
+      "Expense deleted",
+      "error"
+    );
+  };
 
   return (
 
-    <div style={{
-      ...styles.container,
+    <div className={`min-h-screen p-4 md:p-6 ${ui.bg}`}>
 
-      background:
-        darkMode
-          ? "#020617"
-          : "#ffffff",
-
-      color:
-        darkMode
-          ? "#ffffff"
-          : "#111827",
-    }}>
-
-      {/* HEADER */}
-
-      <div style={styles.mobileTop}>
+      {/* Header */}
+      <div className="
+        flex items-center gap-4
+        mb-6
+      ">
 
         <button
           onClick={openSidebar}
-
-          style={{
-            ...styles.menuButton,
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-
-            border:
-              darkMode
-                ? "1px solid #1f2937"
-                : "1px solid #e5e7eb",
-          }}
+          className={`
+            md:hidden
+            w-12 h-12
+            rounded-2xl border
+            text-xl
+            ${ui.card}
+          `}
         >
           ☰
         </button>
 
         <div>
 
-          <h1 style={{
-            ...styles.title,
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-          }}>
+          <h1 className="
+            text-3xl md:text-5xl
+            font-black
+          ">
             Expenses 💸
           </h1>
 
-          <p style={{
-            ...styles.subtitle,
-
-            color:
-              darkMode
-                ? "#d1d5db"
-                : "#6b7280",
-          }}>
+          <p className={ui.text}>
             Manage pharmacy expenses
           </p>
 
@@ -241,73 +183,64 @@ function Expenses({
 
       </div>
 
-      {/* TOP */}
-
-      <div style={styles.topActions}>
-
-        {/* SEARCH */}
+      {/* Top */}
+      <div className="
+        flex flex-col lg:flex-row
+        justify-between gap-5
+        mb-6
+      ">
 
         <input
           type="text"
-
           placeholder="Search expense..."
-
           value={search}
-
           onChange={(e) =>
             setSearch(
               e.target.value
             )
           }
-
-          style={{
-            ...styles.searchInput,
-
-            border:
-              darkMode
-
-                ? "1px solid #374151"
-
-                : "1px solid #d1d5db",
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-          }}
+          className={`
+            w-full lg:max-w-md
+            h-14 px-5 rounded-2xl
+            border outline-none
+            ${ui.input}
+          `}
         />
 
-        {/* RIGHT */}
+        <div className="
+          flex flex-wrap gap-4
+          items-center
+        ">
 
-        <div style={styles.headerRight}>
+          {/* Total */}
+          <div className="
+            bg-red-600 text-white
+            rounded-3xl px-8 py-5
+            min-w-[220px]
+          ">
 
-          {/* TOTAL */}
-
-          <div style={styles.totalCard}>
-
-            <div style={styles.totalLabel}>
+            <p className="text-sm">
               Total Expenses
-            </div>
+            </p>
 
-            <div style={styles.totalAmount}>
-              {fmt(totalExpenses)}
-            </div>
+            <h2 className="
+              text-5xl font-black mt-2
+            ">
+              {fmt(total)}
+            </h2>
 
           </div>
 
-          {/* BUTTON */}
-
+          {/* Add */}
           <button
             onClick={() =>
-              setShowModal(true)
+              setShow(true)
             }
-
-            style={styles.addButton}
+            className="
+              h-14 px-8 rounded-2xl
+              bg-green-600 hover:bg-green-700
+              text-white font-bold
+            "
           >
             + Add Expense
           </button>
@@ -316,320 +249,297 @@ function Expenses({
 
       </div>
 
-      {/* TABLE */}
+      {/* Table */}
+      <div className={`
+        rounded-3xl border
+        overflow-hidden
+        ${ui.card}
+      `}>
 
-      {filteredExpenses.length === 0 ? (
+        {!data.length ? (
 
-        <div style={{
-          ...styles.emptyBox,
-
-          background:
-            darkMode
-              ? "#111827"
-              : "#ffffff",
-
-          color:
-            darkMode
-              ? "#d1d5db"
-              : "#9ca3af",
-
-          border:
-            darkMode
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}>
-          No expenses found
-        </div>
-
-      ) : (
-
-        <div style={{
-          ...styles.tableWrapper,
-
-          background:
-            darkMode
-              ? "#111827"
-              : "#ffffff",
-
-          border:
-            darkMode
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}>
-
-          {/* HEADER */}
-
-          <div style={{
-            ...styles.tableHeader,
-
-            background:
-              darkMode
-                ? "#0f172a"
-                : "#f8fafc",
-
-            color:
-              darkMode
-                ? "#ffffff"
-                : "#111827",
-          }}>
-
-            <div>Category</div>
-
-            <div>Description</div>
-
-            <div>Amount</div>
-
-            <div>Date</div>
-
-            <div>Action</div>
-
+          <div className="
+            p-20 text-center
+            text-slate-400
+          ">
+            No expenses found
           </div>
 
-          {/* BODY */}
+        ) : (
 
-          {filteredExpenses.map(
-            (
-              expense
-            ) => (
+          <>
+            {/* Desktop */}
+            <div className="hidden lg:block">
 
-              <div
-                key={expense.id}
+              <table className="w-full">
 
-                style={{
-                  ...styles.tableRow,
+                <thead>
 
-                  borderTop:
-                    darkMode
-                      ? "1px solid #1f2937"
-                      : "1px solid #e5e7eb",
+                  <tr className="
+                    border-b border-[#1f2937]
+                    text-slate-400 text-sm
+                  ">
 
-                  color:
-                    darkMode
-                      ? "#ffffff"
-                      : "#111827",
-                }}
-              >
+                    {[
+                      "Category",
+                      "Description",
+                      "Amount",
+                      "Date",
+                      "Action",
+                    ].map((i) => (
 
-                {/* CATEGORY */}
+                      <th
+                        key={i}
+                        className="
+                          p-5 text-left
+                        "
+                      >
+                        {i}
+                      </th>
 
-                <div>
+                    ))}
 
-                  <span style={{
-                    ...styles.categoryBadge,
+                  </tr>
 
-                    background:
-                      darkMode
-                        ? "#14532d"
-                        : "#dcfce7",
-                  }}>
+                </thead>
 
-                    {expense.category}
+                <tbody>
 
-                  </span>
+                  {data.map((e) => (
 
-                </div>
+                    <tr
+                      key={e.id}
+                      className="
+                        border-b border-[#1f2937]
+                      "
+                    >
 
-                {/* DESCRIPTION */}
+                      <td className="p-5">
 
-                <div style={styles.descriptionText}>
+                        <span className="
+                          px-4 py-2 rounded-full
+                          bg-green-900
+                          text-green-400
+                          text-sm font-bold
+                        ">
+                          {e.category}
+                        </span>
 
-                  {
-                    expense.description ||
-                    "No description"
-                  }
+                      </td>
 
-                </div>
+                      <td className="p-5">
+                        {
+                          e.description ||
+                          "No description"
+                        }
+                      </td>
 
-                {/* AMOUNT */}
+                      <td className="p-5">
 
-                <div>
+                        <span className="
+                          px-4 py-2 rounded-full
+                          bg-red-900
+                          text-red-400
+                          text-sm font-bold
+                        ">
+                          {fmt(e.amount)}
+                        </span>
 
-                  <span style={{
-                    ...styles.amountBadge,
+                      </td>
 
-                    background:
-                      darkMode
-                        ? "#7f1d1d"
-                        : "#fee2e2",
-                  }}>
+                      <td className="p-5">
+                        {e.date}
+                      </td>
 
-                    {fmt(expense.amount)}
+                      <td className="p-5">
 
-                  </span>
+                        <button
+                          onClick={() =>
+                            remove(e.id)
+                          }
+                          className="
+                            h-10 px-4 rounded-xl
+                            bg-red-600
+                            text-white text-sm
+                            font-bold
+                          "
+                        >
+                          Delete
+                        </button>
 
-                </div>
+                      </td>
 
-                {/* DATE */}
+                    </tr>
+                  ))}
 
-                <div style={styles.dateText}>
-                  {expense.date}
-                </div>
+                </tbody>
 
-                {/* DELETE */}
-
-                <div>
-
-                  <button
-                    onClick={() =>
-                      deleteExpense(
-                        expense.id
-                      )
-                    }
-
-                    style={styles.deleteButton}
-                  >
-                    Delete
-                  </button>
-
-                </div>
-
-              </div>
-            )
-          )}
-
-        </div>
-      )}
-
-      {/* MODAL */}
-
-      {showModal && (
-
-        <div style={styles.modalOverlay}>
-
-          <div style={{
-            ...styles.modal,
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-
-            border:
-              darkMode
-                ? "1px solid #1f2937"
-                : "1px solid #e5e7eb",
-          }}>
-
-            <h2 style={{
-              ...styles.modalTitle,
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}>
-              Add Expense
-            </h2>
-
-            {/* FORM */}
-
-            <div style={styles.formGrid}>
-
-              <input
-                type="text"
-
-                placeholder="Category"
-
-                value={
-                  form.category
-                }
-
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-
-                    category:
-                      e.target.value,
-                  })
-                }
-
-                style={inputStyle(
-                  darkMode
-                )}
-              />
-
-              <input
-                type="text"
-
-                placeholder="Description"
-
-                value={
-                  form.description
-                }
-
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-
-                    description:
-                      e.target.value,
-                  })
-                }
-
-                style={inputStyle(
-                  darkMode
-                )}
-              />
-
-              <input
-                type="number"
-
-                placeholder="Amount"
-
-                value={
-                  form.amount
-                }
-
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-
-                    amount:
-                      e.target.value,
-                  })
-                }
-
-                style={inputStyle(
-                  darkMode
-                )}
-              />
+              </table>
 
             </div>
 
-            {/* BUTTONS */}
+            {/* Mobile */}
+            <div className="
+              lg:hidden
+              p-4 space-y-4
+            ">
 
-            <div style={styles.modalButtons}>
+              {data.map((e) => (
+
+                <div
+                  key={e.id}
+                  className="
+                    border border-[#1f2937]
+                    rounded-2xl p-5
+                  "
+                >
+
+                  <div className="
+                    flex justify-between
+                    mb-4
+                  ">
+
+                    <span className="
+                      px-4 py-2 rounded-full
+                      bg-green-900
+                      text-green-400
+                      text-xs font-bold
+                    ">
+                      {e.category}
+                    </span>
+
+                    <span className="
+                      px-4 py-2 rounded-full
+                      bg-red-900
+                      text-red-400
+                      text-xs font-bold
+                    ">
+                      {fmt(e.amount)}
+                    </span>
+
+                  </div>
+
+                  <p className="mb-3">
+                    {
+                      e.description ||
+                      "No description"
+                    }
+                  </p>
+
+                  <div className="
+                    flex justify-between
+                    items-center
+                  ">
+
+                    <p className={ui.text}>
+                      {e.date}
+                    </p>
+
+                    <button
+                      onClick={() =>
+                        remove(e.id)
+                      }
+                      className="
+                        h-10 px-4 rounded-xl
+                        bg-red-600
+                        text-white text-sm
+                        font-bold
+                      "
+                    >
+                      Delete
+                    </button>
+
+                  </div>
+
+                </div>
+              ))}
+
+            </div>
+          </>
+        )}
+
+      </div>
+
+      {/* Modal */}
+      {show && (
+
+        <div className="
+          fixed inset-0 z-50
+          bg-black/60
+          flex items-center
+          justify-center
+          p-4
+        ">
+
+          <div className={`
+            w-full max-w-md
+            rounded-3xl border
+            p-6 space-y-4
+            ${ui.card}
+          `}>
+
+            <h2 className="
+              text-2xl font-black
+            ">
+              Add Expense
+            </h2>
+
+            {[
+              ["category", "Category"],
+              ["description", "Description"],
+              ["amount", "Amount"],
+            ].map(([key, text]) => (
+
+              <input
+                key={key}
+                type={
+                  key === "amount"
+                    ? "number"
+                    : "text"
+                }
+                placeholder={text}
+                value={form[key]}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    [key]:
+                      e.target.value,
+                  })
+                }
+                className={`
+                  w-full h-14 px-5
+                  rounded-2xl border
+                  outline-none
+                  ${ui.input}
+                `}
+              />
+
+            ))}
+
+            <div className="
+              flex gap-4 pt-2
+            ">
 
               <button
-                onClick={
-                  handleSave
-                }
-
-                style={styles.saveButton}
+                onClick={save}
+                className="
+                  flex-1 h-14 rounded-2xl
+                  bg-green-600
+                  text-white font-bold
+                "
               >
-                Save Expense
+                Save
               </button>
 
               <button
                 onClick={() =>
-                  setShowModal(
-                    false
-                  )
+                  setShow(false)
                 }
-
-                style={{
-                  ...styles.cancelButton,
-
-                  background:
-                    darkMode
-                      ? "#1f2937"
-                      : "#f3f4f6",
-
-                  color:
-                    darkMode
-                      ? "#ffffff"
-                      : "#111827",
-                }}
+                className="
+                  flex-1 h-14 rounded-2xl
+                  bg-slate-700
+                  text-white font-bold
+                "
               >
                 Cancel
               </button>
@@ -644,294 +554,5 @@ function Expenses({
     </div>
   );
 }
-
-/* =========================
-      STYLES
-========================= */
-
-const styles = {
-
-  container: {
-    width: "100%",
-    minHeight: "100vh",
-    transition:
-      "0.3s ease",
-    padding: "14px",
-    boxSizing: "border-box",
-    overflowX: "hidden",
-  },
-
-  mobileTop: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-    marginBottom: "24px",
-    flexWrap: "wrap",
-  },
-
-  menuButton: {
-    width: "46px",
-    height: "46px",
-    borderRadius: "12px",
-    border: "none",
-    fontSize: "20px",
-    cursor: "pointer",
-    flexShrink: 0,
-  },
-
-  title: {
-    margin: 0,
-    fontSize:
-      "clamp(28px,5vw,34px)",
-  },
-
-  subtitle: {
-    marginTop: "8px",
-    fontSize: "15px",
-  },
-
-  topActions: {
-    display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "16px",
-    marginBottom: "22px",
-  },
-
-  headerRight: {
-    display: "flex",
-    gap: "12px",
-    flexWrap: "wrap",
-    alignItems: "center",
-    justifyContent:
-      "flex-end",
-  },
-
-  totalCard: {
-    background: "#dc2626",
-    color: "#ffffff",
-    padding: "14px 18px",
-    borderRadius: "16px",
-    minWidth: "170px",
-    width: "fit-content",
-    boxSizing: "border-box",
-  },
-
-  totalLabel: {
-    fontSize: "13px",
-    opacity: 0.9,
-    marginBottom: "6px",
-  },
-
-  totalAmount: {
-    fontSize:
-      "clamp(22px,5vw,26px)",
-    fontWeight: "bold",
-  },
-
-  addButton: {
-    background: "#16a34a",
-    color: "#ffffff",
-    border: "none",
-    padding: "14px 22px",
-    borderRadius: "16px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    fontSize: "14px",
-    whiteSpace: "nowrap",
-  },
-
-  searchInput: {
-    width: "100%",
-    maxWidth: "420px",
-    padding: "15px",
-    borderRadius: "16px",
-    outline: "none",
-    fontSize: "14px",
-    boxSizing: "border-box",
-  },
-
-  emptyBox: {
-    borderRadius: "24px",
-    padding: "80px 20px",
-    textAlign: "center",
-    fontSize: "18px",
-  },
-
-  tableWrapper: {
-    width: "100%",
-    borderRadius: "24px",
-    overflow: "hidden",
-  },
-
-  tableHeader: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "1fr 2fr .8fr .8fr .8fr",
-
-    gap: "10px",
-
-    padding: "16px",
-
-    fontWeight: "700",
-
-    fontSize: "12px",
-
-    alignItems: "center",
-  },
-
-  tableRow: {
-    display: "grid",
-
-    gridTemplateColumns:
-      "1fr 2fr .8fr .8fr .8fr",
-
-    gap: "10px",
-
-    padding: "16px",
-
-    alignItems: "center",
-
-    fontSize: "12px",
-  },
-
-  descriptionText: {
-    lineHeight: "20px",
-    wordBreak: "break-word",
-  },
-
-  dateText: {
-    whiteSpace: "nowrap",
-  },
-
-  categoryBadge: {
-    color: "#16a34a",
-    padding: "8px 14px",
-    borderRadius: "999px",
-    fontSize: "13px",
-    fontWeight: "bold",
-    display: "inline-block",
-  },
-
-  amountBadge: {
-    color: "#dc2626",
-    padding: "10px 16px",
-    borderRadius: "999px",
-    fontWeight: "bold",
-    fontSize: "14px",
-    display: "inline-block",
-  },
-
-  deleteButton: {
-    background: "#dc2626",
-
-    color: "#ffffff",
-
-    border: "none",
-
-    padding: "10px 16px",
-
-    borderRadius: "12px",
-
-    cursor: "pointer",
-
-    fontWeight: "bold",
-
-    fontSize: "13px",
-
-    whiteSpace: "nowrap",
-  },
-
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    background:
-      "rgba(0,0,0,0.5)",
-    display: "flex",
-    justifyContent:
-      "center",
-    alignItems:
-      "center",
-    zIndex: 999,
-    padding: "20px",
-  },
-
-  modal: {
-    width: "100%",
-    maxWidth: "460px",
-    borderRadius: "24px",
-    padding: "30px",
-    boxSizing: "border-box",
-  },
-
-  modalTitle: {
-    marginTop: 0,
-    marginBottom: "24px",
-  },
-
-  formGrid: {
-    display: "grid",
-    gap: "16px",
-  },
-
-  modalButtons: {
-    display: "flex",
-    gap: "14px",
-    marginTop: "24px",
-    flexWrap: "wrap",
-  },
-
-  saveButton: {
-    flex: 1,
-    background: "#16a34a",
-    color: "#ffffff",
-    border: "none",
-    padding: "14px",
-    borderRadius: "14px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    minWidth: "140px",
-  },
-
-  cancelButton: {
-    flex: 1,
-    border: "none",
-    padding: "14px",
-    borderRadius: "14px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    minWidth: "140px",
-  },
-};
-
-/* =========================
-      INPUT STYLE
-========================= */
-
-const inputStyle = (
-  darkMode
-) => ({
-  width: "100%",
-  padding: "14px",
-  borderRadius: "14px",
-  border:
-    darkMode
-      ? "1px solid #374151"
-      : "1px solid #d1d5db",
-  outline: "none",
-  fontSize: "14px",
-  background:
-    darkMode
-      ? "#0f172a"
-      : "#ffffff",
-  color:
-    darkMode
-      ? "#ffffff"
-      : "#111827",
-  boxSizing: "border-box",
-});
 
 export default Expenses;

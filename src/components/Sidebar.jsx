@@ -1,88 +1,70 @@
-/* =========================
-      THEME
-========================= */
+import { useState } from "react";
+import { useTheme } from "../context/ThemeContext";
 
-import {
-  useTheme,
-} from "../context/ThemeContext";
+function Sidebar({ page, setPage, currentUser }) {
+  const { darkMode } = useTheme();
 
-function Sidebar({
-  page,
-  setPage,
-  currentUser,
-}) {
+  // Sidebar open / close
+  const [open, setOpen] = useState(true);
 
-  const {
-    darkMode,
-  } = useTheme();
-
+  // Check if current user is admin
   const isAdmin =
-    currentUser?.role
-      ?.toLowerCase() ===
-    "admin";
+    currentUser?.role?.toLowerCase() === "admin";
 
+  // Navigation items
   const navItems = [
-
     {
       id: "dashboard",
       label: "Dashboard",
       icon: "📊",
     },
-
     {
       id: "pos",
       label: "POS / Sales",
       icon: "🛒",
     },
-
     {
       id: "medicines",
       label: "Medicines",
       icon: "💊",
     },
-
     {
       id: "inventory",
       label: "Inventory",
       icon: "📦",
     },
-
     {
       id: "customers",
       label: "Customers",
       icon: "👥",
     },
-
     {
       id: "suppliers",
       label: "Suppliers",
       icon: "🏭",
     },
-
     {
       id: "sales",
       label: "Sales History",
       icon: "📋",
     },
-
     {
       id: "debts",
       label: "Debts",
       icon: "💳",
     },
-
     {
       id: "expenses",
       label: "Expenses",
       icon: "💸",
     },
-
     {
       id: "reports",
       label: "Reports",
       icon: "📈",
     },
 
+    // Show only for admin
     ...(isAdmin
       ? [
           {
@@ -101,420 +83,168 @@ function Sidebar({
   ];
 
   return (
-
-    <div
-      style={{
-        ...styles.sidebar,
-
-        background:
-          darkMode
-            ? "linear-gradient(180deg,#052e16,#064e3b)"
-            : "#ffffff",
-
-        borderRight:
-          darkMode
-            ? "1px solid #1f2937"
-            : "1px solid #e5e7eb",
-
-        color:
-          darkMode
-            ? "#ffffff"
-            : "#111827",
-      }}
+    <aside
+      className={`h-screen overflow-y-auto overflow-x-hidden
+      transition-all duration-300
+      flex flex-col justify-between
+      border-r shadow-lg
+      scrollbar-thin scrollbar-thumb-gray-400
+      scrollbar-track-transparent
+      ${
+        open ? "w-[280px]" : "w-[90px]"
+      }
+      ${
+        darkMode
+          ? "bg-gradient-to-b from-green-950 to-emerald-900 border-gray-800 text-white"
+          : "bg-white border-gray-200 text-gray-900"
+      }`}
     >
+      {/* Top Section */}
+      <div className="p-3">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          {/* Logo */}
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="min-w-[55px] h-[55px] rounded-2xl bg-green-600 flex items-center justify-center text-2xl">
+              💊
+            </div>
 
-      {/* TOP */}
+            {open && (
+              <div>
+                <h1 className="text-xl font-bold whitespace-nowrap">
+                  ANFAC
+                </h1>
 
-      <div>
-
-        <div style={styles.logoContainer}>
-
-          <div style={styles.logoIcon}>
-            💊
+                <p
+                  className={`text-xs whitespace-nowrap
+                  ${
+                    darkMode
+                      ? "text-green-200"
+                      : "text-green-600"
+                  }`}
+                >
+                  Pharmacy System
+                </p>
+              </div>
+            )}
           </div>
 
-          <h2
-            style={{
-              ...styles.logoText,
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}
+          {/* Toggle Button */}
+          <button
+            onClick={() => setOpen(!open)}
+            className={`min-w-[40px] h-[40px]
+            rounded-xl flex items-center justify-center
+            transition
+            ${
+              darkMode
+                ? "bg-slate-900 hover:bg-slate-800"
+                : "bg-gray-100 hover:bg-gray-200"
+            }`}
           >
-            ANFAC
-          </h2>
-
-          <p
-            style={{
-              ...styles.logoSub,
-
-              color:
-                darkMode
-                  ? "#bbf7d0"
-                  : "#16a34a",
-            }}
-          >
-            Pharmacy System
-          </p>
-
+            {open ? "⬅️" : "➡️"}
+          </button>
         </div>
 
-        {/* NAV */}
-
-        <div style={styles.navContainer}>
-
+        {/* Navigation */}
+        <div className="flex flex-col gap-2">
           {navItems.map((item) => {
-
-            const active =
-              page === item.id;
+            const active = page === item.id;
 
             return (
-
-              <div
+              <button
                 key={item.id}
-
-                onClick={() =>
-                  setPage(item.id)
-                }
-
-                style={{
-                  ...styles.navItem,
-
-                  background:
-                    active
-                      ? "#16a34a"
-                      : darkMode
-                      ? "#0f172a"
-                      : "#f3f4f6",
-
-                  border:
-                    active
-                      ? "1px solid rgba(255,255,255,0.15)"
-                      : darkMode
-                      ? "1px solid transparent"
-                      : "1px solid #e5e7eb",
-
-                  color:
-                    darkMode
-                      ? "#ffffff"
-                      : "#111827",
-
-                  fontWeight:
-                    active
-                      ? "700"
-                      : "500",
-                }}
+                onClick={() => setPage(item.id)}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-200
+                ${
+                  active
+                    ? "bg-green-600 text-white"
+                    : darkMode
+                    ? "bg-slate-900 hover:bg-slate-800 text-white"
+                    : "bg-gray-100 hover:bg-gray-200 text-gray-900"
+                }`}
               >
-
+                {/* Icon */}
                 <div
-                  style={{
-                    ...styles.iconBox,
-
-                    background:
-                      active
-                        ? "rgba(255,255,255,0.18)"
-                        : darkMode
-                        ? "#111827"
-                        : "#ffffff",
-                  }}
+                  className={`min-w-[42px] h-[42px]
+                  rounded-xl flex items-center justify-center text-lg
+                  ${
+                    active
+                      ? "bg-white/20"
+                      : darkMode
+                      ? "bg-black/20"
+                      : "bg-white"
+                  }`}
                 >
                   {item.icon}
                 </div>
 
-                <span style={styles.navLabel}>
-                  {item.label}
-                </span>
-
-              </div>
+                {/* Label */}
+                {open && (
+                  <span className="text-sm font-medium whitespace-nowrap">
+                    {item.label}
+                  </span>
+                )}
+              </button>
             );
           })}
-
         </div>
-
       </div>
 
-      {/* USER */}
-
+      {/* User Section */}
       <div
-        style={{
-          ...styles.userCard,
-
-          background:
-            darkMode
-              ? "#111827"
-              : "#f9fafb",
-
-          border:
-            darkMode
-              ? "1px solid #1f2937"
-              : "1px solid #e5e7eb",
-        }}
+        className={`m-3 p-3 rounded-2xl border
+        ${
+          darkMode
+            ? "bg-gray-900 border-gray-800"
+            : "bg-gray-50 border-gray-200"
+        }`}
       >
-
-        <div style={styles.userRow}>
-
+        <div className="flex items-center gap-3">
+          {/* User Image */}
           {currentUser?.image ? (
-
             <img
               src={currentUser.image}
               alt="user"
-              style={styles.userImage}
+              className="w-[50px] h-[50px]
+              rounded-full object-cover
+              border-2 border-green-500"
             />
-
           ) : (
-
-            <div style={styles.avatar}>
-
-              {
-                currentUser?.name
-                  ?.charAt(0)
-                  ?.toUpperCase()
-              }
-
+            <div
+              className="w-[50px] h-[50px]
+              rounded-full bg-green-600
+              flex items-center justify-center
+              text-white font-bold text-lg"
+            >
+              {currentUser?.name
+                ?.charAt(0)
+                ?.toUpperCase()}
             </div>
           )}
 
-          <div
-            style={{
-              overflow: "hidden",
-            }}
-          >
+          {/* User Info */}
+          {open && (
+            <div className="overflow-hidden">
+              <h3 className="text-sm font-bold truncate">
+                {currentUser?.name}
+              </h3>
 
-            <div
-              style={{
-                ...styles.userName,
-
-                color:
+              <p
+                className={`text-xs truncate
+                ${
                   darkMode
-                    ? "#ffffff"
-                    : "#111827",
-              }}
-            >
-              {currentUser?.name}
+                    ? "text-green-200"
+                    : "text-green-600"
+                }`}
+              >
+                {currentUser?.role}
+              </p>
             </div>
-
-            <div
-              style={{
-                ...styles.userRole,
-
-                color:
-                  darkMode
-                    ? "#bbf7d0"
-                    : "#16a34a",
-              }}
-            >
-              {currentUser?.role}
-            </div>
-
-          </div>
-
+          )}
         </div>
-
       </div>
-
-    </div>
+    </aside>
   );
 }
-
-const styles = {
-
-  sidebar: {
-    width: "280px",
-
-    height: "100dvh",
-
-    padding: "20px 14px",
-
-    display: "flex",
-
-    flexDirection: "column",
-
-    justifyContent: "space-between",
-
-    overflowY: "auto",
-
-    flexShrink: 0,
-
-    boxSizing: "border-box",
-
-    transition: "0.3s ease",
-
-    boxShadow:
-      "4px 0 15px rgba(0,0,0,0.08)",
-  },
-
-  logoContainer: {
-    textAlign: "center",
-
-    marginBottom: "35px",
-  },
-
-  logoIcon: {
-    width: "78px",
-
-    height: "78px",
-
-    margin: "0 auto 14px",
-
-    borderRadius: "22px",
-
-    background: "#16a34a",
-
-    display: "flex",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    fontSize: "34px",
-  },
-
-  logoText: {
-    margin: 0,
-
-    fontSize:
-      "clamp(24px,4vw,28px)",
-
-    fontWeight: "bold",
-  },
-
-  logoSub: {
-    marginTop: "6px",
-
-    fontSize: "13px",
-  },
-
-  navContainer: {
-    display: "flex",
-
-    flexDirection: "column",
-
-    gap: "8px",
-  },
-
-  navItem: {
-    display: "flex",
-
-    alignItems: "center",
-
-    gap: "14px",
-
-    padding: "14px 16px",
-
-    borderRadius: "18px",
-
-    cursor: "pointer",
-
-    transition: "0.2s",
-
-    width: "100%",
-
-    boxSizing: "border-box",
-  },
-
-  iconBox: {
-    width: "38px",
-
-    height: "38px",
-
-    borderRadius: "12px",
-
-    display: "flex",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    fontSize: "18px",
-
-    flexShrink: 0,
-  },
-
-  navLabel: {
-    fontSize: "15px",
-
-    whiteSpace: "nowrap",
-
-    overflow: "hidden",
-
-    textOverflow: "ellipsis",
-  },
-
-  userCard: {
-    marginTop: "20px",
-
-    padding: "16px",
-
-    borderRadius: "20px",
-
-    boxSizing: "border-box",
-  },
-
-  userRow: {
-    display: "flex",
-
-    alignItems: "center",
-
-    gap: "12px",
-  },
-
-  userImage: {
-    width: "52px",
-
-    height: "52px",
-
-    borderRadius: "50%",
-
-    objectFit: "cover",
-
-    border: "2px solid #22c55e",
-
-    flexShrink: 0,
-  },
-
-  avatar: {
-    width: "52px",
-
-    height: "52px",
-
-    borderRadius: "50%",
-
-    background: "#16a34a",
-
-    display: "flex",
-
-    alignItems: "center",
-
-    justifyContent: "center",
-
-    fontWeight: "bold",
-
-    fontSize: "18px",
-
-    color: "#ffffff",
-
-    flexShrink: 0,
-  },
-
-  userName: {
-    fontWeight: "700",
-
-    fontSize: "15px",
-
-    overflow: "hidden",
-
-    textOverflow: "ellipsis",
-
-    whiteSpace: "nowrap",
-  },
-
-  userRole: {
-    fontSize: "13px",
-
-    marginTop: "3px",
-  },
-};
 
 export default Sidebar;

@@ -1,7 +1,4 @@
-import {
-  useState,
-  useEffect,
-} from "react";
+import { useState, useEffect } from "react";
 
 import {
   collection,
@@ -15,10 +12,7 @@ import {
   createUserWithEmailAndPassword,
 } from "firebase/auth";
 
-import {
-  db,
-  auth,
-} from "../firebase";
+import { db, auth } from "../firebase";
 
 import {
   useTheme,
@@ -30,65 +24,62 @@ function Users({
   openSidebar,
 }) {
 
-  const {
-    darkMode,
-  } = useTheme();
+  const { darkMode } =
+    useTheme();
 
-  /* =========================
-        STATES
-  ========================= */
+  // Theme
+  const ui = {
+    bg: darkMode
+      ? "bg-[#020617] text-white"
+      : "bg-slate-100 text-black",
 
-  const [
-    users,
-    setUsers,
-  ] = useState([]);
+    card: darkMode
+      ? "bg-[#111827] border-[#1f2937]"
+      : "bg-white border-slate-200",
 
-  const [
-    showModal,
-    setShowModal,
-  ] = useState(false);
+    input: darkMode
+      ? "bg-[#0f172a] border-[#374151] text-white"
+      : "bg-white border-slate-300",
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(false);
+    text: darkMode
+      ? "text-slate-400"
+      : "text-slate-500",
+  };
 
-  const [
-    editId,
-    setEditId,
-  ] = useState(null);
+  // States
+  const [users, setUsers] =
+    useState([]);
 
-  const [
-    visiblePasswords,
-    setVisiblePasswords,
-  ] = useState({});
+  const [show, setShow] =
+    useState(false);
 
-  const [
-    form,
-    setForm,
-  ] = useState({
-    name: "",
-    email: "",
-    password: "",
-    role: "user",
-  });
+  const [loading, setLoading] =
+    useState(false);
 
-  /* =========================
-        ADMIN CHECK
-  ========================= */
+  const [editId, setEditId] =
+    useState(null);
 
+  const [showPass, setShowPass] =
+    useState({});
+
+  const [form, setForm] =
+    useState({
+      name: "",
+      email: "",
+      password: "",
+      role: "user",
+    });
+
+  // Admin
   const isAdmin =
     currentUser?.role
       ?.toLowerCase() ===
     "admin";
 
-  /* =========================
-        GET USERS
-  ========================= */
-
+  // Get Users
   useEffect(() => {
 
-    const unsubscribe =
+    const unsub =
       onSnapshot(
 
         collection(
@@ -96,36 +87,44 @@ function Users({
           "users"
         ),
 
-        (snapshot) => {
+        (snap) => {
 
-          const data =
-            snapshot.docs.map(
-              (doc) => ({
-                id: doc.id,
-                ...doc.data(),
+          setUsers(
+
+            snap.docs.map(
+              (d) => ({
+                id: d.id,
+                ...d.data(),
               })
-            );
-
-          setUsers(data);
+            )
+          );
         }
       );
 
-    return () =>
-      unsubscribe();
+    return () => unsub();
 
   }, []);
 
-  /* =========================
-        ADD USER
-  ========================= */
+  // Input
+  const change =
+    (e) => {
 
+      setForm({
+        ...form,
+
+        [e.target.name]:
+          e.target.value,
+      });
+    };
+
+  // Add User
   const addUser =
     async () => {
 
       if (
-        !form.name.trim() ||
-        !form.email.trim() ||
-        !form.password.trim()
+        !form.name ||
+        !form.email ||
+        !form.password
       ) {
 
         toast?.(
@@ -140,46 +139,30 @@ function Users({
 
         setLoading(true);
 
-        const userCredential =
+        const res =
           await createUserWithEmailAndPassword(
             auth,
             form.email,
             form.password
           );
 
-        const firebaseUser =
-          userCredential.user;
-
-        const newUser = {
-
-          uid:
-            firebaseUser.uid,
-
-          name:
-            form.name,
-
-          email:
-            form.email,
-
-          password:
-            form.password,
-
-          role:
-            form.role,
-
-          status:
-            "active",
-        };
-
         await setDoc(
 
           doc(
             db,
             "users",
-            firebaseUser.uid
+            res.user.uid
           ),
 
-          newUser
+          {
+            uid:
+              res.user.uid,
+
+            ...form,
+
+            status:
+              "active",
+          }
         );
 
         toast?.(
@@ -194,16 +177,12 @@ function Users({
           role: "user",
         });
 
-        setShowModal(
-          false
-        );
+        setShow(false);
 
-      } catch (error) {
-
-        console.log(error);
+      } catch (err) {
 
         toast?.(
-          error.message,
+          err.message,
           "error"
         );
 
@@ -213,20 +192,15 @@ function Users({
       }
     };
 
-  /* =========================
-        DELETE USER
-  ========================= */
-
-  const deleteUser =
+  // Delete
+  const remove =
     async (id) => {
 
-      const confirmDelete =
-        window.confirm(
+      if (
+        !window.confirm(
           "Delete user?"
-        );
-
-      if (!confirmDelete)
-        return;
+        )
+      ) return;
 
       try {
 
@@ -243,9 +217,7 @@ function Users({
           "success"
         );
 
-      } catch (error) {
-
-        console.log(error);
+      } catch {
 
         toast?.(
           "Delete failed",
@@ -254,11 +226,8 @@ function Users({
       }
     };
 
-  /* =========================
-        SAVE EDIT
-  ========================= */
-
-  const saveEdit =
+  // Save Edit
+  const save =
     async (user) => {
 
       try {
@@ -281,9 +250,7 @@ function Users({
 
         setEditId(null);
 
-      } catch (error) {
-
-        console.log(error);
+      } catch {
 
         toast?.(
           "Update failed",
@@ -292,62 +259,61 @@ function Users({
       }
     };
 
-  /* =========================
-        ACCESS DENIED
-  ========================= */
-
+  // Access
   if (!isAdmin) {
 
     return (
 
-      <div style={{
-        padding: "40px",
-        color: "red",
-      }}>
-
+      <div className="
+        p-10 text-red-500
+        text-2xl font-black
+      ">
         Access Denied 🚫
-
       </div>
     );
   }
 
   return (
 
-    <div style={{
-      ...styles.container,
+    <div className={`
+      min-h-screen p-4 md:p-6
+      ${ui.bg}
+    `}>
 
-      background:
-        darkMode
-          ? "#020617"
-          : "#f3f4f6",
+      {/* Header */}
+      <div className="
+        flex flex-col md:flex-row
+        justify-between gap-5
+        mb-6
+      ">
 
-      color:
-        darkMode
-          ? "#ffffff"
-          : "#111827",
-    }}>
-
-      {/* HEADER */}
-
-      <div style={styles.header}>
-
-        <div style={styles.headerLeft}>
+        <div className="
+          flex items-center gap-4
+        ">
 
           <button
             onClick={openSidebar}
-            style={styles.menuButton}
+            className={`
+              md:hidden
+              w-12 h-12 rounded-2xl
+              text-xl
+              ${ui.card}
+            `}
           >
             ☰
           </button>
 
           <div>
 
-            <h1 style={styles.title}>
+            <h1 className="
+              text-3xl md:text-5xl
+              font-black
+            ">
               Users 👤
             </h1>
 
-            <p style={styles.subtitle}>
-              Manage all users
+            <p className={ui.text}>
+              Manage users
             </p>
 
           </div>
@@ -356,56 +322,56 @@ function Users({
 
         <button
           onClick={() =>
-            setShowModal(true)
+            setShow(true)
           }
-
-          style={styles.addButton}
+          className="
+            h-14 px-6 rounded-2xl
+            bg-green-600
+            text-white font-bold
+          "
         >
           + Add User
         </button>
 
       </div>
 
-      {/* TABLE */}
+      {/* Table */}
+      <div className={`
+        rounded-3xl border
+        overflow-x-auto
+        ${ui.card}
+      `}>
 
-      <div style={{
-        ...styles.tableWrapper,
-
-        background:
-          darkMode
-            ? "#111827"
-            : "#ffffff",
-      }}>
-
-        <table style={styles.table}>
+        <table className="
+          w-full min-w-[900px]
+        ">
 
           <thead>
 
-            <tr>
+            <tr className="
+              border-b border-[#1f2937]
+              text-slate-400
+            ">
 
-              <th style={th(darkMode)}>
-                Name
-              </th>
+              {[
+                "Name",
+                "Email",
+                "Password",
+                "Role",
+                "Status",
+                "Action",
+              ].map((i) => (
 
-              <th style={th(darkMode)}>
-                Email
-              </th>
+                <th
+                  key={i}
+                  className="
+                    p-5 text-left
+                  "
+                >
+                  {i}
+                </th>
 
-              <th style={th(darkMode)}>
-                Password
-              </th>
-
-              <th style={th(darkMode)}>
-                Role
-              </th>
-
-              <th style={th(darkMode)}>
-                Status
-              </th>
-
-              <th style={th(darkMode)}>
-                Action
-              </th>
+              ))}
 
             </tr>
 
@@ -413,296 +379,285 @@ function Users({
 
           <tbody>
 
-            {users.map(
-              (user) => (
+            {!users.length ? (
+
+              <tr>
+
+                <td
+                  colSpan="6"
+                  className="
+                    p-10 text-center
+                    text-slate-400
+                  "
+                >
+                  No users found
+                </td>
+
+              </tr>
+
+            ) : (
+
+              users.map((u) => (
 
                 <tr
-                  key={user.id}
+                  key={u.id}
+                  className="
+                    border-b border-[#1f2937]
+                  "
                 >
 
-                  {/* NAME */}
+                  {/* Name */}
+                  <td className="p-5">
 
-                  <td style={td(darkMode)}>
+                    {editId ===
+                    u.id ? (
 
-                    {
-                      editId ===
-                      user.id ? (
+                      <input
+                        value={u.name}
+                        onChange={(e) =>
 
-                        <input
-                          value={
-                            user.name
-                          }
+                          setUsers(
+                            users.map(
+                              (x) =>
 
-                          onChange={(e) => {
-
-                            setUsers((prev) =>
-                              prev.map((u) =>
-
-                                u.id ===
-                                user.id
+                                x.id ===
+                                u.id
 
                                   ? {
-                                      ...u,
-
+                                      ...x,
                                       name:
                                         e.target.value,
                                     }
 
-                                  : u
-                              )
-                            );
-                          }}
+                                  : x
+                            )
+                          )
+                        }
+                        className={`
+                          w-full h-11 px-4
+                          rounded-xl border
+                          outline-none
+                          ${ui.input}
+                        `}
+                      />
 
-                          style={input(
-                            darkMode
-                          )}
-                        />
-
-                      ) : (
-
-                        user.name
-                      )
-                    }
+                    ) : (
+                      u.name
+                    )}
 
                   </td>
 
-                  {/* EMAIL */}
+                  {/* Email */}
+                  <td className="p-5">
 
-                  <td style={td(darkMode)}>
+                    {editId ===
+                    u.id ? (
 
-                    {
-                      editId ===
-                      user.id ? (
+                      <input
+                        value={u.email}
+                        onChange={(e) =>
 
-                        <input
-                          value={
-                            user.email
-                          }
+                          setUsers(
+                            users.map(
+                              (x) =>
 
-                          onChange={(e) => {
-
-                            setUsers((prev) =>
-                              prev.map((u) =>
-
-                                u.id ===
-                                user.id
+                                x.id ===
+                                u.id
 
                                   ? {
-                                      ...u,
-
+                                      ...x,
                                       email:
                                         e.target.value,
                                     }
 
-                                  : u
-                              )
-                            );
-                          }}
+                                  : x
+                            )
+                          )
+                        }
+                        className={`
+                          w-full h-11 px-4
+                          rounded-xl border
+                          outline-none
+                          ${ui.input}
+                        `}
+                      />
 
-                          style={input(
-                            darkMode
-                          )}
-                        />
-
-                      ) : (
-
-                        user.email
-                      )
-                    }
+                    ) : (
+                      u.email
+                    )}
 
                   </td>
 
-                  {/* PASSWORD */}
+                  {/* Password */}
+                  <td className="p-5">
 
-                  <td style={td(darkMode)}>
+                    {editId ===
+                    u.id ? (
 
-                    {
-                      editId ===
-                      user.id ? (
+                      <input
+                        type={
+                          showPass[
+                            u.id
+                          ]
 
-                        <input
-                          type={
-                            visiblePasswords[
-                              user.id
-                            ]
+                            ? "text"
 
-                              ? "text"
+                            : "password"
+                        }
+                        value={
+                          u.password
+                        }
+                        onChange={(e) =>
 
-                              : "password"
-                          }
+                          setUsers(
+                            users.map(
+                              (x) =>
 
-                          value={
-                            user.password || ""
-                          }
-
-                          onChange={(e) => {
-
-                            setUsers((prev) =>
-                              prev.map((u) =>
-
-                                u.id ===
-                                user.id
+                                x.id ===
+                                u.id
 
                                   ? {
-                                      ...u,
-
+                                      ...x,
                                       password:
                                         e.target.value,
                                     }
 
-                                  : u
-                              )
-                            );
-                          }}
-
-                          style={input(
-                            darkMode
-                          )}
-                        />
-
-                      ) : (
-
-                        visiblePasswords[
-                          user.id
-                        ]
-
-                          ? (
-                            user.password ||
-                            "No Password"
+                                  : x
+                            )
                           )
+                        }
+                        className={`
+                          w-full h-11 px-4
+                          rounded-xl border
+                          outline-none
+                          ${ui.input}
+                        `}
+                      />
 
-                          : "••••••••"
-                      )
-                    }
+                    ) : (
+
+                      showPass[
+                        u.id
+                      ]
+
+                        ? u.password
+
+                        : "••••••••"
+                    )}
 
                   </td>
 
-                  {/* ROLE */}
+                  {/* Role */}
+                  <td className="p-5">
 
-                  <td style={td(darkMode)}>
+                    {editId ===
+                    u.id ? (
 
-                    {
-                      editId ===
-                      user.id ? (
+                      <select
+                        value={u.role}
+                        onChange={(e) =>
 
-                        <select
-                          value={
-                            user.role
-                          }
+                          setUsers(
+                            users.map(
+                              (x) =>
 
-                          onChange={(e) => {
-
-                            setUsers((prev) =>
-                              prev.map((u) =>
-
-                                u.id ===
-                                user.id
+                                x.id ===
+                                u.id
 
                                   ? {
-                                      ...u,
-
+                                      ...x,
                                       role:
                                         e.target.value,
                                     }
 
-                                  : u
-                              )
-                            );
-                          }}
+                                  : x
+                            )
+                          )
+                        }
+                        className={`
+                          w-full h-11 px-4
+                          rounded-xl border
+                          outline-none
+                          ${ui.input}
+                        `}
+                      >
 
-                          style={input(
-                            darkMode
-                          )}
-                        >
+                        <option value="user">
+                          User
+                        </option>
 
-                          <option value="user">
-                            User
-                          </option>
+                        <option value="admin">
+                          Admin
+                        </option>
 
-                          <option value="admin">
-                            Admin
-                          </option>
+                      </select>
 
-                        </select>
+                    ) : (
 
-                      ) : (
+                      <span className={`
+                        px-4 py-2 rounded-full
+                        text-sm font-bold
+                        ${
+                          u.role ===
+                          "admin"
 
-                        <span style={{
-                          ...styles.badge,
+                            ? "bg-green-900 text-green-400"
 
-                          background:
-                            user.role ===
-                            "admin"
+                            : "bg-blue-900 text-blue-400"
+                        }
+                      `}>
 
-                              ? "#14532d"
+                        {u.role}
 
-                              : "#1e3a8a",
-
-                          color:
-                            user.role ===
-                            "admin"
-
-                              ? "#22c55e"
-
-                              : "#60a5fa",
-                        }}>
-
-                          {user.role}
-
-                        </span>
-                      )
-                    }
+                      </span>
+                    )}
 
                   </td>
 
-                  {/* STATUS */}
+                  {/* Status */}
+                  <td className="p-5">
 
-                  <td style={td(darkMode)}>
-
-                    <span style={{
-                      ...styles.badge,
-                      background:
-                        "#14532d",
-                      color:
-                        "#22c55e",
-                    }}>
-
+                    <span className="
+                      px-4 py-2 rounded-full
+                      bg-green-900
+                      text-green-400
+                      text-sm font-bold
+                    ">
                       Active
-
                     </span>
 
                   </td>
 
-                  {/* ACTION */}
+                  {/* Actions */}
+                  <td className="p-5">
 
-                  <td style={td(darkMode)}>
-
-                    <div style={styles.actions}>
+                    <div className="
+                      flex flex-wrap gap-2
+                    ">
 
                       <button
                         onClick={() =>
 
-                          setVisiblePasswords(
-                            (prev) => ({
+                          setShowPass({
+                            ...showPass,
 
-                              ...prev,
-
-                              [user.id]:
-                                !prev[
-                                  user.id
-                                ],
-                            })
-                          )
+                            [u.id]:
+                              !showPass[
+                                u.id
+                              ],
+                          })
                         }
-
-                        style={
-                          styles.showButton
-                        }
+                        className="
+                          h-10 px-4 rounded-xl
+                          bg-yellow-500
+                          text-white text-sm
+                          font-bold
+                        "
                       >
 
                         {
-                          visiblePasswords[
-                            user.id
+                          showPass[
+                            u.id
                           ]
 
                             ? "Hide"
@@ -712,52 +667,52 @@ function Users({
 
                       </button>
 
-                      {
-                        editId ===
-                        user.id ? (
+                      {editId ===
+                      u.id ? (
 
-                          <button
-                            onClick={() =>
-                              saveEdit(
-                                user
-                              )
-                            }
+                        <button
+                          onClick={() =>
+                            save(u)
+                          }
+                          className="
+                            h-10 px-4 rounded-xl
+                            bg-green-600
+                            text-white text-sm
+                            font-bold
+                          "
+                        >
+                          Save
+                        </button>
 
-                            style={
-                              styles.saveButton
-                            }
-                          >
-                            Save
-                          </button>
+                      ) : (
 
-                        ) : (
-
-                          <button
-                            onClick={() =>
-                              setEditId(
-                                user.id
-                              )
-                            }
-
-                            style={
-                              styles.editButton
-                            }
-                          >
-                            Edit
-                          </button>
-                        )
-                      }
+                        <button
+                          onClick={() =>
+                            setEditId(
+                              u.id
+                            )
+                          }
+                          className="
+                            h-10 px-4 rounded-xl
+                            bg-blue-600
+                            text-white text-sm
+                            font-bold
+                          "
+                        >
+                          Edit
+                        </button>
+                      )}
 
                       <button
                         onClick={() =>
-                          deleteUser(
-                            user.id
-                          )
+                          remove(u.id)
                         }
-
-                        style={
-                          styles.deleteButton
-                        }
+                        className="
+                          h-10 px-4 rounded-xl
+                          bg-red-600
+                          text-white text-sm
+                          font-bold
+                        "
                       >
                         Delete
                       </button>
@@ -767,7 +722,7 @@ function Users({
                   </td>
 
                 </tr>
-              )
+              ))
             )}
 
           </tbody>
@@ -776,107 +731,105 @@ function Users({
 
       </div>
 
-      {/* MODAL */}
+      {/* Modal */}
+      {show && (
 
-      {showModal && (
+        <div className="
+          fixed inset-0 z-50
+          bg-black/60
+          flex items-center
+          justify-center
+          p-4
+        ">
 
-        <div style={styles.modalOverlay}>
+          <div className={`
+            w-full max-w-md
+            rounded-3xl border
+            p-6 space-y-4
+            ${ui.card}
+          `}>
 
-          <div style={{
-            ...styles.modal,
-
-            background:
-              darkMode
-                ? "#111827"
-                : "#ffffff",
-          }}>
-
-            <h2>
+            <h2 className="
+              text-2xl font-black
+            ">
               Add User
             </h2>
 
-            <div style={styles.formGrid}>
+            {[
+              [
+                "name",
+                "Full Name",
+              ],
+
+              [
+                "email",
+                "Email",
+              ],
+
+              [
+                "password",
+                "Password",
+              ],
+            ].map(([k, t]) => (
 
               <input
-                type="text"
-                placeholder="Full Name"
-                value={form.name}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    name:
-                      e.target.value,
-                  })
+                key={k}
+                name={k}
+                type={
+                  k ===
+                  "password"
+
+                    ? "password"
+
+                    : "text"
                 }
-                style={input(
-                  darkMode
-                )}
+                placeholder={t}
+                value={form[k]}
+                onChange={change}
+                className={`
+                  w-full h-14 px-5
+                  rounded-2xl border
+                  outline-none
+                  ${ui.input}
+                `}
               />
 
-              <input
-                type="email"
-                placeholder="Email"
-                value={form.email}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    email:
-                      e.target.value,
-                  })
-                }
-                style={input(
-                  darkMode
-                )}
-              />
+            ))}
 
-              <input
-                type="text"
-                placeholder="Password"
-                value={form.password}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    password:
-                      e.target.value,
-                  })
-                }
-                style={input(
-                  darkMode
-                )}
-              />
+            <select
+              name="role"
+              value={form.role}
+              onChange={change}
+              className={`
+                w-full h-14 px-5
+                rounded-2xl border
+                outline-none
+                ${ui.input}
+              `}
+            >
 
-              <select
-                value={form.role}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    role:
-                      e.target.value,
-                  })
-                }
-                style={input(
-                  darkMode
-                )}
-              >
+              <option value="user">
+                User
+              </option>
 
-                <option value="user">
-                  User
-                </option>
+              <option value="admin">
+                Admin
+              </option>
 
-                <option value="admin">
-                  Admin
-                </option>
+            </select>
 
-              </select>
-
-            </div>
-
-            <div style={styles.modalButtons}>
+            <div className="
+              flex gap-4 pt-2
+            ">
 
               <button
                 onClick={addUser}
                 disabled={loading}
-                style={styles.saveButton}
+                className="
+                  flex-1 h-14 rounded-2xl
+                  bg-green-600
+                  text-white font-bold
+                "
               >
 
                 {
@@ -889,11 +842,13 @@ function Users({
 
               <button
                 onClick={() =>
-                  setShowModal(false)
+                  setShow(false)
                 }
-                style={
-                  styles.cancelButton
-                }
+                className="
+                  flex-1 h-14 rounded-2xl
+                  bg-slate-700
+                  text-white font-bold
+                "
               >
                 Cancel
               </button>
@@ -908,219 +863,5 @@ function Users({
     </div>
   );
 }
-
-/* =========================
-      STYLES
-========================= */
-
-const styles = {
-
-  container: {
-    width: "100%",
-    minHeight: "100vh",
-    padding: "14px",
-    overflowX: "hidden",
-    boxSizing: "border-box",
-  },
-
-  header: {
-    display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "16px",
-    marginBottom: "20px",
-  },
-
-  headerLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-  },
-
-  menuButton: {
-    width: "45px",
-    height: "45px",
-    borderRadius: "12px",
-    border: "none",
-    background: "#2563eb",
-    color: "#ffffff",
-    cursor: "pointer",
-    fontSize: "20px",
-  },
-
-  title: {
-    margin: 0,
-    fontSize: "30px",
-  },
-
-  subtitle: {
-    marginTop: "5px",
-    color: "#94a3b8",
-  },
-
-  addButton: {
-    background: "#16a34a",
-    color: "#ffffff",
-    border: "none",
-    padding: "12px 20px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-
-  tableWrapper: {
-    width: "100%",
-    overflowX: "auto",
-    borderRadius: "20px",
-  },
-
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    minWidth: "900px",
-  },
-
-  actions: {
-    display: "flex",
-    gap: "8px",
-    flexWrap: "wrap",
-  },
-
-  badge: {
-    padding: "8px 14px",
-    borderRadius: "999px",
-    fontWeight: "bold",
-    textTransform: "capitalize",
-  },
-
-  showButton: {
-    background: "#f59e0b",
-    color: "#ffffff",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-
-  editButton: {
-    background: "#2563eb",
-    color: "#ffffff",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-
-  saveButton: {
-    background: "#16a34a",
-    color: "#ffffff",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-
-  deleteButton: {
-    background: "#dc2626",
-    color: "#ffffff",
-    border: "none",
-    padding: "10px 14px",
-    borderRadius: "10px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    background:
-      "rgba(0,0,0,0.6)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 999,
-    padding: "20px",
-  },
-
-  modal: {
-    width: "100%",
-    maxWidth: "500px",
-    borderRadius: "24px",
-    padding: "30px",
-    boxSizing: "border-box",
-  },
-
-  formGrid: {
-    display: "grid",
-    gap: "16px",
-    marginTop: "20px",
-  },
-
-  modalButtons: {
-    display: "flex",
-    gap: "12px",
-    marginTop: "24px",
-  },
-
-  cancelButton: {
-    flex: 1,
-    background: "#374151",
-    color: "#ffffff",
-    border: "none",
-    padding: "12px",
-    borderRadius: "12px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-};
-
-const th = (darkMode) => ({
-  padding: "16px",
-  textAlign: "left",
-  background:
-    darkMode
-      ? "#0f172a"
-      : "#e5e7eb",
-  color:
-    darkMode
-      ? "#ffffff"
-      : "#111827",
-  fontWeight: "bold",
-});
-
-const td = (darkMode) => ({
-  padding: "16px",
-  borderBottom:
-    darkMode
-      ? "1px solid #1e293b"
-      : "1px solid #d1d5db",
-});
-
-const input = (
-  darkMode
-) => ({
-  width: "100%",
-  padding: "12px",
-  borderRadius: "10px",
-  border:
-    darkMode
-      ? "1px solid #374151"
-      : "1px solid #d1d5db",
-  background:
-    darkMode
-      ? "#0f172a"
-      : "#ffffff",
-  color:
-    darkMode
-      ? "#ffffff"
-      : "#111827",
-  outline: "none",
-  boxSizing: "border-box",
-});
 
 export default Users;

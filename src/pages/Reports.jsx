@@ -1,6 +1,8 @@
 import {
+  useEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 
 import {
@@ -18,6 +20,14 @@ import {
   Line,
 } from "recharts";
 
+import {
+  collection,
+  onSnapshot,
+  query,
+  limit,
+  orderBy,
+} from "firebase/firestore";
+
 import * as XLSX from "xlsx";
 
 import jsPDF from "jspdf";
@@ -28,209 +38,249 @@ import {
   useReactToPrint,
 } from "react-to-print";
 
+import { db } from "../firebase";
+
 import {
   useTheme,
 } from "../context/ThemeContext";
 
 function Reports({
-  sales = [],
   medicines = [],
-  expenses = [],
   openSidebar,
 }) {
-
   const { darkMode } =
     useTheme();
 
-  /* =========================================
-        PRINT REF
-  ========================================= */
+  /* =========================
+      States
+  ========================= */
+
+  const [sales, setSales] =
+    useState([]);
+
+  const [expenses, setExpenses] =
+    useState([]);
+
+  /* =========================
+      Theme
+  ========================= */
+
+  const ui = {
+    bg: darkMode
+      ? "bg-[#020617] text-white"
+      : "bg-slate-100 text-black",
+
+    card: darkMode
+      ? "bg-[#111827]"
+      : "bg-white",
+
+    text: darkMode
+      ? "text-slate-400"
+      : "text-slate-500",
+  };
+
+  /* =========================
+      Load Firebase Data
+  ========================= */
+
+  useEffect(() => {
+    const salesQuery =
+      query(
+        collection(
+          db,
+          "sales"
+        ),
+        orderBy(
+          "date",
+          "desc"
+        ),
+        limit(100)
+      );
+
+    const expensesQuery =
+      query(
+        collection(
+          db,
+          "expenses"
+        ),
+        orderBy(
+          "date",
+          "desc"
+        ),
+        limit(100)
+      );
+
+    const unsubSales =
+      onSnapshot(
+        salesQuery,
+        (snapshot) => {
+          setSales(
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            )
+          );
+        }
+      );
+
+    const unsubExpenses =
+      onSnapshot(
+        expensesQuery,
+        (snapshot) => {
+          setExpenses(
+            snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            )
+          );
+        }
+      );
+
+    return () => {
+      unsubSales();
+      unsubExpenses();
+    };
+  }, []);
+
+  /* =========================
+      Print
+  ========================= */
 
   const reportRef =
     useRef(null);
 
-  const handlePrint =
+  const print =
     useReactToPrint({
-
       contentRef:
         reportRef,
     });
 
-  /* =========================================
-        TOTALS
-  ========================================= */
+  /* =========================
+      Totals
+  ========================= */
 
   const totalSales =
     sales.reduce(
-      (sum, sale) =>
-
-        sum +
+      (a, b) =>
+        a +
         Number(
-          sale.total || 0
+          b.total || 0
         ),
-
       0
     );
 
   const totalExpenses =
     expenses.reduce(
-      (
-        sum,
-        expense
-      ) =>
-
-        sum +
+      (a, b) =>
+        a +
         Number(
-          expense.amount || 0
+          b.amount || 0
         ),
-
       0
     );
 
-  const totalProfit =
+  const profit =
     totalSales -
     totalExpenses;
 
-  /* =========================================
-        DAILY SALES
-  ========================================= */
+  /* =========================
+      Daily Sales
+  ========================= */
 
   const dailySales =
     useMemo(() => {
-
-      const grouped = {};
+      const data = {};
 
       sales.forEach(
-        (sale) => {
-
-          const date =
-            sale.date?.split(
+        (s) => {
+          const d =
+            s.date?.split(
               "T"
-            )[0] ||
-            "Unknown";
+            )[0];
 
-          if (
-            !grouped[date]
-          ) {
-
-            grouped[
-              date
-            ] = 0;
-          }
-
-          grouped[
-            date
-          ] += Number(
-            sale.total || 0
-          );
+          data[d] =
+            (data[d] || 0) +
+            Number(
+              s.total || 0
+            );
         }
       );
 
       return Object.keys(
-        grouped
-      ).map((key) => ({
-        date: key,
-        total:
-          grouped[key],
+        data
+      ).map((d) => ({
+        date: d,
+        total: data[d],
       }));
-
     }, [sales]);
 
-  /* =========================================
-        MONTHLY SALES
-  ========================================= */
+  /* =========================
+      Monthly Sales
+  ========================= */
 
   const monthlySales =
     useMemo(() => {
-
-      const grouped = {};
+      const data = {};
 
       sales.forEach(
-        (sale) => {
-
-          const month =
+        (s) => {
+          const m =
             new Date(
-              sale.date
+              s.date
             ).toLocaleString(
               "default",
-
               {
                 month:
                   "short",
               }
             );
 
-          if (
-            !grouped[month]
-          ) {
-
-            grouped[
-              month
-            ] = 0;
-          }
-
-          grouped[
-            month
-          ] += Number(
-            sale.total || 0
-          );
+          data[m] =
+            (data[m] || 0) +
+            Number(
+              s.total || 0
+            );
         }
       );
 
       return Object.keys(
-        grouped
-      ).map((key) => ({
-        month: key,
-        total:
-          grouped[key],
+        data
+      ).map((m) => ({
+        month: m,
+        total: data[m],
       }));
-
     }, [sales]);
 
-  /* =========================================
-        BEST CUSTOMERS
-  ========================================= */
+  /* =========================
+      Best Customers
+  ========================= */
 
   const bestCustomers =
     useMemo(() => {
-
-      const grouped = {};
+      const data = {};
 
       sales.forEach(
-        (sale) => {
-
-          const customer =
-            sale.customer ||
-            "Unknown";
-
-          if (
-            !grouped[
-              customer
-            ]
-          ) {
-
-            grouped[
-              customer
-            ] = 0;
-          }
-
-          grouped[
-            customer
-          ] += Number(
-            sale.total || 0
-          );
+        (s) => {
+          data[s.customer] =
+            (data[
+              s.customer
+            ] || 0) +
+            Number(
+              s.total || 0
+            );
         }
       );
 
       return Object.entries(
-        grouped
+        data
       )
 
         .map(
-          ([
-            name,
-            total,
-          ]) => ({
+          ([name, total]) => ({
             name,
             total,
           })
@@ -243,54 +293,38 @@ function Reports({
         )
 
         .slice(0, 5);
-
     }, [sales]);
 
-  /* =========================================
-        BEST MEDICINES
-  ========================================= */
+  /* =========================
+      Best Medicines
+  ========================= */
 
   const bestMedicines =
     useMemo(() => {
-
-      const grouped = {};
+      const data = {};
 
       sales.forEach(
-        (sale) => {
-
-          sale.items?.forEach(
-            (item) => {
-
-              if (
-                !grouped[
-                  item.name
-                ]
-              ) {
-
-                grouped[
-                  item.name
-                ] = 0;
-              }
-
-              grouped[
-                item.name
-              ] += Number(
-                item.qty || 0
-              );
+        (s) => {
+          s.items?.forEach(
+            (i) => {
+              data[i.name] =
+                (data[
+                  i.name
+                ] || 0) +
+                Number(
+                  i.qty || 0
+                );
             }
           );
         }
       );
 
       return Object.entries(
-        grouped
+        data
       )
 
         .map(
-          ([
-            name,
-            qty,
-          ]) => ({
+          ([name, qty]) => ({
             name,
             qty,
           })
@@ -303,15 +337,13 @@ function Reports({
         )
 
         .slice(0, 5);
-
     }, [sales]);
 
-  /* =========================================
-        PIE DATA
-  ========================================= */
+  /* =========================
+      Pie Chart
+  ========================= */
 
-  const pieData = [
-
+  const pie = [
     {
       name: "Revenue",
       value:
@@ -325,44 +357,43 @@ function Reports({
     },
   ];
 
-  /* =========================================
-        EXPORT PDF
-  ========================================= */
+  /* =========================
+      Export PDF
+  ========================= */
 
   const exportPDF =
     () => {
-
       const doc =
         new jsPDF();
 
       doc.text(
-        "ANFAC PHARMACY REPORTS",
+        "ANFAC REPORT",
         14,
         15
       );
 
       autoTable(doc, {
-
         startY: 25,
 
         head: [[
-          "Customer",
-          "Total",
+          "Sales",
+          "Expenses",
+          "Profit",
         ]],
 
-        body:
-          bestCustomers.map(
-            (
-              customer
-            ) => [
+        body: [[
+          `$${totalSales.toFixed(
+            2
+          )}`,
 
-              customer.name,
+          `$${totalExpenses.toFixed(
+            2
+          )}`,
 
-              `$${customer.total.toFixed(
-                2
-              )}`,
-            ]
-          ),
+          `$${profit.toFixed(
+            2
+          )}`,
+        ]],
       });
 
       doc.save(
@@ -370,365 +401,181 @@ function Reports({
       );
     };
 
-  /* =========================================
-        EXPORT EXCEL
-  ========================================= */
+  /* =========================
+      Export Excel
+  ========================= */
 
   const exportExcel =
     () => {
-
-      const worksheet =
+      const ws =
         XLSX.utils.json_to_sheet(
           sales
         );
 
-      const workbook =
+      const wb =
         XLSX.utils.book_new();
 
       XLSX.utils.book_append_sheet(
-
-        workbook,
-
-        worksheet,
-
+        wb,
+        ws,
         "Reports"
       );
 
       XLSX.writeFile(
-
-        workbook,
-
+        wb,
         "reports.xlsx"
       );
     };
 
   return (
-
     <div
-      style={{
-        ...styles.container,
-
-        background:
-          darkMode
-            ? "#020617"
-            : "#f1f5f9",
-
-        color:
-          darkMode
-            ? "#ffffff"
-            : "#111827",
-      }}
+      className={`
+        min-h-screen
+        p-4 md:p-6
+        ${ui.bg}
+      `}
     >
-
-      {/* HEADER */}
-
+      {/* Header */}
       <div
-        style={
-          styles.header
-        }
+        className="
+        flex flex-col lg:flex-row
+        justify-between gap-5
+        mb-8
+      "
       >
-
         <div
-          style={
-            styles.headerLeft
-          }
+          className="
+          flex items-center gap-4
+        "
         >
-
+          {/* Mobile Sidebar */}
           <button
             onClick={
               openSidebar
             }
-
-            style={{
-              ...styles.menuButton,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-
-              color:
-                darkMode
-                  ? "#ffffff"
-                  : "#111827",
-            }}
+            className={`
+              md:hidden
+              w-12 h-12
+              rounded-2xl
+              text-xl
+              ${ui.card}
+            `}
           >
             ☰
           </button>
 
           <div>
-
             <h1
-              style={
-                styles.title
-              }
+              className="
+              text-3xl md:text-5xl
+              font-black
+            "
             >
               Reports 📊
             </h1>
 
-            <p
-              style={
-                styles.subtitle
-              }
-            >
-              Pharmacy
-              analytics
-              dashboard
+            <p className={ui.text}>
+              Pharmacy analytics
             </p>
-
           </div>
-
         </div>
 
-        {/* ACTIONS */}
-
+        {/* Actions */}
         <div
-          style={
-            styles.exportActions
-          }
+          className="
+          flex flex-wrap gap-3
+        "
         >
+          <Btn
+            text="PDF"
+            color="bg-red-600"
+            click={exportPDF}
+          />
 
-          <button
-            onClick={
-              exportPDF
-            }
+          <Btn
+            text="Excel"
+            color="bg-green-600"
+            click={exportExcel}
+          />
 
-            style={{
-              ...styles.actionButton,
-              background:
-                "#dc2626",
-            }}
-          >
-            Export PDF
-          </button>
-
-          <button
-            onClick={
-              exportExcel
-            }
-
-            style={{
-              ...styles.actionButton,
-              background:
-                "#16a34a",
-            }}
-          >
-            Export Excel
-          </button>
-
-          <button
-            onClick={
-              handlePrint
-            }
-
-            style={{
-              ...styles.actionButton,
-              background:
-                "#2563eb",
-            }}
-          >
-            Print Report
-          </button>
-
+          <Btn
+            text="Print"
+            color="bg-blue-600"
+            click={print}
+          />
         </div>
-
       </div>
 
-      {/* PRINT AREA */}
-
+      {/* Report Content */}
       <div ref={reportRef}>
-
-        {/* CARDS */}
-
+        {/* Cards */}
         <div
-          style={
-            styles.cardsGrid
-          }
+          className="
+          grid grid-cols-1
+          sm:grid-cols-2
+          xl:grid-cols-4
+          gap-5 mb-6
+        "
         >
+          <Card
+            title="Sales"
+            value={`$${totalSales.toFixed(
+              2
+            )}`}
+            color="text-green-500"
+            ui={ui}
+          />
 
-          <div
-            style={{
-              ...styles.card,
+          <Card
+            title="Expenses"
+            value={`$${totalExpenses.toFixed(
+              2
+            )}`}
+            color="text-red-500"
+            ui={ui}
+          />
 
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-            }}
-          >
+          <Card
+            title="Profit"
+            value={`$${profit.toFixed(
+              2
+            )}`}
+            color="text-cyan-400"
+            ui={ui}
+          />
 
-            <span
-              style={
-                styles.cardTitle
-              }
-            >
-              Daily Sales
-            </span>
-
-            <h2
-              style={{
-                ...styles.cardValue,
-                color:
-                  "#22c55e",
-              }}
-            >
-              $
-              {
-                totalSales.toFixed(
-                  2
-                )
-              }
-            </h2>
-
-          </div>
-
-          <div
-            style={{
-              ...styles.card,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-            }}
-          >
-
-            <span
-              style={
-                styles.cardTitle
-              }
-            >
-              Expenses
-            </span>
-
-            <h2
-              style={{
-                ...styles.cardValue,
-                color:
-                  "#ef4444",
-              }}
-            >
-              $
-              {
-                totalExpenses.toFixed(
-                  2
-                )
-              }
-            </h2>
-
-          </div>
-
-          <div
-            style={{
-              ...styles.card,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-            }}
-          >
-
-            <span
-              style={
-                styles.cardTitle
-              }
-            >
-              Profit
-            </span>
-
-            <h2
-              style={{
-                ...styles.cardValue,
-                color:
-                  "#06b6d4",
-              }}
-            >
-              $
-              {
-                totalProfit.toFixed(
-                  2
-                )
-              }
-            </h2>
-
-          </div>
-
-          <div
-            style={{
-              ...styles.card,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-            }}
-          >
-
-            <span
-              style={
-                styles.cardTitle
-              }
-            >
-              Medicines
-            </span>
-
-            <h2
-              style={{
-                ...styles.cardValue,
-                color:
-                  "#f59e0b",
-              }}
-            >
-              {
-                medicines.length
-              }
-            </h2>
-
-          </div>
-
+          <Card
+            title="Medicines"
+            value={
+              medicines.length
+            }
+            color="text-yellow-500"
+            ui={ui}
+          />
         </div>
 
-        {/* CHARTS */}
-
+        {/* Charts */}
         <div
-          style={
-            styles.chartGrid
-          }
+          className="
+          grid grid-cols-1
+          xl:grid-cols-3
+          gap-5 mb-6
+        "
         >
-
-          {/* DAILY */}
-
-          <div
-            style={{
-              ...styles.chartCard,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-            }}
+          {/* Daily */}
+          <ChartCard
+            title="Daily Sales"
+            ui={ui}
           >
-
-            <h3
-              style={
-                styles.chartTitle
-              }
-            >
-              Daily Sales
-            </h3>
-
             <ResponsiveContainer
               width="100%"
               height={300}
             >
-
               <LineChart
                 data={
                   dailySales
                 }
               >
-
                 <CartesianGrid
                   strokeDasharray="3 3"
                 />
@@ -742,50 +589,28 @@ function Reports({
                 <Tooltip />
 
                 <Line
-                  type="monotone"
                   dataKey="total"
                   stroke="#22c55e"
                   strokeWidth={3}
                 />
-
               </LineChart>
-
             </ResponsiveContainer>
+          </ChartCard>
 
-          </div>
-
-          {/* MONTHLY */}
-
-          <div
-            style={{
-              ...styles.chartCard,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-            }}
+          {/* Monthly */}
+          <ChartCard
+            title="Monthly Report"
+            ui={ui}
           >
-
-            <h3
-              style={
-                styles.chartTitle
-              }
-            >
-              Monthly Report
-            </h3>
-
             <ResponsiveContainer
               width="100%"
               height={300}
             >
-
               <BarChart
                 data={
                   monthlySales
                 }
               >
-
                 <CartesianGrid
                   strokeDasharray="3 3"
                 />
@@ -808,362 +633,221 @@ function Reports({
                     0,
                   ]}
                 />
-
               </BarChart>
-
             </ResponsiveContainer>
+          </ChartCard>
 
-          </div>
-
-          {/* PIE */}
-
-          <div
-            style={{
-              ...styles.chartCard,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-            }}
+          {/* Pie */}
+          <ChartCard
+            title="Expense vs Revenue"
+            ui={ui}
           >
-
-            <h3
-              style={
-                styles.chartTitle
-              }
-            >
-              Expense vs
-              Revenue
-            </h3>
-
             <ResponsiveContainer
               width="100%"
               height={300}
             >
-
               <PieChart>
-
                 <Pie
-                  data={pieData}
+                  data={pie}
                   dataKey="value"
                   outerRadius={100}
                   label
                 >
-
                   <Cell fill="#22c55e" />
 
                   <Cell fill="#ef4444" />
-
                 </Pie>
 
                 <Tooltip />
-
               </PieChart>
-
             </ResponsiveContainer>
-
-          </div>
-
+          </ChartCard>
         </div>
 
-        {/* TABLES */}
-
+        {/* Bottom Lists */}
         <div
-          style={
-            styles.tableGrid
-          }
+          className="
+          grid grid-cols-1
+          xl:grid-cols-2
+          gap-5
+        "
         >
+          <ListCard
+            title="Best Customers"
+            ui={ui}
+            data={bestCustomers}
+            color="text-green-500"
+            type="money"
+          />
 
-          {/* CUSTOMERS */}
-
-          <div
-            style={{
-              ...styles.tableCard,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-            }}
-          >
-
-            <h3
-              style={
-                styles.chartTitle
-              }
-            >
-              Best Customers
-            </h3>
-
-            {
-              bestCustomers.map(
-                (
-                  customer,
-                  index
-                ) => (
-
-                  <div
-                    key={index}
-
-                    style={
-                      styles.tableRow
-                    }
-                  >
-
-                    <span>
-                      {
-                        customer.name
-                      }
-                    </span>
-
-                    <strong
-                      style={{
-                        color:
-                          "#22c55e",
-                      }}
-                    >
-                      $
-                      {
-                        customer.total.toFixed(
-                          2
-                        )
-                      }
-                    </strong>
-
-                  </div>
-                )
-              )
-            }
-
-          </div>
-
-          {/* MEDICINES */}
-
-          <div
-            style={{
-              ...styles.tableCard,
-
-              background:
-                darkMode
-                  ? "#111827"
-                  : "#ffffff",
-            }}
-          >
-
-            <h3
-              style={
-                styles.chartTitle
-              }
-            >
-              Best Selling
-              Medicines
-            </h3>
-
-            {
-              bestMedicines.map(
-                (
-                  medicine,
-                  index
-                ) => (
-
-                  <div
-                    key={index}
-
-                    style={
-                      styles.tableRow
-                    }
-                  >
-
-                    <span>
-                      {
-                        medicine.name
-                      }
-                    </span>
-
-                    <strong
-                      style={{
-                        color:
-                          "#2563eb",
-                      }}
-                    >
-                      {
-                        medicine.qty
-                      }
-                    </strong>
-
-                  </div>
-                )
-              )
-            }
-
-          </div>
-
+          <ListCard
+            title="Best Medicines"
+            ui={ui}
+            data={bestMedicines}
+            color="text-blue-500"
+            type="qty"
+          />
         </div>
-
       </div>
-
     </div>
   );
 }
 
-/* =========================================
-      STYLES
-========================================= */
+/* =========================
+    Button
+========================= */
 
-const styles = {
+function Btn({
+  text,
+  color,
+  click,
+}) {
+  return (
+    <button
+      onClick={click}
+      className={`
+        h-12 px-5
+        rounded-2xl
+        text-white font-bold
+        ${color}
+      `}
+    >
+      {text}
+    </button>
+  );
+}
 
-  container: {
-    width: "100%",
-    minHeight: "100vh",
-    padding: "24px",
-    boxSizing:
-      "border-box",
-  },
+/* =========================
+    Card
+========================= */
 
-  header: {
-    display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "20px",
-    marginBottom:
-      "30px",
-  },
+function Card({
+  title,
+  value,
+  color,
+  ui,
+}) {
+  return (
+    <div
+      className={`
+        p-6 rounded-3xl
+        ${ui.card}
+      `}
+    >
+      <p className={ui.text}>
+        {title}
+      </p>
 
-  headerLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-  },
+      <h2
+        className={`
+        text-5xl font-black
+        mt-3 ${color}
+      `}
+      >
+        {value}
+      </h2>
+    </div>
+  );
+}
 
-  menuButton: {
-    width: "50px",
-    height: "50px",
-    borderRadius:
-      "14px",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "22px",
-    boxShadow:
-      "0 4px 14px rgba(0,0,0,0.08)",
-  },
+/* =========================
+    Chart Card
+========================= */
 
-  title: {
-    margin: 0,
-    fontSize:
-      "clamp(28px,4vw,40px)",
-    fontWeight:
-      "700",
-  },
+function ChartCard({
+  title,
+  children,
+  ui,
+}) {
+  return (
+    <div
+      className={`
+        p-6 rounded-3xl
+        ${ui.card}
+      `}
+    >
+      <h2
+        className="
+        text-2xl font-black
+        mb-5
+      "
+      >
+        {title}
+      </h2>
 
-  subtitle: {
-    marginTop: "6px",
-    fontSize: "15px",
-  },
+      {children}
+    </div>
+  );
+}
 
-  exportActions: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "12px",
-  },
+/* =========================
+    List Card
+========================= */
 
-  actionButton: {
-    border: "none",
-    padding:
-      "12px 18px",
-    borderRadius:
-      "12px",
-    cursor: "pointer",
-    fontWeight:
-      "bold",
-    color: "#ffffff",
-    fontSize: "14px",
-  },
+function ListCard({
+  title,
+  data,
+  color,
+  type,
+  ui,
+}) {
+  return (
+    <div
+      className={`
+        p-6 rounded-3xl
+        ${ui.card}
+      `}
+    >
+      <h2
+        className="
+        text-2xl font-black
+        mb-5
+      "
+      >
+        {title}
+      </h2>
 
-  cardsGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(240px,1fr))",
-    gap: "20px",
-    marginBottom:
-      "30px",
-  },
+      {!data.length ? (
+        <p className={ui.text}>
+          No data found
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {data.map(
+            (item, i) => (
+              <div
+                key={i}
+                className="
+                  flex items-center
+                  justify-between
+                  border-b border-slate-700
+                  pb-3
+                "
+              >
+                <h3 className="font-bold">
+                  {item.name}
+                </h3>
 
-  card: {
-    padding: "24px",
-    borderRadius:
-      "22px",
-    boxShadow:
-      "0 6px 20px rgba(0,0,0,0.05)",
-  },
-
-  cardTitle: {
-    fontSize: "15px",
-    fontWeight:
-      "600",
-    color: "#64748b",
-  },
-
-  cardValue: {
-    fontSize: "34px",
-    fontWeight:
-      "bold",
-    marginTop: "10px",
-  },
-
-  chartGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(320px,1fr))",
-    gap: "24px",
-    marginBottom:
-      "30px",
-  },
-
-  chartCard: {
-    borderRadius:
-      "24px",
-    padding: "24px",
-    minHeight:
-      "380px",
-    boxShadow:
-      "0 6px 20px rgba(0,0,0,0.05)",
-  },
-
-  chartTitle: {
-    marginBottom:
-      "20px",
-    fontSize: "18px",
-    fontWeight:
-      "bold",
-  },
-
-  tableGrid: {
-    display: "grid",
-    gridTemplateColumns:
-      "repeat(auto-fit,minmax(320px,1fr))",
-    gap: "24px",
-  },
-
-  tableCard: {
-    borderRadius:
-      "24px",
-    padding: "24px",
-    boxShadow:
-      "0 6px 20px rgba(0,0,0,0.05)",
-  },
-
-  tableRow: {
-    display: "flex",
-    justifyContent:
-      "space-between",
-    alignItems: "center",
-    padding: "14px 0",
-    borderBottom:
-      "1px solid #e5e7eb",
-  },
-};
+                <span
+                  className={`
+                    font-black
+                    ${color}
+                  `}
+                >
+                  {type ===
+                  "money"
+                    ? `$${item.total.toFixed(
+                        2
+                      )}`
+                    : `${item.qty} Qty`}
+                </span>
+              </div>
+            )
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default Reports;
