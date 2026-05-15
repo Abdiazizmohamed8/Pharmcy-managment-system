@@ -87,7 +87,7 @@ function SalesHistory({
       ),
       orderBy(
         "date",
-        "desc"
+        "asc"
       ),
       limit(100)
     );
