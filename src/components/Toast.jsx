@@ -5,82 +5,168 @@ function Toast({
   type = "success",
   onClose,
 }) {
-  // Toast styles based on type
-  const toastTypes = {
-    success: {
-      bg: "bg-green-600",
-      icon: "✅",
-      title: "Success",
-    },
 
-    error: {
-      bg: "bg-red-600",
-      icon: "❌",
-      title: "Error",
-    },
+  /* =========================
+      Toast Colors
+  ========================= */
 
-    warning: {
-      bg: "bg-amber-500",
-      icon: "⏰",
-      title: "Warning",
-    },
-  };
+  const bgColor =
+    type === "error"
+      ? "#dc2626"
+      : type === "warning"
+      ? "#f59e0b"
+      : "#16a34a";
 
-  // Active toast type
-  const current =
-    toastTypes[type] ||
-    toastTypes.success;
+  /* =========================
+      Toast Icon
+  ========================= */
+
+  const icon =
+    type === "error"
+      ? "❌"
+      : type === "warning"
+      ? "⏰"
+      : "✅";
+
+  /* =========================
+      Toast Title
+  ========================= */
+
+  const title =
+    type === "error"
+      ? "Error"
+      : type === "warning"
+      ? "Warning"
+      : "Success";
 
   return (
-    <div
-      className="animate-[slideIn_.35s_ease]
-      w-full max-w-[95vw] sm:max-w-sm md:max-w-md"
-    >
+
+    <div className="toast-wrapper">
+
       {/* Toast Box */}
+
       <div
-        className={`${current.bg}
-        text-white rounded-2xl
-        p-4 shadow-2xl
-        border border-white/10
-        flex items-start gap-3`}
+        className="toast-box"
+        style={{
+          background: bgColor,
+          color: "#ffffff",
+
+          padding: "16px",
+
+          borderRadius: "18px",
+
+          display: "flex",
+          alignItems: "center",
+          gap: "14px",
+
+          boxShadow:
+            "0 15px 40px rgba(0,0,0,0.25)",
+
+          border:
+            "1px solid rgba(255,255,255,0.15)",
+
+          animation:
+            "slideIn 0.35s ease",
+
+          boxSizing: "border-box",
+
+          minWidth: "320px",
+          maxWidth: "420px",
+        }}
       >
+
         {/* Icon */}
+
         <div
-          className="min-w-[46px] h-[46px]
-          rounded-xl bg-white/20
-          flex items-center justify-center
-          text-xl"
+          style={{
+            width: "44px",
+            height: "44px",
+
+            borderRadius: "14px",
+
+            background:
+              "rgba(255,255,255,0.15)",
+
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+
+            fontSize: "22px",
+
+            flexShrink: 0,
+          }}
         >
-          {current.icon}
+
+          {icon}
+
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
-          <h3 className="font-bold text-base sm:text-lg mb-1">
-            {current.title}
-          </h3>
 
-          <p
-            className="text-sm sm:text-[15px]
-            leading-6 opacity-95 break-words"
+        <div
+          style={{
+            flex: 1,
+          }}
+        >
+
+          {/* Title */}
+
+          <div
+            style={{
+              fontWeight: "700",
+              fontSize: "18px",
+              marginBottom: "4px",
+            }}
           >
+
+            {title}
+
+          </div>
+
+          {/* Message */}
+
+          <div
+            style={{
+              fontSize: "15px",
+              lineHeight: "22px",
+              opacity: 0.95,
+            }}
+          >
+
             {message}
-          </p>
+
+          </div>
+
         </div>
 
         {/* Close Button */}
+
         <button
           onClick={onClose}
-          className="text-xl hover:opacity-70 transition"
+          style={{
+            background: "transparent",
+            border: "none",
+
+            color: "#ffffff",
+
+            fontSize: "22px",
+
+            cursor: "pointer",
+          }}
         >
+
           ✕
+
         </button>
+
       </div>
 
       {/* Animation */}
+
       <style>
         {`
           @keyframes slideIn {
+
             from {
               opacity: 0;
               transform: translateY(20px);
@@ -93,6 +179,7 @@ function Toast({
           }
         `}
       </style>
+
     </div>
   );
 }

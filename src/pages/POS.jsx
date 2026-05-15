@@ -201,28 +201,44 @@ function POS({ sales = [], setSales, toast, openSidebar }) {
       const newInvoiceNumber = lastInvoice + 1;
 
       // SALE DATA
-      const saleData = {
-        invoiceNumber: newInvoiceNumber,
+     const saleData = {
 
-        customer: customerName,
-        phone: customerPhone,
-        address: customerAddress,
+  id: String(newInvoiceNumber),
 
-        items: cart,
+  invoiceNumber:
+    newInvoiceNumber,
 
-        subtotal,
-        discount,
-        taxAmount,
-        total,
-        paid,
-        debt,
+  customer:
+    customerName,
 
-        method: paymentMethod,
-        status: saleStatus,
+  phone:
+    customerPhone,
 
-        createdAt: Date.now(),
-        date: new Date().toISOString(),
-      };
+  address:
+    customerAddress,
+
+  items: cart,
+
+  subtotal,
+  discount,
+  taxAmount,
+  total,
+  paid,
+  debt,
+
+  method:
+    paymentMethod,
+
+  status:
+    saleStatus,
+
+  createdAt:
+    Date.now(),
+
+  date:
+    new Date()
+      .toISOString(),
+};
 
       // SAVE SALE
       await setDoc(

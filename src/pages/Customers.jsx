@@ -6,6 +6,8 @@ import {
 import {
   doc,
   deleteDoc,
+  addDoc,
+  collection,
 } from "firebase/firestore";
 
 import { db } from "../firebase";
@@ -16,6 +18,7 @@ import {
 
 function Customers({
   customers = [],
+  sales = [],
   setCustomers,
   openSidebar,
   toast,
@@ -24,7 +27,10 @@ function Customers({
   const { darkMode } =
     useTheme();
 
-  // Theme
+  /* =========================
+      THEME
+  ========================= */
+
   const ui = {
     bg: darkMode
       ? "bg-[#050816] text-white"
@@ -43,11 +49,32 @@ function Customers({
       : "text-slate-500",
   };
 
-  // Search
+  /* =========================
+      STATES
+  ========================= */
+
   const [search, setSearch] =
     useState("");
 
-  // Filter
+  const [showModal, setShowModal] =
+    useState(false);
+
+  const [
+    selectedCustomer,
+    setSelectedCustomer,
+  ] = useState(null);
+
+  const [form, setForm] =
+    useState({
+      name: "",
+      phone: "",
+      address: "",
+    });
+
+  /* =========================
+      FILTER CUSTOMERS
+  ========================= */
+
   const filtered =
     useMemo(() =>
 
@@ -65,13 +92,87 @@ function Customers({
     [customers, search]
     );
 
-  // Delete
+  /* =========================
+      ADD CUSTOMER
+  ========================= */
+
+  const addCustomer =
+    async () => {
+
+      if (!form.name) {
+
+        toast?.(
+          "Customer name required",
+          "warning"
+        );
+
+        return;
+      }
+
+      try {
+
+        const newCustomer = {
+          ...form,
+
+          date:
+            new Date()
+              .toISOString()
+              .slice(0, 10),
+        };
+
+        const docRef =
+          await addDoc(
+
+            collection(
+              db,
+              "customers"
+            ),
+
+            newCustomer
+          );
+
+        setCustomers([
+          ...customers,
+
+          {
+            id: docRef.id,
+            ...newCustomer,
+          },
+        ]);
+
+        setForm({
+          name: "",
+          phone: "",
+          address: "",
+        });
+
+        setShowModal(false);
+
+        toast?.(
+          "Customer added",
+          "success"
+        );
+
+      } catch {
+
+        toast?.(
+          "Add failed",
+          "error"
+        );
+      }
+    };
+
+  /* =========================
+      DELETE CUSTOMER
+  ========================= */
+
   const remove =
     async (id) => {
 
       try {
 
         await deleteDoc(
+
           doc(
             db,
             "customers",
@@ -82,7 +183,8 @@ function Customers({
         setCustomers(
 
           customers.filter(
-            (c) => c.id !== id
+            (c) =>
+              c.id !== id
           )
         );
 
@@ -108,7 +210,7 @@ function Customers({
       ${ui.bg}
     `}>
 
-      {/* Header */}
+      {/* HEADER */}
       <div className="
         flex items-center gap-4
         mb-6
@@ -142,14 +244,14 @@ function Customers({
 
       </div>
 
-      {/* Top */}
+      {/* TOP */}
       <div className="
         flex flex-col lg:flex-row
         justify-between gap-4
         mb-6
       ">
 
-        {/* Search */}
+        {/* SEARCH */}
         <input
           type="text"
           placeholder="Search customer..."
@@ -168,32 +270,54 @@ function Customers({
           `}
         />
 
-        {/* Total */}
         <div className="
-          min-w-[180px]
-          rounded-3xl
-          bg-blue-600
-          text-white
-          p-5 text-center
+          flex flex-wrap gap-4
         ">
 
-          <p className="
-            text-sm
-          ">
-            Customers
-          </p>
+          {/* ADD */}
+          <button
+            onClick={() =>
+              setShowModal(true)
+            }
+            className="
+              h-14 px-6
+              rounded-2xl
+              bg-green-600
+              hover:bg-green-700
+              text-white font-bold
+            "
+          >
+            Add Customer
+          </button>
 
-          <h2 className="
-            text-4xl font-black
+          {/* TOTAL */}
+          <div className="
+            min-w-[180px]
+            rounded-3xl
+            bg-blue-600
+            text-white
+            p-5 text-center
           ">
-            {customers.length}
-          </h2>
+
+            <p className="
+              text-sm
+            ">
+              Customers
+            </p>
+
+            <h2 className="
+              text-4xl font-black
+            ">
+              {customers.length}
+            </h2>
+
+          </div>
 
         </div>
 
       </div>
 
-      {/* Table */}
+      {/* TABLE */}
       <div className={`
         rounded-3xl border
         overflow-hidden
@@ -216,9 +340,10 @@ function Customers({
           ">
 
             <table className="
-              w-full min-w-[900px]
+              w-full min-w-[1000px]
             ">
 
+              {/* HEADER */}
               <thead>
 
                 <tr className="
@@ -249,18 +374,41 @@ function Customers({
 
               </thead>
 
+              {/* BODY */}
               <tbody>
 
                 {filtered.map(
                   (c) => {
 
-                    const debt =
-                      Number(
-                        c.debt || 0
+                    // CUSTOMER SALES
+                    const customerSales =
+                      sales.filter(
+                        (sale) =>
+
+                          sale.customer ===
+                          c.name
                       );
 
-                    const hasDebt =
-                      debt > 0;
+                    // TOTAL DEBT
+                    const debt =
+                      customerSales.reduce(
+
+                        (sum, sale) =>
+
+                          sum +
+
+                          (
+                            Number(
+                              sale.total || 0
+                            ) -
+
+                            Number(
+                              sale.paid || 0
+                            )
+                          ),
+
+                        0
+                      );
 
                     return (
 
@@ -268,11 +416,14 @@ function Customers({
                         key={c.id}
                         className="
                           border-b border-[#1e293b]
+                          hover:bg-slate-500/5
                         "
                       >
 
-                        {/* Customer */}
-                        <td className="p-5">
+                        {/* CUSTOMER */}
+                        <td className="
+                          p-5
+                        ">
 
                           <div className="
                             flex items-center gap-3
@@ -288,7 +439,9 @@ function Customers({
                               text-white
                             ">
 
-                              {c.name?.charAt(0)}
+                              {
+                                c.name?.charAt(0)
+                              }
 
                             </div>
 
@@ -304,7 +457,7 @@ function Customers({
                               <p className="
                                 text-sm text-slate-400
                               ">
-                                {c.date || "2026-05-15"}
+                                {c.date || "-"}
                               </p>
 
                             </div>
@@ -313,18 +466,24 @@ function Customers({
 
                         </td>
 
-                        {/* Phone */}
-                        <td className="p-5">
+                        {/* PHONE */}
+                        <td className="
+                          p-5
+                        ">
                           {c.phone || "-"}
                         </td>
 
-                        {/* Address */}
-                        <td className="p-5">
+                        {/* ADDRESS */}
+                        <td className="
+                          p-5
+                        ">
                           {c.address || "-"}
                         </td>
 
-                        {/* Debt */}
-                        <td className="p-5">
+                        {/* DEBT */}
+                        <td className="
+                          p-5
+                        ">
 
                           <span className={`
                             px-4 py-2
@@ -332,7 +491,7 @@ function Customers({
                             text-sm font-semibold
 
                             ${
-                              hasDebt
+                              debt > 0
 
                                 ? "bg-red-500/10 text-red-400"
 
@@ -347,8 +506,10 @@ function Customers({
 
                         </td>
 
-                        {/* Status */}
-                        <td className="p-5">
+                        {/* STATUS */}
+                        <td className="
+                          p-5
+                        ">
 
                           <span className={`
                             px-4 py-2
@@ -356,40 +517,66 @@ function Customers({
                             text-sm font-semibold
 
                             ${
-                              hasDebt
+                              debt > 0
 
-                                ? "bg-red-500/10 text-red-400"
+                                ? "bg-yellow-500/10 text-yellow-400"
 
                                 : "bg-green-500/10 text-green-400"
                             }
                           `}>
 
-                            {hasDebt
-                              ? "Debt"
-                              : "No Debt"}
+                            {
+                              debt > 0
+                                ? "Partial"
+                                : "Paid"
+                            }
 
                           </span>
 
                         </td>
 
-                        {/* Action */}
-                        <td className="p-5">
+                        {/* ACTION */}
+                        <td className="
+                          p-5
+                        ">
 
-                          <button
-                            onClick={() =>
-                              remove(c.id)
-                            }
-                            className="
-                              h-11 px-5
-                              rounded-2xl
-                              bg-red-600
-                              hover:bg-red-700
-                              text-white
-                              text-sm font-semibold
-                            "
-                          >
-                            Delete
-                          </button>
+                          <div className="
+                            flex gap-2
+                          ">
+
+                            <button
+                              onClick={() =>
+                                setSelectedCustomer(c)
+                              }
+                              className="
+                                h-11 px-5
+                                rounded-2xl
+                                bg-blue-600
+                                hover:bg-blue-700
+                                text-white
+                                text-sm font-semibold
+                              "
+                            >
+                              View
+                            </button>
+
+                            <button
+                              onClick={() =>
+                                remove(c.id)
+                              }
+                              className="
+                                h-11 px-5
+                                rounded-2xl
+                                bg-red-600
+                                hover:bg-red-700
+                                text-white
+                                text-sm font-semibold
+                              "
+                            >
+                              Delete
+                            </button>
+
+                          </div>
 
                         </td>
 
@@ -407,6 +594,135 @@ function Customers({
         )}
 
       </div>
+
+      {/* ADD MODAL */}
+      {showModal && (
+
+        <div className="
+          fixed inset-0
+          bg-black/60
+          z-[999]
+          flex items-center
+          justify-center
+          p-4
+        ">
+
+          <div className={`
+            w-full max-w-lg
+            rounded-3xl
+            p-6 border
+            ${ui.card}
+          `}>
+
+            <h2 className="
+              text-2xl font-black
+              mb-5
+            ">
+              Add Customer
+            </h2>
+
+            <div className="
+              space-y-4
+            ">
+
+              <input
+                type="text"
+                placeholder="Customer name"
+                value={form.name}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    name:
+                      e.target.value,
+                  })
+                }
+                className={`
+                  w-full h-14 px-5
+                  rounded-2xl border
+                  outline-none
+                  ${ui.input}
+                `}
+              />
+
+              <input
+                type="text"
+                placeholder="Phone"
+                value={form.phone}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    phone:
+                      e.target.value,
+                  })
+                }
+                className={`
+                  w-full h-14 px-5
+                  rounded-2xl border
+                  outline-none
+                  ${ui.input}
+                `}
+              />
+
+              <input
+                type="text"
+                placeholder="Address"
+                value={form.address}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    address:
+                      e.target.value,
+                  })
+                }
+                className={`
+                  w-full h-14 px-5
+                  rounded-2xl border
+                  outline-none
+                  ${ui.input}
+                `}
+              />
+
+            </div>
+
+            {/* ACTIONS */}
+            <div className="
+              flex justify-end
+              gap-3 mt-6
+            ">
+
+              <button
+                onClick={() =>
+                  setShowModal(false)
+                }
+                className="
+                  h-12 px-5
+                  rounded-2xl
+                  bg-slate-500
+                  text-white font-bold
+                "
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={addCustomer}
+                className="
+                  h-12 px-5
+                  rounded-2xl
+                  bg-green-600
+                  hover:bg-green-700
+                  text-white font-bold
+                "
+              >
+                Save
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
 
     </div>
   );

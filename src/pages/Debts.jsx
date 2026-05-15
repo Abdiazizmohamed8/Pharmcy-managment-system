@@ -22,7 +22,10 @@ function Debts({
   const { darkMode } =
     useTheme();
 
-  // Theme
+  /* =========================
+      THEME
+  ========================= */
+
   const ui = {
     bg: darkMode
       ? "bg-[#020617] text-white"
@@ -41,11 +44,17 @@ function Debts({
       : "text-slate-500",
   };
 
-  // Search
+  /* =========================
+      SEARCH
+  ========================= */
+
   const [search, setSearch] =
     useState("");
 
-  // Filter Debts
+  /* =========================
+      FILTER DEBTS
+  ========================= */
+
   const debtSales =
     useMemo(() => {
 
@@ -53,11 +62,16 @@ function Debts({
         (sale) => {
 
           const debt =
-            Number(sale.total || 0) -
-            Number(sale.paid || 0);
+            Number(
+              sale.total || 0
+            ) -
+            Number(
+              sale.paid || 0
+            );
 
           return (
             debt > 0 &&
+
             sale.customer
               ?.toLowerCase()
               .includes(
@@ -69,21 +83,34 @@ function Debts({
 
     }, [sales, search]);
 
-  // Total Debt
+  /* =========================
+      TOTAL DEBT
+  ========================= */
+
   const totalDebt =
     debtSales.reduce(
+
       (sum, sale) =>
 
         sum +
+
         (
-          Number(sale.total || 0) -
-          Number(sale.paid || 0)
+          Number(
+            sale.total || 0
+          ) -
+
+          Number(
+            sale.paid || 0
+          )
         ),
 
       0
     );
 
-  // Mark Paid
+  /* =========================
+      MARK PAID
+  ========================= */
+
   const markPaid =
     async (sale) => {
 
@@ -94,51 +121,41 @@ function Debts({
             sale.total || 0
           );
 
-        // Update Sale
+        // UPDATE FIRESTORE
         await updateDoc(
 
           doc(
             db,
             "sales",
-            sale.id
+            String(
+              sale.invoiceNumber
+            )
           ),
 
           {
             paid: total,
-            status: "Paid",
-          }
-        );
-
-        // Update Customer
-        await updateDoc(
-
-          doc(
-            db,
-            "customers",
-            sale.phone ||
-            sale.customer
-          ),
-
-          {
             debt: 0,
             status: "Paid",
           }
         );
 
-        // Local Update
+        // UPDATE LOCAL
         setSales(
 
-          sales.map((item) =>
+          sales.map(
+            (item) =>
 
-            item.id === sale.id
+              item.invoiceNumber ===
+              sale.invoiceNumber
 
-              ? {
-                  ...item,
-                  paid: total,
-                  status: "Paid",
-                }
+                ? {
+                    ...item,
+                    paid: total,
+                    debt: 0,
+                    status: "Paid",
+                  }
 
-              : item
+                : item
           )
         );
 
@@ -149,7 +166,9 @@ function Debts({
 
       } catch (error) {
 
-        console.log(error);
+        console.log(
+          error
+        );
 
         toast?.(
           "Failed to update debt",
@@ -160,9 +179,13 @@ function Debts({
 
   return (
 
-    <div className={`min-h-screen p-4 md:p-6 ${ui.bg}`}>
+    <div className={`
+      min-h-screen
+      p-4 md:p-6
+      ${ui.bg}
+    `}>
 
-      {/* Header */}
+      {/* HEADER */}
       <div className="
         flex items-center gap-4
         mb-6
@@ -198,14 +221,14 @@ function Debts({
 
       </div>
 
-      {/* Top */}
+      {/* TOP */}
       <div className="
         flex flex-col lg:flex-row
         justify-between gap-5
         mb-6
       ">
 
-        {/* Search */}
+        {/* SEARCH */}
         <input
           type="text"
           placeholder="Search customer..."
@@ -224,14 +247,16 @@ function Debts({
           `}
         />
 
-        {/* Total */}
+        {/* TOTAL */}
         <div className="
           bg-red-600 text-white
           rounded-3xl px-8 py-5
           text-center min-w-[220px]
         ">
 
-          <p className="text-sm">
+          <p className="
+            text-sm
+          ">
             Total Debt
           </p>
 
@@ -246,14 +271,12 @@ function Debts({
 
       </div>
 
-      {/* Table */}
-      <div
-        className={`
-          rounded-3xl border
-          overflow-hidden
-          ${ui.card}
-        `}
-      >
+      {/* TABLE */}
+      <div className={`
+        rounded-3xl border
+        overflow-hidden
+        ${ui.card}
+      `}>
 
         {!debtSales.length ? (
 
@@ -268,10 +291,14 @@ function Debts({
 
           <>
 
-            {/* Desktop */}
-            <div className="hidden lg:block">
+            {/* DESKTOP */}
+            <div className="
+              hidden lg:block
+            ">
 
-              <table className="w-full">
+              <table className="
+                w-full
+              ">
 
                 <thead>
 
@@ -326,68 +353,101 @@ function Debts({
                       return (
 
                         <tr
-                          key={sale.id}
+                          key={
+                            sale.invoiceNumber
+                          }
                           className="
                             border-b border-[#1f2937]
                             hover:bg-slate-500/5
                           "
                         >
 
+                          {/* CUSTOMER */}
                           <td className="
                             p-5 font-bold
                           ">
                             {sale.customer}
                           </td>
 
+                          {/* INVOICE */}
                           <td className="
                             p-5 text-blue-500
                             font-bold
                           ">
+
                             #
                             {
-                              sale.invoice || 1
+                              sale.invoiceNumber
                             }
+
                           </td>
 
+                          {/* TOTAL */}
                           <td className="
                             p-5 text-green-500
                             font-bold
                           ">
+
                             $
                             {total.toFixed(2)}
+
                           </td>
 
+                          {/* PAID */}
                           <td className="
                             p-5 text-cyan-400
                             font-bold
                           ">
+
                             $
                             {paid.toFixed(2)}
+
                           </td>
 
+                          {/* DEBT */}
                           <td className="
                             p-5 text-red-500
                             font-bold
                           ">
+
                             $
                             {debt.toFixed(2)}
+
                           </td>
 
-                          <td className="p-5">
+                          {/* STATUS */}
+                          <td className="
+                            p-5
+                          ">
 
-                            <span className="
+                            <span className={`
                               px-4 py-2
                               rounded-full
-                              bg-yellow-600
-                              text-white text-xs
-                              font-bold
-                            ">
-                              Partial
+                              text-xs font-bold
+
+                              ${
+                                debt > 0
+
+                                  ? "bg-yellow-600 text-white"
+
+                                  : "bg-green-600 text-white"
+                              }
+                            `}>
+
+                              {
+                                debt > 0
+                                  ? "Debt"
+                                  : "Paid"
+                              }
+
                             </span>
 
                           </td>
 
-                          <td className="p-5">
+                          {/* ACTION */}
+                          <td className="
+                            p-5
+                          ">
 
                             <button
                               onClick={() =>
@@ -419,160 +479,10 @@ function Debts({
 
             </div>
 
-            {/* Mobile */}
-            <div className="
-              lg:hidden
-              p-4 space-y-4
-            ">
-
-              {debtSales.map(
-                (sale) => {
-
-                  const total =
-                    Number(
-                      sale.total || 0
-                    );
-
-                  const paid =
-                    Number(
-                      sale.paid || 0
-                    );
-
-                  const debt =
-                    total - paid;
-
-                  return (
-
-                    <div
-                      key={sale.id}
-                      className="
-                        border border-[#1f2937]
-                        rounded-2xl p-5
-                      "
-                    >
-
-                      <div className="
-                        flex items-center
-                        justify-between
-                        mb-4
-                      ">
-
-                        <div>
-
-                          <h2 className="
-                            font-black text-lg
-                          ">
-                            {sale.customer}
-                          </h2>
-
-                          <p className="
-                            text-blue-500
-                            text-sm font-bold
-                          ">
-                            #
-                            {
-                              sale.invoice || 1
-                            }
-                          </p>
-
-                        </div>
-
-                        <span className="
-                          px-4 py-2
-                          rounded-full
-                          bg-yellow-600
-                          text-white text-xs
-                          font-bold
-                        ">
-                          Partial
-                        </span>
-
-                      </div>
-
-                      <div className="
-                        grid grid-cols-3
-                        gap-4 mb-4
-                      ">
-
-                        <Box
-                          title="Total"
-                          value={total}
-                          color="text-green-500"
-                          ui={ui}
-                        />
-
-                        <Box
-                          title="Paid"
-                          value={paid}
-                          color="text-cyan-400"
-                          ui={ui}
-                        />
-
-                        <Box
-                          title="Debt"
-                          value={debt}
-                          color="text-red-500"
-                          ui={ui}
-                        />
-
-                      </div>
-
-                      <button
-                        onClick={() =>
-                          markPaid(
-                            sale
-                          )
-                        }
-                        className="
-                          w-full h-12
-                          rounded-2xl
-                          bg-green-600
-                          hover:bg-green-700
-                          text-white font-bold
-                        "
-                      >
-                        Mark Paid
-                      </button>
-
-                    </div>
-                  );
-                }
-              )}
-
-            </div>
-
           </>
         )}
 
       </div>
-
-    </div>
-  );
-}
-
-/* Mobile Box */
-function Box({
-  title,
-  value,
-  color,
-  ui,
-}) {
-
-  return (
-
-    <div>
-
-      <p className={ui.text}>
-        {title}
-      </p>
-
-      <h3 className={`
-        font-black text-lg
-        ${color}
-      `}>
-        $
-        {value.toFixed(2)}
-      </h3>
 
     </div>
   );
