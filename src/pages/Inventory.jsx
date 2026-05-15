@@ -155,7 +155,7 @@ function Inventory({ openSidebar }) {
         <Card
           title="Total Medicines"
           value={total}
-          color="text-white"
+          color="text-blue-500"
           ui={ui}
         />
 
