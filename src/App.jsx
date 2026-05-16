@@ -78,6 +78,10 @@ function App() {
         : true;
     });
 
+  /* =========================
+      GLOBAL THEME
+  ========================= */
+
   useEffect(() => {
 
     localStorage.setItem(
@@ -85,10 +89,53 @@ function App() {
       JSON.stringify(dark)
     );
 
-    document.body.className =
+    // HTML
+    if (dark) {
+
+      document.documentElement.classList.add(
+        "dark"
+      );
+
+    } else {
+
+      document.documentElement.classList.remove(
+        "dark"
+      );
+    }
+
+    // BODY
+    document.body.style.background =
       dark
-        ? "bg-[#090d16]"
-        : "bg-gray-100";
+        ? "#090d16"
+        : "#f3f4f6";
+
+    document.body.style.color =
+      dark
+        ? "white"
+        : "#111827";
+
+    document.body.style.transition =
+      "all 0.3s ease";
+
+    // ROOT
+    const root =
+      document.getElementById(
+        "root"
+      );
+
+    if (root) {
+
+      root.style.background =
+        dark
+          ? "#090d16"
+          : "#f3f4f6";
+
+      root.style.minHeight =
+        "100vh";
+
+      root.style.width =
+        "100%";
+    }
 
   }, [dark]);
 
@@ -405,12 +452,8 @@ function App() {
     return (
       <>
         <Login
-          setAuthed={
-            setAuthed
-          }
-          setCurrentUser={
-            setCurrentUser
-          }
+          setAuthed={setAuthed}
+          setCurrentUser={setCurrentUser}
           toast={toast}
         />
 
@@ -422,12 +465,8 @@ function App() {
           ">
 
             <Toast
-              message={
-                toastData.message
-              }
-              type={
-                toastData.type
-              }
+              message={toastData.message}
+              type={toastData.type}
             />
 
           </div>
@@ -448,12 +487,8 @@ function App() {
 
         return (
           <Dashboard
-            medicines={
-              medicines
-            }
-            customers={
-              customers
-            }
+            medicines={medicines}
+            customers={customers}
           />
         );
 
@@ -462,9 +497,7 @@ function App() {
         return (
           <POS
             sales={sales}
-            setSales={
-              setSales
-            }
+            setSales={setSales}
             toast={toast}
           />
         );
@@ -473,12 +506,8 @@ function App() {
 
         return (
           <Medicines
-            medicines={
-              medicines
-            }
-            setMedicines={
-              setMedicines
-            }
+            medicines={medicines}
+            setMedicines={setMedicines}
             toast={toast}
             dark={dark}
           />
@@ -488,9 +517,7 @@ function App() {
 
         return (
           <Inventory
-            medicines={
-              medicines
-            }
+            medicines={medicines}
             darkMode={dark}
             toast={toast}
           />
@@ -500,13 +527,9 @@ function App() {
 
         return (
           <Customers
-            customers={
-              customers
-            }
+            customers={customers}
             sales={sales}
-            setCustomers={
-              setCustomers
-            }
+            setCustomers={setCustomers}
             toast={toast}
           />
         );
@@ -515,12 +538,8 @@ function App() {
 
         return (
           <Suppliers
-            suppliers={
-              suppliers
-            }
-            setSuppliers={
-              setSuppliers
-            }
+            suppliers={suppliers}
+            setSuppliers={setSuppliers}
             toast={toast}
           />
         );
@@ -539,9 +558,7 @@ function App() {
         return (
           <Debts
             sales={sales}
-            setSales={
-              setSales
-            }
+            setSales={setSales}
             toast={toast}
           />
         );
@@ -559,9 +576,7 @@ function App() {
 
         return (
           <Reports
-            medicines={
-              medicines
-            }
+            medicines={medicines}
             sales={sales}
             dark={dark}
           />
@@ -590,9 +605,7 @@ function App() {
 
         return (
           <Users
-            currentUser={
-              currentUser
-            }
+            currentUser={currentUser}
             toast={toast}
             darkMode={dark}
           />
@@ -604,9 +617,7 @@ function App() {
           <Settings
             dark={dark}
             setDark={setDark}
-            currentUser={
-              currentUser
-            }
+            currentUser={currentUser}
             toast={toast}
           />
         );
@@ -615,12 +626,8 @@ function App() {
 
         return (
           <Dashboard
-            medicines={
-              medicines
-            }
-            customers={
-              customers
-            }
+            medicines={medicines}
+            customers={customers}
           />
         );
     }
@@ -634,11 +641,11 @@ function App() {
       w-full
       overflow-x-hidden
 
+      transition-all duration-300
+
       ${
         dark
-
           ? "bg-[#090d16] text-white"
-
           : "bg-gray-100 text-gray-900"
       }
     `}>
@@ -647,13 +654,11 @@ function App() {
       <Sidebar
         page={page}
         setPage={setPage}
-        currentUser={
-          currentUser
-        }
+        currentUser={currentUser}
       />
 
-      {/* MAIN CONTENT */}
-      <main className="
+      {/* MAIN */}
+      <main className={`
         flex-1
         flex
         flex-col
@@ -662,33 +667,42 @@ function App() {
         w-full
 
         overflow-x-hidden
-      ">
+
+        transition-all duration-300
+
+        ${
+          dark
+            ? "bg-[#090d16]"
+            : "bg-gray-100"
+        }
+      `}>
 
         {/* TOPBAR */}
         <Topbar
-          setAuthed={
-            setAuthed
-          }
-          setCurrentUser={
-            setCurrentUser
-          }
-          currentUser={
-            currentUser
-          }
-          medicines={
-            medicines
-          }
+          setAuthed={setAuthed}
+          setCurrentUser={setCurrentUser}
+          currentUser={currentUser}
+          medicines={medicines}
           sales={sales}
         />
 
         {/* PAGE CONTENT */}
-        <div className="
+        <div className={`
           flex-1
+
           overflow-y-auto
           overflow-x-hidden
 
           p-2 md:p-4
-        ">
+
+          transition-all duration-300
+
+          ${
+            dark
+              ? "bg-[#090d16]"
+              : "bg-gray-100"
+          }
+        `}>
 
           {renderPage()}
 
@@ -705,12 +719,8 @@ function App() {
         ">
 
           <Toast
-            message={
-              toastData.message
-            }
-            type={
-              toastData.type
-            }
+            message={toastData.message}
+            type={toastData.type}
           />
 
         </div>

@@ -4,9 +4,114 @@ html,
 body,
 #root {
   width: 100%;
+  min-height: 100%;
   overflow-x: hidden;
+
+  transition:
+    background 0.3s ease,
+    color 0.3s ease;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* =========================
+   LIGHT MODE
+========================= */
+
+html,
+body,
+#root {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+/* =========================
+   DARK MODE
+========================= */
+
+html.dark,
+html.dark body,
+html.dark #root {
+  background: #020617 !important;
+  color: white !important;
+}
+
+/* =========================
+   GLOBAL DARK BACKGROUNDS
+========================= */
+
+.dark .bg-white,
+.dark .bg-gray-50,
+.dark .bg-gray-100,
+.dark .bg-gray-200 {
+  background-color: #111827 !important;
+}
+
+/* =========================
+   TEXT COLORS
+========================= */
+
+.dark .text-black,
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: white !important;
+}
+
+/* =========================
+   BORDERS
+========================= */
+
+.dark * {
+  border-color: #374151;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+.dark input,
+.dark textarea,
+.dark select {
+  background: #111827 !important;
+  color: white !important;
+  border-color: #374151 !important;
+}
+
+/* =========================
+   TABLES
+========================= */
+
+.dark table {
+  background: #111827 !important;
+  color: white !important;
+}
+
+/* =========================
+   SCROLLBAR
+========================= */
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+  border-radius: 10px;
+}
+
+/* DARK SCROLLBAR */
+
+.dark ::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #374151;
 }

@@ -36,15 +36,75 @@ export function ThemeProvider({
       )
     );
 
-    document.body.style.background =
-      darkMode
-        ? "#020617"
-        : "#f3f4f6";
+    const html =
+      document.documentElement;
 
-    document.body.style.color =
-      darkMode
-        ? "#ffffff"
-        : "#111827";
+    const body =
+      document.body;
+
+    const root =
+      document.getElementById(
+        "root"
+      );
+
+    /* =========================
+        DARK MODE
+    ========================= */
+
+    if (darkMode) {
+
+      html.classList.add(
+        "dark"
+      );
+
+      html.style.background =
+        "#020617";
+
+      body.style.background =
+        "#020617";
+
+      body.style.color =
+        "#ffffff";
+
+      if (root) {
+
+        root.style.background =
+          "#020617";
+
+        root.style.color =
+          "#ffffff";
+      }
+
+    }
+
+    /* =========================
+        LIGHT MODE
+    ========================= */
+
+    else {
+
+      html.classList.remove(
+        "dark"
+      );
+
+      html.style.background =
+        "#f3f4f6";
+
+      body.style.background =
+        "#f3f4f6";
+
+      body.style.color =
+        "#111827";
+
+      if (root) {
+
+        root.style.background =
+          "#f3f4f6";
+
+        root.style.color =
+          "#111827";
+      }
+    }
 
   }, [darkMode]);
 
