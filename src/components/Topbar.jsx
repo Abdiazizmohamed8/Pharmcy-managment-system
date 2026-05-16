@@ -29,7 +29,7 @@ function Topbar({
   } = useTheme();
 
   /* =========================
-      States
+      STATES
   ========================= */
 
   const [
@@ -38,7 +38,7 @@ function Topbar({
   ] = useState(false);
 
   /* =========================
-      Notifications
+      NOTIFICATIONS
   ========================= */
 
   const notifications =
@@ -46,12 +46,10 @@ function Topbar({
 
       const alerts = [];
 
-      /* Medicine Alerts */
-
       medicines.forEach(
         (medicine) => {
 
-          // Low stock
+          // LOW STOCK
 
           if (
             Number(
@@ -70,7 +68,7 @@ function Topbar({
             });
           }
 
-          // Expiry alerts
+          // EXPIRY
 
           const expiryDate =
             medicine.expiryDate ||
@@ -108,8 +106,6 @@ function Topbar({
                   )
               );
 
-            // Expired
-
             if (days < 0) {
 
               alerts.push({
@@ -119,11 +115,7 @@ function Topbar({
                   `${medicine.name} expired`,
               });
 
-            }
-
-            // Expiring soon
-
-            else if (
+            } else if (
               days <= 60
             ) {
 
@@ -138,7 +130,7 @@ function Topbar({
         }
       );
 
-      /* Debt Alerts */
+      /* DEBTS */
 
       sales.forEach(
         (sale) => {
@@ -162,7 +154,7 @@ function Topbar({
               type: "danger",
 
               message:
-                `${sale.customer} has unpaid debt $${debt.toFixed(2)}`,
+                `${sale.customer} unpaid debt $${debt.toFixed(2)}`,
             });
           }
         }
@@ -176,7 +168,7 @@ function Topbar({
     ]);
 
   /* =========================
-      Logout
+      LOGOUT
   ========================= */
 
   const handleLogout =
@@ -203,7 +195,7 @@ function Topbar({
     };
 
   /* =========================
-      Theme UI
+      UI
   ========================= */
 
   const ui = {
@@ -216,50 +208,54 @@ function Topbar({
       ? "bg-[#111827] border-[#1e293b]"
       : "bg-slate-50 border-slate-200",
 
-    text: darkMode
-      ? "text-slate-400"
-      : "text-slate-500",
-
     title: darkMode
       ? "text-white"
       : "text-slate-900",
+
+    text: darkMode
+      ? "text-slate-400"
+      : "text-slate-500",
   };
 
   return (
 
     <div className={`
-      sticky top-0 z-[100]
-      w-full border-b
+      sticky top-0 z-30
+      w-full
+      border-b
       backdrop-blur-xl
+
       px-3 md:px-6
       py-4
+
       ${ui.bg}
     `}>
 
       <div className="
-        flex flex-col
-        lg:flex-row
-        lg:items-center
-        lg:justify-between
-        gap-4
+        flex items-center
+        justify-between
+        gap-3
+        w-full
       ">
 
-        {/* =========================
-            Left
-        ========================= */}
+        {/* LEFT */}
 
-        <div>
+        <div className="
+          min-w-0
+        ">
 
           <h1 className={`
-            text-2xl md:text-3xl
+            text-xl md:text-3xl
             font-black
+            truncate
             ${ui.title}
           `}>
             Welcome 👋
           </h1>
 
           <p className={`
-            text-sm mt-1
+            text-xs md:text-sm
+            truncate
             ${ui.text}
           `}>
             Pharmacy management system
@@ -267,28 +263,18 @@ function Topbar({
 
         </div>
 
-        {/* =========================
-            Right
-        ========================= */}
+        {/* RIGHT */}
 
         <div className="
           flex items-center
           gap-2 md:gap-3
-          w-full lg:w-auto
-
-          overflow-x-auto
-          md:overflow-visible
-
-          scrollbar-hide
-          pb-1
+          flex-shrink-0
         ">
 
-          {/* =========================
-              Notifications
-          ========================= */}
+          {/* NOTIFICATIONS */}
 
           <div className="
-            relative flex-shrink-0
+            relative
           ">
 
             <button
@@ -299,14 +285,20 @@ function Topbar({
               }
               className={`
                 relative
-                w-11 h-11 md:w-12 md:h-12
+                w-10 h-10
+                md:w-12 md:h-12
+
                 rounded-2xl
                 border
+
                 flex items-center
                 justify-center
+
                 text-lg md:text-xl
+
                 transition-all
                 hover:scale-105
+
                 ${ui.card}
                 ${ui.title}
               `}
@@ -319,12 +311,16 @@ function Topbar({
                 <span className="
                   absolute
                   -top-1 -right-1
+
                   w-5 h-5
                   rounded-full
+
                   bg-red-600
                   text-white
+
                   text-[10px]
                   font-bold
+
                   flex items-center
                   justify-center
                 ">
@@ -336,12 +332,13 @@ function Topbar({
 
             </button>
 
-            {/* Dropdown */}
+            {/* DROPDOWN */}
 
             {showNotifications && (
 
               <div className={`
                 fixed md:absolute
+
                 top-20 md:top-14
                 right-2 md:right-0
 
@@ -355,6 +352,7 @@ function Topbar({
                 rounded-3xl
                 border
                 p-4
+
                 shadow-2xl
                 z-[9999]
 
@@ -395,6 +393,7 @@ function Topbar({
                           className={`
                             rounded-2xl
                             p-4
+
                             text-sm
                             font-semibold
                             text-white
@@ -445,22 +444,25 @@ function Topbar({
 
           </div>
 
-          {/* =========================
-              Dark Mode
-          ========================= */}
+          {/* DARK MODE */}
 
           <button
             onClick={toggleTheme}
             className={`
-              flex-shrink-0
-              w-11 h-11 md:w-12 md:h-12
+              w-10 h-10
+              md:w-12 md:h-12
+
               rounded-2xl
               border
+
               flex items-center
               justify-center
+
               text-lg md:text-xl
+
               transition-all
               hover:scale-105
+
               ${ui.card}
             `}
           >
@@ -471,29 +473,33 @@ function Topbar({
 
           </button>
 
-          {/* =========================
-              User Card
-          ========================= */}
+          {/* USER */}
 
           <div className={`
             hidden sm:flex
             items-center
             gap-3
+
             rounded-2xl
             border
+
             px-4 py-2
-            flex-shrink-0
+
             ${ui.card}
           `}>
 
-            {/* Avatar */}
+            {/* AVATAR */}
 
             <div className="
-              w-11 h-11 md:w-12 md:h-12
+              w-10 h-10
+              md:w-12 md:h-12
+
               rounded-full
               bg-green-600
+
               text-white
               font-bold
+
               flex items-center
               justify-center
             ">
@@ -504,7 +510,7 @@ function Topbar({
 
             </div>
 
-            {/* User Info */}
+            {/* INFO */}
 
             <div>
 
@@ -514,7 +520,7 @@ function Topbar({
               `}>
 
                 {currentUser?.name ||
-                  "Unknown User"}
+                  "Unknown"}
 
               </h3>
 
@@ -532,24 +538,26 @@ function Topbar({
 
           </div>
 
-          {/* =========================
-              Logout
-          ========================= */}
+          {/* LOGOUT */}
 
           <button
             onClick={handleLogout}
             className="
-              flex-shrink-0
-              h-11 md:h-12
-              px-4 md:px-5
+              h-10 md:h-12
+              px-3 md:px-5
+
               rounded-2xl
+
               bg-red-600
               hover:bg-red-700
+
               text-white
               text-sm md:text-base
               font-bold
+
               transition-all
               hover:scale-105
+
               whitespace-nowrap
             "
           >
