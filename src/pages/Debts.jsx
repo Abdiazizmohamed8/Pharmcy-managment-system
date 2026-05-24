@@ -121,7 +121,6 @@ function Debts({
             sale.total || 0
           );
 
-        // FIRESTORE UPDATE
         await updateDoc(
 
           doc(
@@ -139,7 +138,6 @@ function Debts({
           }
         );
 
-        // LOCAL UPDATE
         setSales(
 
           sales.map(
@@ -179,23 +177,25 @@ function Debts({
 
     <div className={`
       min-h-screen
-      p-4 md:p-6
+      p-3 sm:p-4 md:p-6
       ${ui.bg}
     `}>
 
       {/* HEADER */}
       <div className="
-        flex items-center gap-4
-        mb-6
+        flex items-center gap-3
+        mb-5 md:mb-7
       ">
 
         <button
           onClick={openSidebar}
           className={`
-            md:hidden
-            w-12 h-12
+            lg:hidden
+            w-11 h-11
             rounded-2xl border
             text-xl
+            flex items-center
+            justify-center
             ${ui.card}
           `}
         >
@@ -205,13 +205,17 @@ function Debts({
         <div>
 
           <h1 className="
-            text-3xl md:text-5xl
+            text-2xl sm:text-3xl
+            md:text-5xl
             font-black
           ">
             Debts 💳
           </h1>
 
-          <p className={ui.text}>
+          <p className={`
+            text-sm md:text-base
+            ${ui.text}
+          `}>
             Customer debts management
           </p>
 
@@ -219,10 +223,12 @@ function Debts({
 
       </div>
 
-      {/* TOP */}
+      {/* TOP BAR */}
       <div className="
-        flex flex-col lg:flex-row
-        justify-between gap-5
+        flex flex-col
+        xl:flex-row
+        gap-4
+        justify-between
         mb-6
       ">
 
@@ -237,27 +243,36 @@ function Debts({
             )
           }
           className={`
-            w-full lg:max-w-md
-            h-14 px-5
+            w-full
+            xl:max-w-md
+            h-12 md:h-14
+            px-4 md:px-5
             rounded-2xl border
             outline-none
+            text-sm md:text-base
             ${ui.input}
           `}
         />
 
-        {/* TOTAL */}
+        {/* TOTAL CARD */}
         <div className="
           bg-red-600 text-white
-          rounded-3xl px-8 py-5
-          text-center min-w-[220px]
+          rounded-3xl
+          px-6 py-5
+          text-center
+          w-full xl:w-[260px]
         ">
 
-          <p className="text-sm">
+          <p className="
+            text-sm opacity-90
+          ">
             Total Debt
           </p>
 
           <h2 className="
-            text-5xl font-black mt-2
+            text-3xl md:text-5xl
+            font-black mt-2
+            break-all
           ">
             $
             {totalDebt.toFixed(2)}
@@ -267,7 +282,7 @@ function Debts({
 
       </div>
 
-      {/* TABLE / MOBILE */}
+      {/* TABLE CONTAINER */}
       <div className={`
         rounded-3xl border
         overflow-hidden
@@ -277,7 +292,8 @@ function Debts({
         {!debtSales.length ? (
 
           <div className="
-            p-20 text-center
+            p-10 md:p-20
+            text-center
             text-slate-400
           ">
             No debts found
@@ -285,330 +301,222 @@ function Debts({
 
         ) : (
 
-          <>
+          <div className="
+            overflow-x-auto
+            w-full
+          ">
 
-            {/* =========================
-                DESKTOP TABLE
-            ========================= */}
-
-            <div className="
-              hidden lg:block
+            <table className="
+              w-full
+              min-w-[750px]
             ">
 
-              <table className="
-                w-full
-              ">
+              {/* TABLE HEAD */}
+              <thead>
 
-                <thead>
+                <tr className="
+                  border-b border-[#1f2937]
+                  text-slate-400
+                  text-xs md:text-sm
+                  bg-black/5
+                ">
 
-                  <tr className="
-                    border-b border-[#1f2937]
-                    text-slate-400 text-sm
-                  ">
+                  {[
+                    "Customer",
+                    "Invoice",
+                    "Total",
+                    "Paid",
+                    "Debt",
+                    "Status",
+                    "Action",
+                  ].map((item) => (
 
-                    {[
-                      "Customer",
-                      "Invoice",
-                      "Total",
-                      "Paid",
-                      "Debt",
-                      "Status",
-                      "Action",
-                    ].map((item) => (
-
-                      <th
-                        key={item}
-                        className="
-                          p-5 text-left
-                        "
-                      >
-                        {item}
-                      </th>
-
-                    ))}
-
-                  </tr>
-
-                </thead>
-
-                <tbody>
-
-                  {debtSales.map(
-                    (sale) => {
-
-                      const total =
-                        Number(
-                          sale.total || 0
-                        );
-
-                      const paid =
-                        Number(
-                          sale.paid || 0
-                        );
-
-                      const debt =
-                        total - paid;
-
-                      return (
-
-                        <tr
-                          key={
-                            sale.invoiceNumber
-                          }
-                          className="
-                            border-b border-[#1f2937]
-                            hover:bg-slate-500/5
-                          "
-                        >
-
-                          {/* CUSTOMER */}
-                          <td className="
-                            p-5 font-bold
-                          ">
-                            {sale.customer}
-                          </td>
-
-                          {/* INVOICE */}
-                          <td className="
-                            p-5 text-blue-500
-                            font-bold
-                          ">
-                            #
-                            {
-                              sale.invoiceNumber
-                            }
-                          </td>
-
-                          {/* TOTAL */}
-                          <td className="
-                            p-5 text-green-500
-                            font-bold
-                          ">
-                            $
-                            {total.toFixed(2)}
-                          </td>
-
-                          {/* PAID */}
-                          <td className="
-                            p-5 text-cyan-400
-                            font-bold
-                          ">
-                            $
-                            {paid.toFixed(2)}
-                          </td>
-
-                          {/* DEBT */}
-                          <td className="
-                            p-5 text-red-500
-                            font-bold
-                          ">
-                            $
-                            {debt.toFixed(2)}
-                          </td>
-
-                          {/* STATUS */}
-                          <td className="
-                            p-5
-                          ">
-
-                            <span className={`
-                              px-4 py-2
-                              rounded-full
-                              text-xs font-bold
-
-                              ${
-                                debt > 0
-                                  ? "bg-yellow-600 text-white"
-                                  : "bg-green-600 text-white"
-                              }
-                            `}>
-
-                              {
-                                debt > 0
-                                  ? "Debt"
-                                  : "Paid"
-                              }
-
-                            </span>
-
-                          </td>
-
-                          {/* ACTION */}
-                          <td className="
-                            p-5
-                          ">
-
-                            <button
-                              onClick={() =>
-                                markPaid(
-                                  sale
-                                )
-                              }
-                              className="
-                                h-11 px-5
-                                rounded-2xl
-                                bg-green-600
-                                hover:bg-green-700
-                                text-white font-bold
-                              "
-                            >
-                              Mark Paid
-                            </button>
-
-                          </td>
-
-                        </tr>
-                      );
-                    }
-                  )}
-
-                </tbody>
-
-              </table>
-
-            </div>
-
-            {/* =========================
-                MOBILE CARDS
-            ========================= */}
-
-            <div className="
-              lg:hidden
-              p-4
-              space-y-4
-            ">
-
-              {debtSales.map(
-                (sale) => {
-
-                  const total =
-                    Number(
-                      sale.total || 0
-                    );
-
-                  const paid =
-                    Number(
-                      sale.paid || 0
-                    );
-
-                  const debt =
-                    total - paid;
-
-                  return (
-
-                    <div
-                      key={
-                        sale.invoiceNumber
-                      }
-                      className={`
-                        rounded-2xl
-                        border
-                        p-4
-                        ${ui.card}
-                      `}
+                    <th
+                      key={item}
+                      className="
+                        p-3 md:p-5
+                        text-left
+                        whitespace-nowrap
+                      "
                     >
+                      {item}
+                    </th>
 
-                      <div className="
-                        flex items-center
-                        justify-between
-                        mb-3
-                      ">
+                  ))}
 
-                        <h2 className="
-                          font-bold text-lg
-                        ">
-                          {sale.customer}
-                        </h2>
+                </tr>
 
-                        <span className={`
-                          px-3 py-1
-                          rounded-full
-                          text-xs font-bold
+              </thead>
 
-                          ${
-                            debt > 0
-                              ? "bg-yellow-600 text-white"
-                              : "bg-green-600 text-white"
-                          }
-                        `}>
+              {/* TABLE BODY */}
+              <tbody>
 
-                          {
-                            debt > 0
-                              ? "Debt"
-                              : "Paid"
-                          }
+                {debtSales.map(
+                  (sale) => {
 
-                        </span>
+                    const total =
+                      Number(
+                        sale.total || 0
+                      );
 
-                      </div>
+                    const paid =
+                      Number(
+                        sale.paid || 0
+                      );
 
-                      <div className="
-                        space-y-2 text-sm
-                      ">
+                    const debt =
+                      total - paid;
 
-                        <p>
-                          Invoice:
-                          <span className="
-                            ml-2 font-bold
-                            text-blue-500
-                          ">
-                            #
-                            {
-                              sale.invoiceNumber
-                            }
-                          </span>
-                        </p>
+                    return (
 
-                        <p className="
-                          text-green-500
-                          font-bold
-                        ">
-                          Total:
-                          ${total.toFixed(2)}
-                        </p>
-
-                        <p className="
-                          text-cyan-400
-                          font-bold
-                        ">
-                          Paid:
-                          ${paid.toFixed(2)}
-                        </p>
-
-                        <p className="
-                          text-red-500
-                          font-bold
-                        ">
-                          Debt:
-                          ${debt.toFixed(2)}
-                        </p>
-
-                      </div>
-
-                      <button
-                        onClick={() =>
-                          markPaid(sale)
+                      <tr
+                        key={
+                          sale.invoiceNumber
                         }
                         className="
-                          mt-4
-                          w-full h-11
-                          rounded-2xl
-                          bg-green-600
-                          hover:bg-green-700
-                          text-white font-bold
+                          border-b border-[#1f2937]
+                          hover:bg-slate-500/5
+                          transition
                         "
                       >
-                        Mark Paid
-                      </button>
 
-                    </div>
-                  );
-                }
-              )}
+                        {/* CUSTOMER */}
+                        <td className="
+                          p-3 md:p-5
+                          font-bold
+                          whitespace-nowrap
+                          text-sm md:text-base
+                        ">
+                          {sale.customer}
+                        </td>
 
-            </div>
+                        {/* INVOICE */}
+                        <td className="
+                          p-3 md:p-5
+                          text-blue-500
+                          font-bold
+                          whitespace-nowrap
+                          text-sm md:text-base
+                        ">
 
-          </>
+                          #
+                          {
+                            sale.invoiceNumber
+                          }
+
+                        </td>
+
+                        {/* TOTAL */}
+                        <td className="
+                          p-3 md:p-5
+                          text-green-500
+                          font-bold
+                          whitespace-nowrap
+                          text-sm md:text-base
+                        ">
+
+                          $
+                          {total.toFixed(2)}
+
+                        </td>
+
+                        {/* PAID */}
+                        <td className="
+                          p-3 md:p-5
+                          text-cyan-400
+                          font-bold
+                          whitespace-nowrap
+                          text-sm md:text-base
+                        ">
+
+                          $
+                          {paid.toFixed(2)}
+
+                        </td>
+
+                        {/* DEBT */}
+                        <td className="
+                          p-3 md:p-5
+                          text-red-500
+                          font-bold
+                          whitespace-nowrap
+                          text-sm md:text-base
+                        ">
+
+                          $
+                          {debt.toFixed(2)}
+
+                        </td>
+
+                        {/* STATUS */}
+                        <td className="
+                          p-3 md:p-5
+                        ">
+
+                          <span className={`
+                            px-3 md:px-4
+                            py-2
+                            rounded-full
+                            text-[10px] md:text-xs
+                            font-bold
+                            whitespace-nowrap
+
+                            ${
+                              debt > 0
+                                ? "bg-yellow-600 text-white"
+                                : "bg-green-600 text-white"
+                            }
+                          `}>
+
+                            {
+                              debt > 0
+                                ? "Debt"
+                                : "Paid"
+                            }
+
+                          </span>
+
+                        </td>
+
+                        {/* ACTION */}
+                        <td className="
+                          p-3 md:p-5
+                        ">
+
+                          <button
+                            onClick={() =>
+                              markPaid(
+                                sale
+                              )
+                            }
+                            className="
+                              h-10 md:h-11
+                              px-4 md:px-5
+                              rounded-xl md:rounded-2xl
+                              bg-green-600
+                              hover:bg-green-700
+                              text-white
+                              text-xs md:text-sm
+                              font-bold
+                              whitespace-nowrap
+                              transition
+                            "
+                          >
+                            Mark Paid
+                          </button>
+
+                        </td>
+
+                      </tr>
+                    );
+                  }
+                )}
+
+              </tbody>
+
+            </table>
+
+          </div>
         )}
 
       </div>
