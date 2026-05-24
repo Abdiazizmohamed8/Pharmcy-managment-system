@@ -121,7 +121,7 @@ function Debts({
             sale.total || 0
           );
 
-        // UPDATE FIRESTORE
+        // FIRESTORE UPDATE
         await updateDoc(
 
           doc(
@@ -139,7 +139,7 @@ function Debts({
           }
         );
 
-        // UPDATE LOCAL
+        // LOCAL UPDATE
         setSales(
 
           sales.map(
@@ -166,9 +166,7 @@ function Debts({
 
       } catch (error) {
 
-        console.log(
-          error
-        );
+        console.log(error);
 
         toast?.(
           "Failed to update debt",
@@ -254,9 +252,7 @@ function Debts({
           text-center min-w-[220px]
         ">
 
-          <p className="
-            text-sm
-          ">
+          <p className="text-sm">
             Total Debt
           </p>
 
@@ -271,7 +267,7 @@ function Debts({
 
       </div>
 
-      {/* TABLE */}
+      {/* TABLE / MOBILE */}
       <div className={`
         rounded-3xl border
         overflow-hidden
@@ -291,7 +287,10 @@ function Debts({
 
           <>
 
-            {/* DESKTOP */}
+            {/* =========================
+                DESKTOP TABLE
+            ========================= */}
+
             <div className="
               hidden lg:block
             ">
@@ -374,12 +373,10 @@ function Debts({
                             p-5 text-blue-500
                             font-bold
                           ">
-
                             #
                             {
                               sale.invoiceNumber
                             }
-
                           </td>
 
                           {/* TOTAL */}
@@ -387,10 +384,8 @@ function Debts({
                             p-5 text-green-500
                             font-bold
                           ">
-
                             $
                             {total.toFixed(2)}
-
                           </td>
 
                           {/* PAID */}
@@ -398,10 +393,8 @@ function Debts({
                             p-5 text-cyan-400
                             font-bold
                           ">
-
                             $
                             {paid.toFixed(2)}
-
                           </td>
 
                           {/* DEBT */}
@@ -409,10 +402,8 @@ function Debts({
                             p-5 text-red-500
                             font-bold
                           ">
-
                             $
                             {debt.toFixed(2)}
-
                           </td>
 
                           {/* STATUS */}
@@ -427,9 +418,7 @@ function Debts({
 
                               ${
                                 debt > 0
-
                                   ? "bg-yellow-600 text-white"
-
                                   : "bg-green-600 text-white"
                               }
                             `}>
@@ -476,6 +465,146 @@ function Debts({
                 </tbody>
 
               </table>
+
+            </div>
+
+            {/* =========================
+                MOBILE CARDS
+            ========================= */}
+
+            <div className="
+              lg:hidden
+              p-4
+              space-y-4
+            ">
+
+              {debtSales.map(
+                (sale) => {
+
+                  const total =
+                    Number(
+                      sale.total || 0
+                    );
+
+                  const paid =
+                    Number(
+                      sale.paid || 0
+                    );
+
+                  const debt =
+                    total - paid;
+
+                  return (
+
+                    <div
+                      key={
+                        sale.invoiceNumber
+                      }
+                      className={`
+                        rounded-2xl
+                        border
+                        p-4
+                        ${ui.card}
+                      `}
+                    >
+
+                      <div className="
+                        flex items-center
+                        justify-between
+                        mb-3
+                      ">
+
+                        <h2 className="
+                          font-bold text-lg
+                        ">
+                          {sale.customer}
+                        </h2>
+
+                        <span className={`
+                          px-3 py-1
+                          rounded-full
+                          text-xs font-bold
+
+                          ${
+                            debt > 0
+                              ? "bg-yellow-600 text-white"
+                              : "bg-green-600 text-white"
+                          }
+                        `}>
+
+                          {
+                            debt > 0
+                              ? "Debt"
+                              : "Paid"
+                          }
+
+                        </span>
+
+                      </div>
+
+                      <div className="
+                        space-y-2 text-sm
+                      ">
+
+                        <p>
+                          Invoice:
+                          <span className="
+                            ml-2 font-bold
+                            text-blue-500
+                          ">
+                            #
+                            {
+                              sale.invoiceNumber
+                            }
+                          </span>
+                        </p>
+
+                        <p className="
+                          text-green-500
+                          font-bold
+                        ">
+                          Total:
+                          ${total.toFixed(2)}
+                        </p>
+
+                        <p className="
+                          text-cyan-400
+                          font-bold
+                        ">
+                          Paid:
+                          ${paid.toFixed(2)}
+                        </p>
+
+                        <p className="
+                          text-red-500
+                          font-bold
+                        ">
+                          Debt:
+                          ${debt.toFixed(2)}
+                        </p>
+
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          markPaid(sale)
+                        }
+                        className="
+                          mt-4
+                          w-full h-11
+                          rounded-2xl
+                          bg-green-600
+                          hover:bg-green-700
+                          text-white font-bold
+                        "
+                      >
+                        Mark Paid
+                      </button>
+
+                    </div>
+                  );
+                }
+              )}
 
             </div>
 
