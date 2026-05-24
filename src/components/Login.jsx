@@ -149,12 +149,16 @@ function Login({
           "success"
         );
 
-      } catch {
+      }catch (error) {
 
-        toast(
-          "Invalid login",
-          "error"
-        );
+  console.log(error.code);
+  console.log(error.message);
+
+  toast(
+    error.code,
+    "error"
+  );
+
 
       } finally {
 
